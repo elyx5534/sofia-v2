@@ -68,9 +68,9 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Run Bandit Security Check
-      uses: gaurav-nelson/bandit-action@v1
+      uses: py-actions/py-bandit@v1
       with:
-        path: "."
+        args: "--recursive ./"
     
     - name: Run Safety Check
       run: |
