@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Sofia V2 Dashboard</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px; }
+      .wrap { max-width: 980px; margin: 0 auto; }
+      .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
+      .row { display: flex; gap: 16px; flex-wrap: wrap; }
+      .col { flex: 1 1 320px; }
+      code { background: #f5f5f5; padding: 2px 6px; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>📈 Sofia V2</h1>
+      <p>Symbol: <code>{{ symbol }}</code></p>
+
+      <div class="row">
+        <div class="col card">
+          <h3>TradingView</h3>
+          <!-- Basit widget (public) -->
+          <div id="tv-chart"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+          <script>
+            new TradingView.widget({
+              "container_id": "tv-chart",
+              "symbol": "{{ symbol }}",
+              "interval": "60",
+              "timezone": "Etc/UTC",
+              "theme": "light",
+              "style": "1",
+              "locale": "en",
+              "hide_top_toolbar": false,
+              "hide_legend": false,
+              "allow_symbol_change": true,
+              "height": 480,
+              "width": "100%"
+            });
+          </script>
+        </div>
+        <div class="col card">
+          <h3>API Hızlı Linkler</h3>
+          <ul>
+            <li><a href="/health" target="_blank">/health</a></li>
+            <li><a href="/data?symbol=BTC-USD" target="_blank">/data?symbol=BTC-USD</a></li>
+            <li><a href="/strategy?symbol=BTC-USD" target="_blank">/strategy?symbol=BTC-USD</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
