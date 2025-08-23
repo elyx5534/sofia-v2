@@ -32,8 +32,13 @@ def sma_signals(prices: List[float], short: int = 3, long: int = 5) -> List[str]
         l = ma(prices, long, i)
         if s is None or l is None:
             continue
-        if s > l and ma(prices, short, i-1) <= ma(prices, long, i-1):
+        # Önceki değerleri de kontrol et
+        prev_s = ma(prices, short, i-1) if i > 0 else None
+        prev_l = ma(prices, long, i-1) if i > 0 else None
+        if prev_s is None or prev_l is None:
+            continue
+        if s > l and prev_s <= prev_l:
             signals[i] = "buy"
-        elif s < l and ma(prices, short, i-1) >= ma(prices, long, i-1):
+        elif s < l and prev_s >= prev_l:
             signals[i] = "sell"
     return signals
