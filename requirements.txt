@@ -7,4 +7,6 @@ jinja2
 aiohttp
 requests
 websockets
+websocket-client
 python-multipart
+colorama
