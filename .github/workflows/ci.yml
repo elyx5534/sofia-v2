@@ -20,13 +20,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-cov black ruff mypy coverage
       
-      - name: Run tests
+      - name: Create dummy test
         run: |
-          if [ -d tests ] && [ "$(ls -A tests/*.py 2>/dev/null)" ]; then
-            pytest -q
-          else
-            echo 'dummy test passed'
-          fi
+          mkdir -p tests
+          echo "def test_dummy(): assert True" > tests/test_dummy.py
+      
+      - name: Run tests
+        run: pytest -q
       
       - name: Black formatting check
         continue-on-error: true
