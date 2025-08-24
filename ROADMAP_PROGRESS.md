@@ -1,6 +1,6 @@
 # Sofia V2 - Roadmap İlerleme Takibi
 
-## 🎯 Genel İlerleme: %42
+## 🎯 Genel İlerleme: %65
 
 ## 📊 Detaylı Durum Tablosu
 
@@ -18,11 +18,13 @@
 ### ORTA VADELİ HEDEFLER (1-2 Ay)
 | Özellik | Durum | İlerleme | Notlar |
 |---------|-------|----------|--------|
-| ✅ Genetik Algoritma (GA) | TAMAMLANDI | %100 | GeneticAlgorithm sınıfı eklendi |
-| ⏳ Fallback Sistemi | BAŞLANMADI | %0 | Binance, Coinbase, Stooq |
+| ✅ Genetik Algoritma (GA) | TAMAMLANDI | %100 | GA Queue sistemi eklendi |
+| ✅ Fallback Sistemi | TAMAMLANDI | %100 | MultiSourceDataProvider (Binance, Coinbase, Kraken) |
 | ✅ Detaylı Analiz Sayfası | TAMAMLANDI | %100 | /analysis/{symbol} endpoint aktif |
 | ✅ Teknik İndikatörler | TAMAMLANDI | %100 | 10+ indikatör eklendi (RSI, MACD, BB, vb.) |
-| ⏳ ML Tahmin Modeli | BAŞLANMADI | %0 | Basit fiyat yönü tahmini |
+| ✅ ML Tahmin Modeli | TAMAMLANDI | %100 | XGBoost/RandomForest price predictor |
+| ✅ Strategy Registry | TAMAMLANDI | %100 | 5 strateji, parametre şemaları |
+| ✅ Optimizer Queue | TAMAMLANDI | %100 | Async GA optimization queue |
 
 ### UZUN VADELİ HEDEFLER (2+ Ay)
 | Özellik | Durum | İlerleme | Notlar |
@@ -35,15 +37,16 @@
 
 ## 📈 Modül Bazlı İlerleme
 
-- **Web UI**: %80 ✅ (Dashboard hazır, detay sayfalar eksik)
-- **Data Hub**: %60 ✅ (yfinance çalışıyor, fallback yok)
-- **Backtest Engine**: %70 ✅ (Motor hazır, UI entegrasyonu yok)
-- **Optimize**: %40 ⏳ (Grid search var, GA yok)
-- **Registry**: %50 ⏳ (SQLite hazır, UI bağlantısı yok)
+- **Web UI**: %80 ✅ (Dashboard hazır, arkadaş geliştiriyor)
+- **Data Hub**: %90 ✅ (Multi-source fallback hazır)
+- **Backtest Engine**: %95 ✅ (Motor + API endpoints hazır)
+- **Optimize**: %85 ✅ (GA Queue system hazır)
+- **Registry**: %100 ✅ (Strategy Registry tamamlandı)
 - **CLI**: %60 ✅ (Çalışıyor ama modülerleştirme lazım)
-- **ML/AI**: %0 ⏳ (Henüz başlanmadı)
+- **ML/AI**: %75 ✅ (Price predictor hazır, backtest var)
+- **API**: %90 ✅ (Tüm core endpoint'ler hazır)
 
-## 🔄 Son Güncelleme: 2025-08-24
+## 🔄 Son Güncelleme: 2025-08-24 - v2
 
 ---
 *Bu dosya her implementasyondan sonra otomatik güncellenir*
