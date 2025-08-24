@@ -11,9 +11,37 @@
       "Bash(git push:*)",
       "Bash(git fetch:*)",
       "Bash(gh pr list:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Read(/C:\\Users\\Elyx\\Downloads/**)",
+      "Read(/D:\\mnt\\d\\BORSA2\\sofia-v2/**)",
+      "WebSearch",
+      "Read(/D:\\d\\BORSA2\\sofia-v2/**)",
+      "Read(/D:\\d\\BORSA2\\sofia-v2/**)",
+      "Read(/D:\\d\\BORSA2\\sofia-v2\\sofia_ui/**)",
+      "Read(/D:\\d\\BORSA2/**)",
+      "Bash(for page in \"/\" \"/portfolio\" \"/assets/BTC-USD\" \"/backtest\" \"/strategies\")",
+      "Bash(do echo -n \"$page: \")",
+      "Bash(done)",
+      "Read(/C:\\Users\\Elyx\\Downloads/**)",
+      "Bash(..venvScriptsActivate)",
+      "Bash(npm install:*)",
+      "Bash(lt:*)",
+      "Bash(npx localtunnel:*)",
+      "Bash(ngrok config:*)",
+      "Bash(ngrok:*)",
+      "Bash(ssh:*)",
+      "Bash(cloudflared tunnel:*)",
+      "Bash(npx cloudflared tunnel:*)",
+      "Bash(git rm:*)",
+      "WebFetch(domain:sufficient-content-lang-technician.trycloudflare.com)",
+      "WebFetch(domain:genre-fantastic-part-boston.trycloudflare.com)",
+      "WebFetch(domain:locking-trinity-if-content.trycloudflare.com)",
+      "WebFetch(domain:participate-rendering-listing-get.trycloudflare.com)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "D:\\d\\BORSA2\\sofia-v2\\sofia_ui"
+    ]
   }
 }

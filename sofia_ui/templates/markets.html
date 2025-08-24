@@ -26,45 +26,45 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Category Tabs -->
             <div class="flex items-center space-x-2 overflow-x-auto pb-2">
-                <button @click="selectedCategory = 'all'" 
+                <button @click="selectedCategory = 'all'"
                         :class="selectedCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-th mr-2"></i>All Coins
                 </button>
-                <button @click="selectedCategory = 'trending'" 
+                <button @click="selectedCategory = 'trending'"
                         :class="selectedCategory === 'trending' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-fire mr-2 text-orange-400"></i>Trending
                 </button>
-                <button @click="selectedCategory = 'defi'" 
+                <button @click="selectedCategory = 'defi'"
                         :class="selectedCategory === 'defi' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-chart-pie mr-2"></i>DeFi
                 </button>
-                <button @click="selectedCategory = 'gaming'" 
+                <button @click="selectedCategory = 'gaming'"
                         :class="selectedCategory === 'gaming' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-gamepad mr-2"></i>Gaming
                 </button>
-                <button @click="selectedCategory = 'layer1'" 
+                <button @click="selectedCategory = 'layer1'"
                         :class="selectedCategory === 'layer1' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-layer-group mr-2"></i>Layer 1
                 </button>
-                <button @click="selectedCategory = 'layer2'" 
+                <button @click="selectedCategory = 'layer2'"
                         :class="selectedCategory === 'layer2' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-clone mr-2"></i>Layer 2
                 </button>
-                <button @click="selectedCategory = 'meme'" 
+                <button @click="selectedCategory = 'meme'"
                         :class="selectedCategory === 'meme' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-laugh mr-2"></i>Meme
                 </button>
-                <button @click="selectedCategory = 'ai'" 
+                <button @click="selectedCategory = 'ai'"
                         :class="selectedCategory === 'ai' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'"
                         class="px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap">
                     <i class="fas fa-robot mr-2"></i>AI
@@ -79,9 +79,9 @@
         <div class="mb-6 flex flex-col md:flex-row gap-4">
             <div class="flex-1">
                 <div class="relative">
-                    <input type="text" 
+                    <input type="text"
                            x-model="searchQuery"
-                           placeholder="Search coins by name or symbol..." 
+                           placeholder="Search coins by name or symbol..."
                            class="w-full px-4 py-3 pl-12 bg-gray-900/60 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all">
                     <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
                 </div>
@@ -93,7 +93,7 @@
                     <option value="change">24h Change</option>
                     <option value="volume">Volume</option>
                 </select>
-                <button @click="viewMode = viewMode === 'grid' ? 'list' : 'grid'" 
+                <button @click="viewMode = viewMode === 'grid' ? 'list' : 'grid'"
                         class="px-4 py-3 bg-gray-900/60 border border-gray-800 rounded-xl text-white hover:bg-gray-800 transition-all">
                     <i :class="viewMode === 'grid' ? 'fas fa-list' : 'fas fa-th-large'"></i>
                 </button>
@@ -124,7 +124,7 @@
                             #<span x-text="coin.rank"></span>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="text-xl font-bold text-white">
                             $<span x-text="formatPrice(coin.price)"></span>
@@ -135,11 +135,11 @@
                             <span x-text="Math.abs(coin.change_percent).toFixed(2)"></span>%
                         </div>
                     </div>
-                    
+
                     <div class="h-16 mb-3">
                         <canvas :id="'chart-' + coin.symbol.replace('-USD', '')"></canvas>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-2 text-xs">
                         <div>
                             <span class="text-gray-500">Volume:</span>
@@ -150,13 +150,13 @@
                             <span class="text-white ml-1">$<span x-text="formatMarketCap(coin.market_cap)"></span></span>
                         </div>
                     </div>
-                    
+
                     <div class="mt-3 pt-3 border-t border-gray-800/50 flex items-center justify-between">
-                        <button @click.stop="addToWatchlist(coin)" 
+                        <button @click.stop="addToWatchlist(coin)"
                                 class="text-gray-400 hover:text-yellow-400 transition-colors">
                             <i class="far fa-star"></i>
                         </button>
-                        <button @click.stop="openTradeModal(coin)" 
+                        <button @click.stop="openTradeModal(coin)"
                                 class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-all">
                             Trade
                         </button>
@@ -226,11 +226,11 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center space-x-2">
-                                        <button @click.stop="addToWatchlist(coin)" 
+                                        <button @click.stop="addToWatchlist(coin)"
                                                 class="text-gray-400 hover:text-yellow-400 transition-colors">
                                             <i class="far fa-star"></i>
                                         </button>
-                                        <button @click.stop="openTradeModal(coin)" 
+                                        <button @click.stop="openTradeModal(coin)"
                                                 class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-all">
                                             Trade
                                         </button>
@@ -250,7 +250,7 @@
     </div>
 
     <!-- Trade Modal -->
-    <div x-show="tradeModalOpen" 
+    <div x-show="tradeModalOpen"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -266,7 +266,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <div x-show="selectedCoin" class="space-y-4">
                 <div class="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg">
                     <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-gray-500/20">
@@ -279,7 +279,7 @@
                         <div class="text-sm text-gray-400">$<span x-text="selectedCoin?.price"></span></div>
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-3">
                     <button class="py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-all">
                         <i class="fas fa-arrow-up mr-2"></i>Buy
@@ -307,7 +307,7 @@ function marketsApp() {
         viewMode: 'grid',
         tradeModalOpen: false,
         selectedCoin: null,
-        
+
         getColorCode(color) {
             const colors = {
                 'orange': '#f97316',
@@ -324,32 +324,32 @@ function marketsApp() {
             };
             return colors[color] || '#6b7280';
         },
-        
+
         async init() {
             await this.fetchCoins();
             this.filterCoins();
-            
+
             // Create mini charts after data loads
             this.$nextTick(() => {
                 this.createMiniCharts();
             });
-            
+
             // Refresh data every 30 seconds
             setInterval(() => {
                 this.fetchCoins();
             }, 30000);
         },
-        
+
         async fetchCoins() {
             try {
                 const response = await fetch('/api/crypto-prices');
                 const data = await response.json();
-                
+
                 // Convert object to array and add mock data
                 this.coins = Object.values(data).map((coin, index) => {
                     // Add mock 7d change
                     coin.change_7d = (Math.random() * 30 - 15);
-                    
+
                     // Add category tags
                     if (['BTC', 'ETH', 'BNB', 'SOL', 'ADA'].includes(coin.symbol.replace('-USD', ''))) {
                         coin.categories = ['layer1'];
@@ -364,15 +364,15 @@ function marketsApp() {
                     } else {
                         coin.categories = [];
                     }
-                    
+
                     // Mark trending coins
                     if (Math.abs(coin.change_percent) > 10) {
                         coin.categories.push('trending');
                     }
-                    
+
                     return coin;
                 });
-                
+
                 this.loading = false;
                 this.filterCoins();
             } catch (error) {
@@ -380,26 +380,26 @@ function marketsApp() {
                 this.loading = false;
             }
         },
-        
+
         filterCoins() {
             let filtered = [...this.coins];
-            
+
             // Filter by search
             if (this.searchQuery) {
                 const query = this.searchQuery.toLowerCase();
-                filtered = filtered.filter(coin => 
-                    coin.name.toLowerCase().includes(query) || 
+                filtered = filtered.filter(coin =>
+                    coin.name.toLowerCase().includes(query) ||
                     coin.symbol.toLowerCase().includes(query)
                 );
             }
-            
+
             // Filter by category
             if (this.selectedCategory !== 'all') {
-                filtered = filtered.filter(coin => 
+                filtered = filtered.filter(coin =>
                     coin.categories && coin.categories.includes(this.selectedCategory)
                 );
             }
-            
+
             // Sort
             filtered.sort((a, b) => {
                 switch(this.sortBy) {
@@ -414,32 +414,32 @@ function marketsApp() {
                         return parseFloat(b.market_cap) - parseFloat(a.market_cap);
                 }
             });
-            
+
             this.filteredCoins = filtered;
-            
+
             // Recreate charts after filtering
             this.$nextTick(() => {
                 this.createMiniCharts();
             });
         },
-        
+
         createMiniCharts() {
             this.filteredCoins.forEach(coin => {
-                const chartId = this.viewMode === 'grid' 
+                const chartId = this.viewMode === 'grid'
                     ? 'chart-' + coin.symbol.replace('-USD', '')
                     : 'list-chart-' + coin.symbol.replace('-USD', '');
-                
+
                 const canvas = document.getElementById(chartId);
                 if (!canvas) return;
-                
+
                 const ctx = canvas.getContext('2d');
-                
+
                 // Generate random chart data
                 const data = Array.from({length: 24}, () => Math.random() * 40 + 30);
-                
+
                 // Determine color based on change
                 const color = coin.change_percent >= 0 ? '#10b981' : '#ef4444';
-                
+
                 new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -468,14 +468,14 @@ function marketsApp() {
                 });
             });
         },
-        
+
         formatPrice(price) {
             if (price < 0.01) return price.toFixed(6);
             if (price < 1) return price.toFixed(4);
             if (price < 100) return price.toFixed(2);
             return price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         },
-        
+
         formatMarketCap(mcap) {
             const num = parseFloat(mcap);
             if (num > 1000000000) return (num / 1000000000).toFixed(2) + 'B';
@@ -483,23 +483,23 @@ function marketsApp() {
             if (num > 1000) return (num / 1000).toFixed(2) + 'K';
             return num.toFixed(2);
         },
-        
+
         addToWatchlist(coin) {
             console.log('Adding to watchlist:', coin);
             // Implement watchlist functionality
         },
-        
+
         openTradeModal(coin) {
             this.selectedCoin = coin;
             this.tradeModalOpen = true;
         },
-        
+
         // Watch for changes
         $watch: {
             searchQuery() { this.filterCoins(); },
             selectedCategory() { this.filterCoins(); },
             sortBy() { this.filterCoins(); },
-            viewMode() { 
+            viewMode() {
                 this.$nextTick(() => {
                     this.createMiniCharts();
                 });

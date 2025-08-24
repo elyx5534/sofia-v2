@@ -12,7 +12,7 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .portfolio-card::before {
         content: '';
         position: absolute;
@@ -28,44 +28,44 @@
         z-index: -1;
         border-radius: inherit;
     }
-    
+
     .portfolio-card:hover::before {
         opacity: 0.3;
     }
-    
+
     @keyframes gradient-border {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
-    
+
     .asset-row {
         transition: all 0.3s ease;
         border-radius: 12px;
     }
-    
+
     .asset-row:hover {
         background: rgba(99, 102, 241, 0.05);
         transform: translateX(5px);
     }
-    
+
     .profit-text {
         animation: profit-glow 2s ease-in-out infinite;
     }
-    
+
     @keyframes profit-glow {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.7; }
     }
-    
+
     .allocation-chart {
         filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.3));
     }
-    
+
     .trade-entry {
         animation: slideIn 0.5s ease;
     }
-    
+
     @keyframes slideIn {
         from {
             opacity: 0;
@@ -76,9 +76,9 @@
             transform: translateX(0);
         }
     }
-    
+
     .neon-border {
-        box-shadow: 
+        box-shadow:
             0 0 5px rgba(99, 102, 241, 0.5),
             0 0 10px rgba(99, 102, 241, 0.3),
             0 0 15px rgba(99, 102, 241, 0.1);
@@ -106,7 +106,7 @@
                 <span class="text-gray-500 text-xs ml-2">All time</span>
             </div>
         </div>
-        
+
         <!-- Available Balance -->
         <div class="portfolio-card rounded-2xl p-6">
             <div class="flex items-center justify-between mb-4">
@@ -121,7 +121,7 @@
                 <i class="fas fa-plus mr-1"></i> Deposit
             </button>
         </div>
-        
+
         <!-- Today's Profit -->
         <div class="portfolio-card rounded-2xl p-6">
             <div class="flex items-center justify-between mb-4">
@@ -135,7 +135,7 @@
                 <div class="h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full" style="width: 78%; animation: width 1s ease;"></div>
             </div>
         </div>
-        
+
         <!-- ROI -->
         <div class="portfolio-card rounded-2xl p-6">
             <div class="flex items-center justify-between mb-4">
@@ -156,7 +156,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Main Content -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Holdings Section -->
@@ -174,7 +174,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="space-y-3">
                     <!-- BTC Holding -->
                     <div class="asset-row flex items-center justify-between p-4">
@@ -199,7 +199,7 @@
                             <canvas id="btcHoldingChart"></canvas>
                         </div>
                     </div>
-                    
+
                     <!-- ETH Holding -->
                     <div class="asset-row flex items-center justify-between p-4">
                         <div class="flex items-center space-x-4">
@@ -223,7 +223,7 @@
                             <canvas id="ethHoldingChart"></canvas>
                         </div>
                     </div>
-                    
+
                     <!-- SOL Holding -->
                     <div class="asset-row flex items-center justify-between p-4">
                         <div class="flex items-center space-x-4">
@@ -249,7 +249,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Performance Chart -->
             <div class="glass-card rounded-2xl p-6">
                 <div class="flex items-center justify-between mb-6">
@@ -266,7 +266,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Right Sidebar -->
         <div class="space-y-6">
             <!-- Allocation Chart -->
@@ -299,7 +299,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Recent Trades -->
             <div class="glass-card rounded-2xl p-6">
                 <h3 class="text-lg font-bold text-white mb-4">Recent Trades</h3>
@@ -318,7 +318,7 @@
                             <span class="text-green-400 text-sm font-semibold">+0.05</span>
                         </div>
                     </div>
-                    
+
                     <div class="trade-entry">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
@@ -333,7 +333,7 @@
                             <span class="text-red-400 text-sm font-semibold">-2.3</span>
                         </div>
                     </div>
-                    
+
                     <div class="trade-entry">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
@@ -350,7 +350,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Quick Actions -->
             <div class="glass-card rounded-2xl p-6 neon-border">
                 <h3 class="text-lg font-bold text-white mb-4">Quick Actions</h3>
@@ -394,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     };
-    
+
     // BTC mini chart
     new Chart(document.getElementById('btcHoldingChart'), {
         ...miniChartOptions,
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }]
         }
     });
-    
+
     // ETH mini chart
     new Chart(document.getElementById('ethHoldingChart'), {
         ...miniChartOptions,
@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }]
         }
     });
-    
+
     // SOL mini chart
     new Chart(document.getElementById('solHoldingChart'), {
         ...miniChartOptions,
@@ -439,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }]
         }
     });
-    
+
     // Allocation Chart
     const allocationCtx = document.getElementById('allocationChart').getContext('2d');
     new Chart(allocationCtx, {
@@ -468,20 +468,20 @@ document.addEventListener('DOMContentLoaded', function() {
             cutout: '70%'
         }
     });
-    
+
     // Performance Chart
     const performanceCtx = document.getElementById('performanceChart').getContext('2d');
     const performanceGradient = performanceCtx.createLinearGradient(0, 0, 0, 250);
     performanceGradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
     performanceGradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
-    
+
     new Chart(performanceCtx, {
         type: 'line',
         data: {
             labels: Array.from({length: 30}, (_, i) => i + 1),
             datasets: [{
                 label: 'Portfolio Value',
-                data: Array.from({length: 30}, (_, i) => 
+                data: Array.from({length: 30}, (_, i) =>
                     400000 + Math.sin(i * 0.3) * 20000 + Math.random() * 10000
                 ),
                 borderColor: 'rgb(99, 102, 241)',
@@ -531,14 +531,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     // Simulate live trades
     setInterval(() => {
         const trades = ['Buy BTC', 'Sell ETH', 'Buy SOL', 'Sell DOGE', 'Buy ADA'];
         const amounts = [0.05, 2.3, 45, 1000, 500];
         const randomTrade = Math.floor(Math.random() * trades.length);
         const isBuy = trades[randomTrade].includes('Buy');
-        
+
         const newTrade = document.createElement('div');
         newTrade.className = 'trade-entry';
         newTrade.innerHTML = `
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span class="text-${isBuy ? 'green' : 'red'}-400 text-sm font-semibold">${isBuy ? '+' : '-'}${amounts[randomTrade]}</span>
             </div>
         `;
-        
+
         const tradesContainer = document.getElementById('recentTrades');
         tradesContainer.insertBefore(newTrade, tradesContainer.firstChild);
         if (tradesContainer.children.length > 5) {

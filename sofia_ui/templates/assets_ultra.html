@@ -16,13 +16,13 @@
         position: relative;
         overflow: hidden;
     }
-    
+
     .asset-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 10px 40px rgba(99, 102, 241, 0.2);
         border-color: rgba(99, 102, 241, 0.3);
     }
-    
+
     .asset-card::after {
         content: '';
         position: absolute;
@@ -35,17 +35,17 @@
         transition: all 0.5s;
         opacity: 0;
     }
-    
+
     .asset-card:hover::after {
         animation: shine 0.5s ease;
     }
-    
+
     @keyframes shine {
         0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
         50% { opacity: 1; }
         100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
     }
-    
+
     .market-badge {
         background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
         padding: 2px 8px;
@@ -55,37 +55,37 @@
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    
+
     .trending-badge {
         animation: pulse 2s infinite;
     }
-    
+
     @keyframes pulse {
-        0%, 100% { 
+        0%, 100% {
             transform: scale(1);
             box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
         }
-        50% { 
+        50% {
             transform: scale(1.05);
             box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
         }
     }
-    
+
     .heatmap-cell {
         transition: all 0.3s ease;
         cursor: pointer;
     }
-    
+
     .heatmap-cell:hover {
         transform: scale(1.1);
         z-index: 10;
         border: 2px solid #fff;
     }
-    
+
     .ticker-scroll {
         animation: scroll 20s linear infinite;
     }
-    
+
     @keyframes scroll {
         0% { transform: translateX(0); }
         100% { transform: translateX(-50%); }
@@ -153,7 +153,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Filter Bar -->
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center space-x-3">
@@ -172,7 +172,7 @@
         </div>
         <div class="flex items-center space-x-3">
             <div class="relative">
-                <input type="text" placeholder="Search assets..." 
+                <input type="text" placeholder="Search assets..."
                        class="bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-2 pl-10 text-sm text-gray-300 focus:outline-none focus:border-purple-500">
                 <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
             </div>
@@ -181,7 +181,7 @@
             </button>
         </div>
     </div>
-    
+
     <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Assets Grid -->
@@ -218,7 +218,7 @@
                             <span class="text-xs text-gray-400">MCap: $1.34T</span>
                         </div>
                     </div>
-                    
+
                     <!-- ETH Card -->
                     <div class="asset-card rounded-xl p-5">
                         <div class="flex items-start justify-between mb-4">
@@ -249,7 +249,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- All Assets Table -->
             <div class="glass-card rounded-xl p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -261,7 +261,7 @@
                         <option>Price</option>
                     </select>
                 </div>
-                
+
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
@@ -307,7 +307,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Right Sidebar -->
         <div class="space-y-6">
             <!-- Market Overview -->
@@ -331,7 +331,7 @@
                         <span class="text-green-400 font-semibold">72 (Greed)</span>
                     </div>
                 </div>
-                
+
                 <!-- Mini Heatmap -->
                 <div class="mt-4 p-3 bg-gray-800/50 rounded-lg">
                     <p class="text-xs text-gray-400 mb-2">Sector Performance</p>
@@ -363,7 +363,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Gainers & Losers -->
             <div class="glass-card rounded-xl p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -374,7 +374,7 @@
                         <button class="text-gray-400 text-xs hover:text-red-400">Losers</button>
                     </div>
                 </div>
-                
+
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
@@ -389,7 +389,7 @@
                             <p class="text-green-400 text-xs">+12.4%</p>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <span class="text-blue-500 font-bold">L</span>
@@ -403,7 +403,7 @@
                             <p class="text-green-400 text-xs">+9.8%</p>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                             <span class="text-purple-500 font-bold">M</span>
@@ -419,7 +419,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- News Feed -->
             <div class="glass-card rounded-xl p-6">
                 <h3 class="text-lg font-bold text-white mb-4">Latest News</h3>
@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     };
-    
+
     // BTC Mini Chart
     new Chart(document.getElementById('btcMiniChart'), {
         ...miniChartOptions,
@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }]
         }
     });
-    
+
     // ETH Mini Chart
     new Chart(document.getElementById('ethMiniChart'), {
         ...miniChartOptions,
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }]
         }
     });
-    
+
     // Sparkline
     new Chart(document.getElementById('btcSparkline'), {
         ...miniChartOptions,

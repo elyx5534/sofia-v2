@@ -3,20 +3,22 @@ Sofia V2 - Web UI Server
 Modern ve profesyonel trading stratejisi arayüzü
 """
 
+import asyncio
+import json
+import random
+from datetime import datetime
+from pathlib import Path
+
+import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import uvicorn
-import asyncio
-from pathlib import Path
-import random
-from datetime import datetime
-import json
-from typing import List
+
 try:
     from live_data import live_data_service
 except:
+
     class MockLiveDataService:
         def get_live_price(self, symbol):
             return {
@@ -27,25 +29,31 @@ except:
                 "change_percent": 3.74,
                 "volume": "28.5B",
                 "market_cap": "1.34T",
-                "last_updated": datetime.now().strftime("%H:%M:%S")
+                "last_updated": datetime.now().strftime("%H:%M:%S"),
             }
+
         def get_multiple_prices(self, symbols):
             return {s: self.get_live_price(s) for s in symbols}
+
         def get_crypto_prices(self):
             return {}
+
         def get_chart_data(self, symbol, period):
             return {}
+
         def get_market_summary(self):
             return {}
+
         def get_crypto_fear_greed_index(self):
             return {"value": 72, "value_classification": "Greed"}
+
     live_data_service = MockLiveDataService()
 
 # FastAPI uygulaması
 app = FastAPI(
     title="Sofia V2 - Trading Strategy Platform",
     description="Akıllı trading stratejileri ve backtest platformu",
-    version="2.0.0"
+    version="2.0.0",
 )
 
 # Static dosyalar ve template'ler
@@ -72,7 +80,7 @@ def get_live_btc_data():
             "change_percent": 3.74,
             "volume": "28.5B",
             "market_cap": "1.34T",
-            "last_updated": datetime.now().strftime("%H:%M:%S")
+            "last_updated": datetime.now().strftime("%H:%M:%S"),
         }
 
 
@@ -84,22 +92,22 @@ def get_mock_news():
             "summary": "Kurumsal yatırımcılar Bitcoin ETF'lerine olan ilgilerini artırıyor...",
             "url": "https://www.coindesk.com/markets/2024/01/15/bitcoin-etf-inflows/",
             "source": "CoinDesk",
-            "time": "2 saat önce"
+            "time": "2 saat önce",
         },
         {
             "title": "MicroStrategy Bitcoin Alımlarını Sürdürüyor",
             "summary": "Şirket hazine stratejisinin bir parçası olarak Bitcoin biriktirmeye devam ediyor...",
             "url": "https://www.bloomberg.com/news/articles/2024/01/15/microstrategy-continues-bitcoin-buying/",
             "source": "Bloomberg",
-            "time": "4 saat önce"
+            "time": "4 saat önce",
         },
         {
             "title": "Fed Faiz Kararı Kripto Piyasalarını Etkiliyor",
             "summary": "Merkez bankası politikaları dijital varlık fiyatlarında dalgalanmaya neden oluyor...",
             "url": "https://www.reuters.com/business/finance/fed-decision-impacts-crypto-markets/",
             "source": "Reuters",
-            "time": "6 saat önce"
-        }
+            "time": "6 saat önce",
+        },
     ]
 
 
@@ -116,7 +124,7 @@ def get_mock_strategies():
             "max_drawdown": -12.4,
             "win_rate": 68.5,
             "status": "active",
-            "color": "bg-emerald-500"
+            "color": "bg-emerald-500",
         },
         {
             "id": 2,
@@ -128,7 +136,7 @@ def get_mock_strategies():
             "max_drawdown": -18.7,
             "win_rate": 61.2,
             "status": "testing",
-            "color": "bg-blue-500"
+            "color": "bg-blue-500",
         },
         {
             "id": 3,
@@ -140,8 +148,8 @@ def get_mock_strategies():
             "max_drawdown": -15.2,
             "win_rate": 58.7,
             "status": "paused",
-            "color": "bg-amber-500"
-        }
+            "color": "bg-amber-500",
+        },
     ]
 
 
@@ -154,9 +162,9 @@ async def homepage(request: Request):
         "page_title": "Sofia V2 - AI Trading Platform",
         "current_page": "dashboard",
         "btc_data": get_live_btc_data(),
-        "latest_news": get_mock_news()[:3]
+        "latest_news": get_mock_news()[:3],
     }
-    return templates.TemplateResponse("dashboard_next.html", context)
+    return templates.TemplateResponse("homepage.html", context)
 
 
 @app.get("/new", response_class=HTMLResponse)
@@ -167,7 +175,7 @@ async def new_dashboard(request: Request):
         "page_title": "Sofia V2 - Trading Platform",
         "current_page": "dashboard",
         "btc_data": get_live_btc_data(),
-        "latest_news": get_mock_news()[:3]
+        "latest_news": get_mock_news()[:3],
     }
     return templates.TemplateResponse("dashboard_ultimate.html", context)
 
@@ -179,7 +187,7 @@ async def portfolio(request: Request):
         "request": request,
         "page_title": "Portfolio - Sofia V2",
         "current_page": "portfolio",
-        "btc_data": get_live_btc_data()
+        "btc_data": get_live_btc_data(),
     }
     return templates.TemplateResponse("portfolio_next.html", context)
 
@@ -192,7 +200,7 @@ async def showcase(request: Request, symbol: str):
     except:
         symbol_data = get_live_btc_data()
         symbol_data["symbol"] = symbol.upper()
-    
+
     context = {
         "request": request,
         "page_title": f"{symbol.upper()} - Showcase",
@@ -204,8 +212,8 @@ async def showcase(request: Request, symbol: str):
             "sma_20": 66234.45,
             "sma_50": 64567.89,
             "bollinger_upper": 68500.0,
-            "bollinger_lower": 65200.0
-        }
+            "bollinger_lower": 65200.0,
+        },
     }
     return templates.TemplateResponse("showcase.html", context)
 
@@ -216,7 +224,7 @@ async def strategy_cards(request: Request):
     context = {
         "request": request,
         "page_title": "Strategy Cards",
-        "strategies": get_mock_strategies()
+        "strategies": get_mock_strategies(),
     }
     return templates.TemplateResponse("cards.html", context)
 
@@ -226,7 +234,7 @@ async def analysis(request: Request, symbol: str):
     """Detaylı analiz sayfası - orta vadeli hedef"""
     btc_data = get_mock_btc_data()
     btc_data["symbol"] = symbol.upper()
-    
+
     context = {
         "request": request,
         "page_title": f"{symbol.upper()} - Detailed Analysis",
@@ -239,21 +247,21 @@ async def analysis(request: Request, symbol: str):
             "sma_50": 64567.89,
             "volume_sma": 1250000,
             "bollinger_upper": 68500.0,
-            "bollinger_lower": 65200.0
+            "bollinger_lower": 65200.0,
         },
         "fundamental_data": {
             "market_cap": "1.34T",
             "volume_24h": "28.5B",
             "circulating_supply": "19.8M",
             "max_supply": "21M",
-            "fear_greed_index": 72
+            "fear_greed_index": 72,
         },
         "prediction": {
             "direction": "up",
             "confidence": 0.73,
             "target_1w": 71000,
-            "target_1m": 75000
-        }
+            "target_1m": 75000,
+        },
     }
     return templates.TemplateResponse("analysis.html", context)
 
@@ -273,28 +281,25 @@ async def get_quote(symbol: str):
 @app.get("/api/news/{symbol}")
 async def get_news(symbol: str):
     """Haber API"""
-    return {
-        "symbol": symbol.upper(),
-        "news": get_mock_news()
-    }
+    return {"symbol": symbol.upper(), "news": get_mock_news()}
 
 
 @app.get("/api/quotes")
 async def get_multiple_quotes(symbols: str = "BTC-USD,ETH-USD,AAPL"):
     """Çoklu fiyat bilgisi API"""
     try:
-        symbol_list = [s.strip() for s in symbols.split(',')]
+        symbol_list = [s.strip() for s in symbols.split(",")]
         return live_data_service.get_multiple_prices(symbol_list)
-    except Exception as e:
+    except Exception:
         # Fallback
-        symbol_list = [s.strip() for s in symbols.split(',')]
+        symbol_list = [s.strip() for s in symbols.split(",")]
         return {symbol: get_live_btc_data() for symbol in symbol_list}
 
 
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -313,6 +318,7 @@ class ConnectionManager:
             except:
                 pass
 
+
 manager = ConnectionManager()
 
 
@@ -326,19 +332,23 @@ async def websocket_portfolio(websocket: WebSocket):
             portfolio_data = {
                 "balance": 125430.67 + random.uniform(-500, 500),
                 "daily_pnl": 2847.32 + random.uniform(-200, 200),
-                "new_trade": {
-                    "time": datetime.now().isoformat(),
-                    "symbol": random.choice(["BTC/USDT", "ETH/USDT", "SOL/USDT"]),
-                    "type": random.choice(["BUY", "SELL"]),
-                    "price": random.uniform(20000, 70000),
-                    "amount": random.uniform(0.01, 1),
-                    "pnl": random.uniform(-500, 500)
-                } if random.random() > 0.7 else None
+                "new_trade": (
+                    {
+                        "time": datetime.now().isoformat(),
+                        "symbol": random.choice(["BTC/USDT", "ETH/USDT", "SOL/USDT"]),
+                        "type": random.choice(["BUY", "SELL"]),
+                        "price": random.uniform(20000, 70000),
+                        "amount": random.uniform(0.01, 1),
+                        "pnl": random.uniform(-500, 500),
+                    }
+                    if random.random() > 0.7
+                    else None
+                ),
             }
-            
+
             await websocket.send_text(json.dumps(portfolio_data))
             await asyncio.sleep(2)
-            
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -390,10 +400,10 @@ async def get_crypto_prices():
             {"symbol": "LDO", "name": "Lido DAO", "color": "cyan"},
             {"symbol": "SNX", "name": "Synthetix", "color": "purple"},
         ]
-        
+
         result = {}
         base_price = 50000  # Base for calculations
-        
+
         for i, crypto in enumerate(top_cryptos[:40]):  # First 40 for now
             # Generate realistic mock prices
             if crypto["symbol"] == "BTC":
@@ -415,29 +425,31 @@ async def get_crypto_prices():
             else:
                 # Generate price based on position
                 price = base_price / ((i + 1) * random.uniform(10, 100))
-            
+
             # Generate random change
             change_percent = random.uniform(-15, 15)
             change = price * (change_percent / 100)
-            
+
             # Generate volume based on rank
             volume_base = 1000000000 / (i + 1)
             volume = volume_base * random.uniform(0.5, 2)
-            
+
             result[f"{crypto['symbol']}-USD"] = {
                 "symbol": f"{crypto['symbol']}-USD",
                 "name": crypto["name"],
                 "price": round(price, 4 if price < 1 else 2),
                 "change": round(change, 4 if abs(change) < 1 else 2),
                 "change_percent": round(change_percent, 2),
-                "volume": f"{volume/1000000000:.1f}B" if volume > 1000000000 else f"{volume/1000000:.1f}M",
+                "volume": (
+                    f"{volume/1000000000:.1f}B" if volume > 1000000000 else f"{volume/1000000:.1f}M"
+                ),
                 "market_cap": f"{(price * volume / 100):.0f}",
                 "last_updated": datetime.now().strftime("%H:%M:%S"),
                 "icon": crypto.get("icon", ""),
                 "color": crypto.get("color", "gray"),
-                "rank": i + 1
+                "rank": i + 1,
             }
-        
+
         return result
     except Exception as e:
         print(f"Error getting crypto prices: {e}")
@@ -452,8 +464,8 @@ async def get_crypto_prices():
                 "change_percent": 1.34,
                 "volume": "15.2B",
                 "last_updated": datetime.now().strftime("%H:%M:%S"),
-                "icon": "fab fa-ethereum"
-            }
+                "icon": "fab fa-ethereum",
+            },
         }
 
 
@@ -462,11 +474,11 @@ async def get_chart_data(symbol: str, period: str = "1mo"):
     """Grafik verisi API"""
     try:
         return live_data_service.get_chart_data(symbol.upper(), period)
-    except Exception as e:
+    except Exception:
         return {
             "error": f"Chart data unavailable for {symbol}",
             "symbol": symbol.upper(),
-            "period": period
+            "period": period,
         }
 
 
@@ -496,7 +508,7 @@ async def assets_detail(request: Request, symbol: str):
     except:
         symbol_data = get_live_btc_data()
         symbol_data["symbol"] = symbol.upper()
-    
+
     context = {
         "request": request,
         "page_title": f"{symbol.upper()} - Asset Details",
@@ -509,13 +521,9 @@ async def assets_detail(request: Request, symbol: str):
             "sma_20": 66234.45,
             "sma_50": 64567.89,
             "bollinger_upper": 68500.0,
-            "bollinger_lower": 65200.0
+            "bollinger_lower": 65200.0,
         },
-        "fundamental_data": {
-            "market_cap": "1.34T",
-            "volume_24h": "28.5B",
-            "fear_greed_index": 72
-        }
+        "fundamental_data": {"market_cap": "1.34T", "volume_24h": "28.5B", "fear_greed_index": 72},
     }
     return templates.TemplateResponse("assets_ultra.html", context)
 
@@ -527,7 +535,7 @@ async def backtest_page(request: Request, symbol: str = None, strategy: str = No
         "request": request,
         "page_title": "Backtest Strategy",
         "preselected_symbol": symbol,
-        "preselected_strategy": strategy
+        "preselected_strategy": strategy,
     }
     return templates.TemplateResponse("backtest.html", context)
 
@@ -535,10 +543,7 @@ async def backtest_page(request: Request, symbol: str = None, strategy: str = No
 @app.get("/strategies", response_class=HTMLResponse)
 async def strategies_page(request: Request):
     """Stratejiler sayfası - UI planında belirtilen"""
-    context = {
-        "request": request,
-        "page_title": "Trading Strategies"
-    }
+    context = {"request": request, "page_title": "Trading Strategies"}
     return templates.TemplateResponse("strategies.html", context)
 
 
@@ -548,7 +553,7 @@ async def markets_page(request: Request):
     context = {
         "request": request,
         "page_title": "Crypto Markets - Sofia V2",
-        "current_page": "markets"
+        "current_page": "markets",
     }
     return templates.TemplateResponse("markets.html", context)
 
@@ -560,67 +565,69 @@ async def run_backtest(request: Request):
     try:
         # Parse request body
         body = await request.json()
-        
+
         # Import backtester modules
+        from datetime import datetime
+
+        import pandas as pd
+
         from src.backtester.engine import BacktestEngine
-        from src.backtester.strategies.sma import SMAStrategy
-        from src.backtester.strategies.rsi_strategy import RSIStrategy
+        from src.backtester.metrics import calculate_metrics
         from src.backtester.strategies.bollinger_strategy import BollingerBandsStrategy
         from src.backtester.strategies.macd_strategy import MACDStrategy
-        from src.backtester.metrics import calculate_metrics
+        from src.backtester.strategies.rsi_strategy import RSIStrategy
+        from src.backtester.strategies.sma import SMAStrategy
         from src.data_hub.data_fetcher import DataFetcher
         from src.data_hub.models import AssetType
-        from datetime import datetime
-        import pandas as pd
-        
+
         # Extract parameters
         symbol = body.get("symbol", "BTC-USD")
         strategy_name = body.get("strategy", "sma_cross")
         start_date = body.get("start_date", "2023-01-01")
         end_date = body.get("end_date", "2024-01-01")
         initial_capital = body.get("initial_capital", 10000)
-        
+
         # Strategy-specific parameters
         strategy_params = {}
         if strategy_name == "sma_cross":
             strategy_params = {
                 "fast_period": body.get("fast_sma", 20),
-                "slow_period": body.get("slow_sma", 50)
+                "slow_period": body.get("slow_sma", 50),
             }
             strategy_instance = SMAStrategy()
         elif strategy_name == "rsi_mean_reversion":
             strategy_params = {
                 "period": body.get("rsi_period", 14),
                 "oversold": body.get("rsi_oversold", 30),
-                "overbought": body.get("rsi_overbought", 70)
+                "overbought": body.get("rsi_overbought", 70),
             }
             strategy_instance = RSIStrategy()
         elif strategy_name == "bollinger_bands":
             strategy_params = {
                 "period": body.get("bb_period", 20),
-                "std_dev": body.get("bb_std", 2)
+                "std_dev": body.get("bb_std", 2),
             }
             strategy_instance = BollingerBandsStrategy()
         elif strategy_name == "macd_momentum":
             strategy_params = {
                 "fast_period": body.get("macd_fast", 12),
                 "slow_period": body.get("macd_slow", 26),
-                "signal_period": body.get("macd_signal", 9)
+                "signal_period": body.get("macd_signal", 9),
             }
             strategy_instance = MACDStrategy()
         else:
             # Default to SMA
             strategy_instance = SMAStrategy()
-        
+
         # Fetch historical data
         fetcher = DataFetcher()
-        
+
         # Determine asset type from symbol
         if symbol in ["BTC-USD", "ETH-USD"]:
             asset_type = AssetType.CRYPTO
         else:
             asset_type = AssetType.STOCK
-        
+
         # Get historical data
         try:
             data = fetcher.fetch_historical(
@@ -628,55 +635,61 @@ async def run_backtest(request: Request):
                 asset_type=asset_type,
                 start_date=datetime.strptime(start_date, "%Y-%m-%d"),
                 end_date=datetime.strptime(end_date, "%Y-%m-%d"),
-                interval="1d"
+                interval="1d",
             )
         except:
             # Fallback to mock data if fetch fails
-            dates = pd.date_range(start=start_date, end=end_date, freq='D')
+            dates = pd.date_range(start=start_date, end=end_date, freq="D")
             prices = [random.uniform(40000, 70000) for _ in range(len(dates))]
-            data = pd.DataFrame({
-                'open': prices,
-                'high': [p * 1.02 for p in prices],
-                'low': [p * 0.98 for p in prices],
-                'close': prices,
-                'volume': [random.uniform(1000000, 5000000) for _ in range(len(dates))]
-            }, index=dates)
-        
+            data = pd.DataFrame(
+                {
+                    "open": prices,
+                    "high": [p * 1.02 for p in prices],
+                    "low": [p * 0.98 for p in prices],
+                    "close": prices,
+                    "volume": [random.uniform(1000000, 5000000) for _ in range(len(dates))],
+                },
+                index=dates,
+            )
+
         # Run backtest
         engine = BacktestEngine(
             initial_capital=initial_capital,
             commission=body.get("commission", 0.001),
-            slippage=body.get("slippage", 0.0001)
+            slippage=body.get("slippage", 0.0001),
         )
-        
+
         results = engine.run(data, strategy_instance, **strategy_params)
-        
+
         # Calculate metrics
         metrics = calculate_metrics(
             equity_curve=results["equity_curve"],
             trades=results["trades"],
-            initial_capital=initial_capital
+            initial_capital=initial_capital,
         )
-        
+
         # Format equity curve for chart
         equity_curve_data = []
-        for date, value in zip(data.index, results["equity_curve"]):
-            equity_curve_data.append({
-                "date": date.strftime("%Y-%m-%d"),
-                "value": round(value, 2)
-            })
-        
+        for date, value in zip(data.index, results["equity_curve"], strict=False):
+            equity_curve_data.append({"date": date.strftime("%Y-%m-%d"), "value": round(value, 2)})
+
         # Format trades for table
         formatted_trades = []
         for trade in results["trades"][:20]:  # Limit to 20 recent trades
-            formatted_trades.append({
-                "date": trade["timestamp"].strftime("%Y-%m-%d") if hasattr(trade["timestamp"], 'strftime') else str(trade["timestamp"]),
-                "action": trade["type"],
-                "price": round(trade["price"], 2),
-                "quantity": round(trade["quantity"], 4),
-                "pnl": round(trade.get("pnl", 0), 2)
-            })
-        
+            formatted_trades.append(
+                {
+                    "date": (
+                        trade["timestamp"].strftime("%Y-%m-%d")
+                        if hasattr(trade["timestamp"], "strftime")
+                        else str(trade["timestamp"])
+                    ),
+                    "action": trade["type"],
+                    "price": round(trade["price"], 2),
+                    "quantity": round(trade["quantity"], 4),
+                    "pnl": round(trade.get("pnl", 0), 2),
+                }
+            )
+
         return {
             "status": "completed",
             "results": {
@@ -687,15 +700,16 @@ async def run_backtest(request: Request):
                 "total_trades": len(results["trades"]),
                 "equity_curve": equity_curve_data,
                 "trades": formatted_trades,
-                "final_value": round(results["final_equity"], 2)
-            }
+                "final_value": round(results["final_equity"], 2),
+            },
         }
     except Exception as e:
         print(f"Backtest error: {e}")
         # Fallback to mock data on error
         import random
+
         await asyncio.sleep(2)
-        
+
         return {
             "status": "completed",
             "results": {
@@ -705,8 +719,8 @@ async def run_backtest(request: Request):
                 "win_rate": round(random.uniform(50, 80), 1),
                 "total_trades": random.randint(10, 100),
                 "equity_curve": [{"date": "2023-01-01", "value": 10000}],
-                "trades": []
-            }
+                "trades": [],
+            },
         }
 
 

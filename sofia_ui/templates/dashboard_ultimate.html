@@ -4,7 +4,7 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
     <!-- Grid Pattern Overlay -->
     <div class="fixed inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.03"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
-    
+
     <!-- Main Container -->
     <div class="relative z-10 p-6">
         <!-- Top Stats Bar -->
@@ -88,7 +88,7 @@
 
         <!-- Main Grid Layout -->
         <div class="grid grid-cols-12 gap-6">
-            
+
             <!-- Left Column - Portfolio Performance -->
             <div class="col-span-12 lg:col-span-8">
                 <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
@@ -148,7 +148,7 @@
 
         <!-- Bottom Section -->
         <div class="grid grid-cols-12 gap-6 mt-6">
-            
+
             <!-- Live Prices -->
             <div class="col-span-12 lg:col-span-4">
                 <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
@@ -180,7 +180,7 @@
                                 <canvas id="btc-mini"></canvas>
                             </div>
                         </div>
-                        
+
                         <!-- Ethereum -->
                         <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all cursor-pointer">
                             <div class="flex items-center space-x-3">
@@ -283,7 +283,7 @@ if (portfolioCtx) {
     const gradient = portfolioCtx.getContext('2d').createLinearGradient(0, 0, 0, 400);
     gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
     gradient.addColorStop(1, 'rgba(147, 51, 234, 0.1)');
-    
+
     new Chart(portfolioCtx, {
         type: 'line',
         data: {
@@ -329,7 +329,7 @@ if (portfolioCtx) {
 function createSparkline(id, color, data) {
     const ctx = document.getElementById(id);
     if (!ctx) return;
-    
+
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -365,7 +365,7 @@ createSparkline('usdt-mini', '#10b981');
 function initWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${protocol}//${window.location.host}/ws/portfolio`);
-    
+
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         // Update UI with real-time data

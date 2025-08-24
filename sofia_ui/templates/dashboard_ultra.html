@@ -5,27 +5,27 @@
 {% block extra_head %}
 <style>
     .gradient-mesh {
-        background: 
+        background:
             radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
             radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
             radial-gradient(circle at 40% 20%, rgba(34, 211, 238, 0.2) 0%, transparent 50%);
     }
-    
+
     .card-glow {
-        box-shadow: 
+        box-shadow:
             0 0 20px rgba(99, 102, 241, 0.1),
             0 0 40px rgba(99, 102, 241, 0.05);
     }
-    
+
     .neon-text {
-        text-shadow: 
+        text-shadow:
             0 0 10px currentColor,
             0 0 20px currentColor,
             0 0 30px currentColor;
     }
-    
+
     .flowing-chart {
-        background: linear-gradient(90deg, 
+        background: linear-gradient(90deg,
             transparent,
             rgba(34, 211, 238, 0.1),
             rgba(99, 102, 241, 0.1),
@@ -35,33 +35,33 @@
         background-size: 200% 100%;
         animation: flow 3s ease-in-out infinite;
     }
-    
+
     @keyframes flow {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
-    
+
     .crypto-card {
         background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.05);
     }
-    
+
     .progress-ring {
         transform: rotate(-90deg);
     }
-    
+
     .balance-glow {
         animation: balance-pulse 2s ease-in-out infinite;
     }
-    
+
     @keyframes balance-pulse {
-        0%, 100% { 
+        0%, 100% {
             filter: brightness(1);
             transform: scale(1);
         }
-        50% { 
+        50% {
             filter: brightness(1.1);
             transform: scale(1.02);
         }
@@ -92,7 +92,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Today's P&L -->
         <div class="stat-card p-6 relative overflow-hidden group hover:scale-105 transition-transform duration-300">
             <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-3xl"></div>
@@ -112,7 +112,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Active Trades -->
         <div class="stat-card p-6 relative overflow-hidden group hover:scale-105 transition-transform duration-300">
             <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
@@ -135,7 +135,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Win Rate -->
         <div class="stat-card p-6 relative overflow-hidden group hover:scale-105 transition-transform duration-300">
             <div class="relative">
@@ -164,7 +164,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column - 2 cols -->
@@ -184,7 +184,7 @@
                     <canvas id="mainChart"></canvas>
                 </div>
             </div>
-            
+
             <!-- Crypto Prices Table -->
             <div class="glass-card p-6 card-glow">
                 <div class="flex items-center justify-between mb-6">
@@ -217,7 +217,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- ETH Row -->
                     <div class="crypto-card rounded-xl p-4 hover:bg-white/5 transition-all cursor-pointer">
                         <div class="flex items-center justify-between">
@@ -239,7 +239,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- More cryptos... -->
                     <div class="crypto-card rounded-xl p-4 hover:bg-white/5 transition-all cursor-pointer">
                         <div class="flex items-center justify-between">
@@ -264,7 +264,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Right Column -->
         <div class="space-y-6">
             <!-- Mining/Strategy Status -->
@@ -288,7 +288,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Promotional Card -->
             <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 p-6">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
@@ -303,7 +303,7 @@
                     <i class="fas fa-rocket text-white/30 text-6xl"></i>
                 </div>
             </div>
-            
+
             <!-- Recent Activity -->
             <div class="glass-card p-6 card-glow">
                 <h3 class="text-lg font-bold text-white mb-4">Recent Activity</h3>
@@ -346,17 +346,17 @@ let ws = null;
 
 function connectWebSocket() {
     ws = new WebSocket('ws://localhost:8000/ws/portfolio');
-    
+
     ws.onmessage = function(event) {
         const data = JSON.parse(event.data);
         updateDashboard(data);
     };
-    
+
     ws.onerror = function(error) {
         console.error('WebSocket error:', error);
         setTimeout(connectWebSocket, 5000);
     };
-    
+
     ws.onclose = function() {
         setTimeout(connectWebSocket, 5000);
     };
@@ -369,7 +369,7 @@ function updateDashboard(data) {
         balanceEl.textContent = '$' + data.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         balanceEl.classList.add('balance-glow');
     }
-    
+
     // Update P&L
     if (data.daily_pnl) {
         const pnlEl = document.getElementById('todayPnl');

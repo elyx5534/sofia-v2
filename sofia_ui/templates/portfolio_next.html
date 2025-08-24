@@ -47,7 +47,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Performance Metrics -->
                 <div class="lg:col-span-2">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 h-full">
@@ -59,7 +59,7 @@
                                 <canvas id="daily-pnl-spark"></canvas>
                             </div>
                         </div>
-                        
+
                         <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
                             <div class="text-xs text-gray-500 mb-2">Weekly P&L</div>
                             <div class="text-2xl font-bold text-emerald-400">+$8,234</div>
@@ -68,7 +68,7 @@
                                 <canvas id="weekly-pnl-spark"></canvas>
                             </div>
                         </div>
-                        
+
                         <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
                             <div class="text-xs text-gray-500 mb-2">Win Rate</div>
                             <div class="text-2xl font-bold text-white">68.5%</div>
@@ -79,7 +79,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
                             <div class="text-xs text-gray-500 mb-2">Sharpe Ratio</div>
                             <div class="text-2xl font-bold text-white">1.82</div>
@@ -100,22 +100,22 @@
     <!-- Main Content -->
     <div class="px-6 py-6 max-w-[1920px] mx-auto">
         <div class="grid grid-cols-12 gap-6">
-            
+
             <!-- Left Column - Holdings & Allocation -->
             <div class="col-span-12 lg:col-span-8 space-y-6">
-                
+
                 <!-- Portfolio Chart -->
                 <div class="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-800/50 p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-white">Portfolio Performance</h3>
                         <div class="flex items-center space-x-2">
-                            <button @click="chartType = 'line'" 
+                            <button @click="chartType = 'line'"
                                     :class="chartType === 'line' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'"
                                     class="px-3 py-1 rounded text-sm">Line</button>
-                            <button @click="chartType = 'candle'" 
+                            <button @click="chartType = 'candle'"
                                     :class="chartType === 'candle' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'"
                                     class="px-3 py-1 rounded text-sm">Candle</button>
-                            <button @click="chartType = 'area'" 
+                            <button @click="chartType = 'area'"
                                     :class="chartType === 'area' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'"
                                     class="px-3 py-1 rounded text-sm">Area</button>
                         </div>
@@ -124,7 +124,7 @@
                         <canvas id="portfolio-chart"></canvas>
                     </div>
                 </div>
-                
+
                 <!-- Holdings Table -->
                 <div class="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-800/50 overflow-hidden">
                     <div class="p-6 border-b border-gray-800/50">
@@ -134,8 +134,8 @@
                                 Holdings
                             </h3>
                             <div class="flex items-center space-x-2">
-                                <input type="text" 
-                                       placeholder="Search holdings..." 
+                                <input type="text"
+                                       placeholder="Search holdings..."
                                        class="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500">
                                 <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
                                     <i class="fas fa-plus mr-1"></i>Add
@@ -143,7 +143,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="overflow-x-auto">
                         <table class="w-full">
                             <thead class="bg-gray-800/50">
@@ -211,10 +211,10 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Right Column - Allocation & Orders -->
             <div class="col-span-12 lg:col-span-4 space-y-6">
-                
+
                 <!-- Asset Allocation -->
                 <div class="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-800/50 p-6">
                     <h3 class="text-lg font-semibold text-white mb-4">
@@ -243,7 +243,7 @@
                         </template>
                     </div>
                 </div>
-                
+
                 <!-- Recent Orders -->
                 <div class="bg-gray-900/60 backdrop-blur-xl rounded-2xl border border-gray-800/50 p-6">
                     <div class="flex items-center justify-between mb-4">
@@ -275,7 +275,7 @@
                                     </div>
                                 </div>
                                 <div class="mt-2 pt-2 border-t border-gray-700/50">
-                                    <span class="text-xs" 
+                                    <span class="text-xs"
                                           :class="order.status === 'FILLED' ? 'text-emerald-400' : order.status === 'PENDING' ? 'text-yellow-400' : 'text-gray-400'"
                                           x-text="order.status"></span>
                                 </div>
@@ -283,7 +283,7 @@
                         </template>
                     </div>
                 </div>
-                
+
                 <!-- Quick Actions -->
                 <div class="bg-gradient-to-br from-purple-900/30 to-indigo-900/30 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6">
                     <h3 class="text-lg font-semibold text-white mb-4">
@@ -392,35 +392,35 @@ function portfolioApp() {
             { id: 3, type: 'BUY', symbol: 'SOL', price: 141.2, amount: 10, time: '1 hour ago', status: 'PENDING' },
             { id: 4, type: 'BUY', symbol: 'AVAX', price: 37.8, amount: 50, time: '3 hours ago', status: 'FILLED' }
         ],
-        
+
         init() {
             this.createPortfolioChart();
             this.createAllocationChart();
             this.createSparklines();
-            
+
             // WebSocket for live updates
             this.initWebSocket();
         },
-        
+
         createPortfolioChart() {
             const ctx = document.getElementById('portfolio-chart');
             if (!ctx) return;
-            
+
             // Generate sample data
             const labels = [];
             const data = [];
             let value = 100000;
-            
+
             for (let i = 30; i >= 0; i--) {
                 const date = new Date();
                 date.setDate(date.getDate() - i);
                 labels.push(date.toLocaleDateString());
-                
+
                 // Simulate portfolio growth
                 value = value * (1 + (Math.random() - 0.45) * 0.02);
                 data.push(value);
             }
-            
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -461,11 +461,11 @@ function portfolioApp() {
                 }
             });
         },
-        
+
         createAllocationChart() {
             const ctx = document.getElementById('allocation-chart');
             if (!ctx) return;
-            
+
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -486,26 +486,26 @@ function portfolioApp() {
                 }
             });
         },
-        
+
         createSparklines() {
             // Daily P&L sparkline
             this.createSparkline('daily-pnl-spark', '#10b981', true);
             this.createSparkline('weekly-pnl-spark', '#10b981', true);
-            
+
             // Holdings sparklines
             this.holdings.forEach(holding => {
-                this.createSparkline(`holding-spark-${holding.symbol}`, 
+                this.createSparkline(`holding-spark-${holding.symbol}`,
                     holding.pnlPercent >= 0 ? '#10b981' : '#ef4444', false);
             });
         },
-        
+
         createSparkline(id, color, fill) {
             const canvas = document.getElementById(id);
             if (!canvas) return;
-            
+
             const ctx = canvas.getContext('2d');
             const data = Array.from({length: 10}, () => Math.random() * 40 + 30);
-            
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -531,11 +531,11 @@ function portfolioApp() {
                 }
             });
         },
-        
+
         initWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const ws = new WebSocket(`${protocol}//${window.location.host}/ws/portfolio`);
-            
+
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 // Update portfolio data in real-time
