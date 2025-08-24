@@ -43,7 +43,8 @@
       "Bash(timeout:*)",
       "Bash(grep:*)",
       "Read(/D:\\/**)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(git config:*)"
     ],
     "deny": [],
     "ask": [],

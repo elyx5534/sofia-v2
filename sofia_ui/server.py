@@ -10,10 +10,38 @@ from datetime import datetime
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+
+# Import authentication and payment modules
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+try:
+    from src.auth.router import router as auth_router
+    from src.payments.router import router as payments_router
+    from src.auth.models import create_tables, init_subscription_plans, User
+    from src.auth.dependencies import get_current_user, get_user_or_api_user, check_rate_limit, require_basic_subscription
+    from src.data_hub.models import get_db, engine
+    AUTH_ENABLED = True
+    print("✅ Authentication modules loaded")
+except ImportError as e:
+    print(f"⚠️ Authentication modules not available: {e}")
+    AUTH_ENABLED = False
+    
+    # Mock functions when auth is not available
+    def get_user_or_api_user():
+        return None
+    
+    def get_db():
+        return None
+    
+    User = None
 
 try:
     from live_data import live_data_service
@@ -55,6 +83,33 @@ app = FastAPI(
     description="Akıllı trading stratejileri ve backtest platformu",
     version="2.0.0",
 )
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers if authentication is enabled
+if AUTH_ENABLED:
+    app.include_router(auth_router)
+    app.include_router(payments_router)
+
+# Initialize database tables
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database and default data"""
+    if AUTH_ENABLED:
+        try:
+            create_tables(engine)
+            print("✅ Database initialized successfully")
+        except Exception as e:
+            print(f"❌ Database initialization failed: {e}")
+    else:
+        print("ℹ️ Running without authentication")
 
 # Static dosyalar ve template'ler
 import os
@@ -154,6 +209,27 @@ def get_mock_strategies():
         },
     ]
 
+
+# Authentication routes
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Login page"""
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/pricing", response_class=HTMLResponse)
+async def pricing_page(request: Request):
+    """Pricing page"""
+    return templates.TemplateResponse("pricing.html", {"request": request})
+
+@app.get("/subscription/success")
+async def subscription_success(request: Request, session_id: str):
+    """Subscription success page"""
+    return RedirectResponse(url="/?success=subscription")
+
+@app.get("/subscription/cancel")
+async def subscription_cancel(request: Request):
+    """Subscription cancel page"""
+    return RedirectResponse(url="/pricing?cancelled=1")
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
