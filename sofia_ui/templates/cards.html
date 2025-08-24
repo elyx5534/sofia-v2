@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-gradient-to-r from-green-600 to-teal-600 text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                <i class="fas fa-layer-group mr-4"></i>
+                Strategy Cards
+            </h1>
+            <p class="text-xl text-green-100 max-w-3xl mx-auto">
+                Backtest sonuçlarınızı güzel kartlar halinde görüntüleyin
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Strategy Cards Grid -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    
+    <!-- Filter Controls -->
+    <div class="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div class="flex space-x-4">
+            <select class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <option>All Strategies</option>
+                <option>SMA Crossover</option>
+                <option>RSI</option>
+                <option>MACD</option>
+            </select>
+            
+            <select class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <option>All Symbols</option>
+                <option>BTC-USD</option>
+                <option>ETH-USD</option>
+                <option>AAPL</option>
+            </select>
+        </div>
+        
+        <div class="flex space-x-2">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-sort mr-2"></i>
+                Sort by Performance
+            </button>
+            <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                <i class="fas fa-plus mr-2"></i>
+                New Backtest
+            </button>
+        </div>
+    </div>
+    
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for strategy in strategies %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300">
+            <!-- Card Header -->
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 {{ strategy.color }} text-white">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold">{{ strategy.name }}</h3>
+                    <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-semibold">
+                        {{ strategy.status.title() }}
+                    </span>
+                </div>
+                <div class="mt-2 flex items-center text-sm opacity-90">
+                    <span class="mr-4">{{ strategy.symbol }}</span>
+                    <span>{{ strategy.period }}</span>
+                </div>
+            </div>
+            
+            <!-- Performance Metrics -->
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold {{ 'text-green-600' if strategy.total_return > 0 else 'text-red-600' }}">
+                            {{ strategy.total_return }}%
+                        </div>
+                        <div class="text-sm text-gray-500">Total Return</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ strategy.sharpe_ratio }}</div>
+                        <div class="text-sm text-gray-500">Sharpe Ratio</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-red-600">{{ strategy.max_drawdown }}%</div>
+                        <div class="text-sm text-gray-500">Max Drawdown</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ strategy.win_rate }}%</div>
+                        <div class="text-sm text-gray-500">Win Rate</div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bars -->
+                <div class="space-y-3 mb-6">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600 dark:text-gray-400">Return</span>
+                            <span class="{{ 'text-green-600' if strategy.total_return > 0 else 'text-red-600' }}">{{ strategy.total_return }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="{{ 'bg-green-600' if strategy.total_return > 0 else 'bg-red-600' }} h-2 rounded-full" 
+                                 style="width: {{ (strategy.total_return / 100 * 100) if strategy.total_return > 0 else 0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600 dark:text-gray-400">Win Rate</span>
+                            <span class="text-blue-600">{{ strategy.win_rate }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ strategy.win_rate }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="space-y-2">
+                    <a href="/backtest?strategy={{ strategy.name|lower|replace(' ', '_') }}&symbol={{ strategy.symbol }}" 
+                       class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition-all flex items-center justify-center">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        View Details
+                    </a>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition-all text-sm">
+                            <i class="fas fa-play mr-1"></i>
+                            Run Again
+                        </button>
+                        <button class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-semibold transition-all text-sm">
+                            <i class="fas fa-copy mr-1"></i>
+                            Clone
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Footer -->
+            <div class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+                <div class="flex items-center justify-between text-sm text-gray-500">
+                    <span>
+                        <i class="fas fa-calendar mr-1"></i>
+                        Last Run: 2 days ago
+                    </span>
+                    <span>
+                        <i class="fas fa-clock mr-1"></i>
+                        Duration: 1.2s
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Empty State -->
+    {% if not strategies %}
+    <div class="text-center py-16">
+        <i class="fas fa-layer-group text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Strategy Cards Yet</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">Run your first backtest to see results here.</p>
+        <a href="/backtest" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">
+            <i class="fas fa-play mr-2"></i>
+            Run Your First Backtest
+        </a>
+    </div>
+    {% endif %}
+    
+    <!-- Pagination -->
+    <div class="mt-12 flex justify-center">
+        <nav class="flex space-x-2">
+            <button class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg">1</button>
+            <button class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">2</button>
+            <button class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">3</button>
+            <button class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </nav>
+    </div>
+</div>
+
+<!-- Quick Stats Summary -->
+<section class="bg-gray-50 dark:bg-gray-800 py-12 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-2xl font-bold text-center text-gray-900 dark:text-white mb-8">
+            Portfolio Performance Summary
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-white dark:bg-gray-700 rounded-lg p-6 text-center">
+                <i class="fas fa-chart-line text-3xl text-green-600 mb-3"></i>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">+47.2%</div>
+                <div class="text-sm text-gray-500">Avg. Return</div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-700 rounded-lg p-6 text-center">
+                <i class="fas fa-trophy text-3xl text-yellow-600 mb-3"></i>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">1.34</div>
+                <div class="text-sm text-gray-500">Avg. Sharpe</div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-700 rounded-lg p-6 text-center">
+                <i class="fas fa-shield-alt text-3xl text-blue-600 mb-3"></i>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">-8.7%</div>
+                <div class="text-sm text-gray-500">Avg. Drawdown</div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-700 rounded-lg p-6 text-center">
+                <i class="fas fa-bullseye text-3xl text-purple-600 mb-3"></i>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">67.8%</div>
+                <div class="text-sm text-gray-500">Avg. Win Rate</div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Card hover effects
+    const cards = document.querySelectorAll('.trading-card, .bg-white.dark\\:bg-gray-800');
+    
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-4px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Filter functionality
+    const filterSelects = document.querySelectorAll('select');
+    filterSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            // Filter cards based on selection
+            console.log('Filter changed:', this.value);
+            // Implementation would go here
+        });
+    });
+});
+</script>
+{% endblock %}
