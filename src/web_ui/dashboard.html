@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofia Trading Platform - Professional Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="background-animation"></div>
+    <div id="particles"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">Sofia Trading Platform</div>
+        <div class="header-stats">
+            <div class="stat-item">
+                <span class="stat-label">Portfolio Value</span>
+                <span class="stat-value" id="portfolio-value">$125,430.50</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Daily P&L</span>
+                <span class="stat-value positive" id="daily-pnl">+$2,345.67</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Return</span>
+                <span class="stat-value positive" id="total-return">+18.5%</span>
+            </div>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span class="status-text">Live Trading</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="dashboard-grid">
+            
+            <!-- Market Watch -->
+            <div class="card market-watch">
+                <h2 class="card-title">Market Watch</h2>
+                <div class="ticker-grid" id="ticker-grid"></div>
+            </div>
+
+            <!-- Portfolio Summary -->
+            <div class="card portfolio-summary">
+                <h2 class="card-title">Portfolio Summary</h2>
+                <div class="portfolio-stats">
+                    <div class="portfolio-stat">
+                        <div class="portfolio-stat-label">Total Assets</div>
+                        <div class="portfolio-stat-value">$95,430</div>
+                    </div>
+                    <div class="portfolio-stat">
+                        <div class="portfolio-stat-label">Cash Balance</div>
+                        <div class="portfolio-stat-value">$30,000</div>
+                    </div>
+                    <div class="portfolio-stat">
+                        <div class="portfolio-stat-label">Open Positions</div>
+                        <div class="portfolio-stat-value">7</div>
+                    </div>
+                    <div class="portfolio-stat">
+                        <div class="portfolio-stat-label">Win Rate</div>
+                        <div class="portfolio-stat-value">68%</div>
+                    </div>
+                </div>
+                <canvas id="portfolio-chart"></canvas>
+            </div>
+
+            <!-- Main Chart -->
+            <div class="card chart-container">
+                <h2 class="card-title">Price Chart</h2>
+                <div class="chart-controls">
+                    <button class="chart-btn active" data-timeframe="1m">1M</button>
+                    <button class="chart-btn" data-timeframe="5m">5M</button>
+                    <button class="chart-btn" data-timeframe="15m">15M</button>
+                    <button class="chart-btn" data-timeframe="1h">1H</button>
+                    <button class="chart-btn" data-timeframe="4h">4H</button>
+                    <button class="chart-btn" data-timeframe="1d">1D</button>
+                </div>
+                <div id="main-chart"></div>
+            </div>
+
+            <!-- Positions Table -->
+            <div class="card positions-table">
+                <h2 class="card-title">Open Positions</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Quantity</th>
+                                <th>Entry Price</th>
+                                <th>Current Price</th>
+                                <th>P&L</th>
+                                <th>P&L %</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody id="positions-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Order Book -->
+            <div class="card order-book">
+                <h2 class="card-title">Order Book - AAPL</h2>
+                <div class="order-book-content">
+                    <div class="order-side buy-side">
+                        <div class="order-side-title">BIDS</div>
+                        <div id="buy-orders"></div>
+                    </div>
+                    <div class="order-side sell-side">
+                        <div class="order-side-title">ASKS</div>
+                        <div id="sell-orders"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Metrics -->
+            <div class="card risk-metrics">
+                <div class="risk-item">
+                    <div class="risk-label">Sharpe Ratio</div>
+                    <div class="risk-value good">2.34</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Max Drawdown</div>
+                    <div class="risk-value warning">-8.5%</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Daily VaR (95%)</div>
+                    <div class="risk-value">$2,450</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Leverage</div>
+                    <div class="risk-value good">0.75x</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Risk Score</div>
+                    <div class="risk-value good">LOW</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Exposure</div>
+                    <div class="risk-value">76%</div>
+                </div>
+            </div>
+
+            <!-- Trading Panel -->
+            <div class="card trading-panel">
+                <h2 class="card-title">Quick Trade</h2>
+                <div class="trading-form">
+                    <div class="form-group">
+                        <label class="form-label">Symbol</label>
+                        <select class="form-select" id="trade-symbol">
+                            <option>AAPL</option>
+                            <option>GOOGL</option>
+                            <option>MSFT</option>
+                            <option>AMZN</option>
+                            <option>TSLA</option>
+                            <option>BTC/USDT</option>
+                            <option>ETH/USDT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Order Type</label>
+                        <select class="form-select" id="order-type">
+                            <option>Market</option>
+                            <option>Limit</option>
+                            <option>Stop</option>
+                            <option>Stop Limit</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-input" id="trade-quantity" value="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Price</label>
+                        <input type="number" class="form-input" id="trade-price" value="175.50" step="0.01">
+                    </div>
+                    <div class="trading-buttons">
+                        <button class="btn btn-buy" onclick="executeTrade('buy')">BUY</button>
+                        <button class="btn btn-sell" onclick="executeTrade('sell')">SELL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="card activity-feed">
+                <h2 class="card-title">Activity Feed</h2>
+                <div class="activity-list" id="activity-list"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

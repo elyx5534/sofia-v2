@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofia Trading Platform v2.0 - Professional Trading Suite</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #e4e4e7;
+            overflow-x: hidden;
+        }
+        
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 12px;
+        }
+        
+        /* Neon Glow Effects */
+        .neon-green { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+        .neon-red { color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        .neon-blue { color: #3b82f6; text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #667eea 100%);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            opacity: 0.05;
+        }
+        
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(17, 24, 39, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(75, 85, 99, 0.5); border-radius: 4px; }
+        
+        /* Pulse Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* Trading Activity Feed */
+        .trade-feed {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .trade-item {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    
+    <!-- Header -->
+    <header class="glass-card m-4 p-4">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                        Sofia Trading Platform
+                    </h1>
+                    <p class="text-xs text-gray-400">AI-Powered Autonomous Trading System v2.0</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-6">
+                <!-- Account Info -->
+                <div class="text-right">
+                    <p class="text-xs text-gray-400">Portfolio Value</p>
+                    <p class="text-xl font-bold neon-green" id="portfolioValue">$125,342.67</p>
+                </div>
+                
+                <!-- Status Indicators -->
+                <div class="flex space-x-2">
+                    <div class="px-3 py-1 rounded-full bg-green-900/50 border border-green-500/50">
+                        <i class="fas fa-circle text-green-500 text-xs pulse"></i>
+                        <span class="text-xs ml-1">Live Trading</span>
+                    </div>
+                    <div class="px-3 py-1 rounded-full bg-blue-900/50 border border-blue-500/50">
+                        <i class="fas fa-robot text-blue-500 text-xs"></i>
+                        <span class="text-xs ml-1">AI Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Grid -->
+    <div class="grid grid-cols-12 gap-4 p-4">
+        
+        <!-- Left Panel - Market Watch -->
+        <div class="col-span-3">
+            <div class="glass-card p-4 mb-4">
+                <h2 class="text-sm font-semibold mb-3 text-gray-300">
+                    <i class="fas fa-eye mr-2"></i>Market Watch
+                </h2>
+                <div id="marketWatch" class="space-y-2">
+                    <!-- Market items will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- AI Analysis Panel -->
+            <div class="glass-card p-4">
+                <h2 class="text-sm font-semibold mb-3 text-gray-300">
+                    <i class="fas fa-brain mr-2 text-purple-400"></i>AI Market Analysis
+                </h2>
+                <div id="aiAnalysis" class="space-y-3">
+                    <div class="p-3 bg-purple-900/20 rounded-lg border border-purple-500/30">
+                        <p class="text-xs text-purple-300 mb-1">Market Sentiment</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-lg font-bold text-purple-400">BULLISH</span>
+                            <span class="text-2xl">📈</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400 leading-relaxed">
+                        <p class="mb-2">🔍 <strong>Current Analysis:</strong></p>
+                        <p>• Tech sector showing strong momentum</p>
+                        <p>• VIX at 6-month lows indicating stability</p>
+                        <p>• Crypto market recovering, BTC testing resistance</p>
+                        <p class="mt-2 text-green-400">✓ 3 new opportunities identified</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Center - Main Chart -->
+        <div class="col-span-6">
+            <div class="glass-card p-4 mb-4" style="height: 500px;">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-semibold text-gray-300">
+                        <span id="selectedSymbol">AAPL</span> - Apple Inc.
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 text-xs bg-gray-800 rounded hover:bg-gray-700">1D</button>
+                        <button class="px-3 py-1 text-xs bg-blue-600 rounded">1H</button>
+                        <button class="px-3 py-1 text-xs bg-gray-800 rounded hover:bg-gray-700">15M</button>
+                        <button class="px-3 py-1 text-xs bg-gray-800 rounded hover:bg-gray-700">5M</button>
+                    </div>
+                </div>
+                <div id="tradingChart" style="height: 430px;"></div>
+            </div>
+            
+            <!-- Performance Metrics -->
+            <div class="grid grid-cols-4 gap-4">
+                <div class="glass-card p-3 text-center">
+                    <p class="text-xs text-gray-400">Today's P&L</p>
+                    <p class="text-lg font-bold neon-green">+$2,341.50</p>
+                    <p class="text-xs text-green-400">+1.87%</p>
+                </div>
+                <div class="glass-card p-3 text-center">
+                    <p class="text-xs text-gray-400">Win Rate</p>
+                    <p class="text-lg font-bold text-blue-400">73.5%</p>
+                    <p class="text-xs text-gray-400">147/200 trades</p>
+                </div>
+                <div class="glass-card p-3 text-center">
+                    <p class="text-xs text-gray-400">Sharpe Ratio</p>
+                    <p class="text-lg font-bold text-purple-400">2.34</p>
+                    <p class="text-xs text-gray-400">Excellent</p>
+                </div>
+                <div class="glass-card p-3 text-center">
+                    <p class="text-xs text-gray-400">Active Positions</p>
+                    <p class="text-lg font-bold text-yellow-400">8</p>
+                    <p class="text-xs text-gray-400">$45,230 deployed</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel -->
+        <div class="col-span-3">
+            <!-- News Feed -->
+            <div class="glass-card p-4 mb-4">
+                <h3 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-newspaper text-blue-400"></i> Market News
+                </h3>
+                <div id="newsFeed" class="space-y-2 max-h-64 overflow-y-auto">
+                    <div class="text-gray-500 text-sm">Loading news...</div>
+                </div>
+            </div>
+            
+            <!-- Backtest Results -->
+            <div class="glass-card p-4 mb-4">
+                <h3 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-flask text-purple-400"></i> Latest Backtest
+                </h3>
+                <div id="backtestResults" class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Strategy:</span>
+                        <span class="text-white">SMA Crossover</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Return:</span>
+                        <span class="text-green-400">+28.5%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Sharpe:</span>
+                        <span class="text-white">1.85</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Win Rate:</span>
+                        <span class="text-white">67%</span>
+                    </div>
+                    <button class="w-full mt-3 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition">
+                        Run New Backtest
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Trading Activity -->
+            <div class="glass-card p-4 mb-4">
+                <h2 class="text-sm font-semibold mb-3 text-gray-300">
+                    <i class="fas fa-bolt mr-2 text-yellow-400"></i>Live Trading Activity
+                </h2>
+                <div id="tradingActivity" class="trade-feed space-y-2">
+                    <!-- Trading activities will be inserted here -->
+                </div>
+            </div>
+            
+            <!-- Open Positions -->
+            <div class="glass-card p-4">
+                <h2 class="text-sm font-semibold mb-3 text-gray-300">
+                    <i class="fas fa-wallet mr-2"></i>Open Positions
+                </h2>
+                <div id="openPositions" class="space-y-2">
+                    <!-- Positions will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Stats Bar -->
+    <div class="glass-card mx-4 mb-4 p-3">
+        <div class="flex justify-between items-center text-xs">
+            <div class="flex space-x-6">
+                <span><i class="fas fa-server text-green-400"></i> All Systems Operational</span>
+                <span><i class="fas fa-database text-blue-400"></i> Data Hub: Connected</span>
+                <span><i class="fas fa-cogs text-purple-400"></i> Strategy: Multi-Factor AI v3.2</span>
+            </div>
+            <div class="flex space-x-6">
+                <span>Market Hours: <span class="text-green-400">OPEN</span></span>
+                <span>Next Rebalance: <span class="text-yellow-400">14:23</span></span>
+                <span id="currentTime" class="text-gray-400"></span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/app.js"></script>
+    
+    <script>
+        // Fetch and display news
+        async function loadNews() {
+            try {
+                const response = await fetch('/api/news/MARKET/5');
+                const data = await response.json();
+                const newsContainer = document.getElementById('newsFeed');
+                
+                if (data.news && data.news.length > 0) {
+                    newsContainer.innerHTML = data.news.map(article => `
+                        <div class="p-2 bg-gray-800/50 rounded hover:bg-gray-700/50 transition cursor-pointer">
+                            <h4 class="text-sm font-medium text-white">${article.title}</h4>
+                            <p class="text-xs text-gray-400 mt-1">${article.source} • ${new Date(article.published).toLocaleTimeString()}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    newsContainer.innerHTML = '<div class="text-gray-500 text-sm">No news available</div>';
+                }
+            } catch (error) {
+                console.error('Error loading news:', error);
+            }
+        }
+        
+        // Load news on page load
+        loadNews();
+        // Refresh news every 60 seconds
+        setInterval(loadNews, 60000);
+    </script>
+</body>
+</html>

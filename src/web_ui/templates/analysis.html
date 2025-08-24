@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ symbol }} - Detailed Analysis | Sofia Trading Platform</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #e4e4e7;
+        }
+        
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .indicator-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .bullish { 
+            background: rgba(16, 185, 129, 0.2); 
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .bearish { 
+            background: rgba(239, 68, 68, 0.2); 
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .neutral { 
+            background: rgba(156, 163, 175, 0.2); 
+            color: #9ca3af;
+            border: 1px solid rgba(156, 163, 175, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="glass-card m-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold">{{ symbol }}</h1>
+                <p class="text-gray-400">{{ company_name }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-3xl font-bold {{ 'text-green-400' if price_change >= 0 else 'text-red-400' }}">
+                    ${{ current_price }}
+                </div>
+                <div class="{{ 'text-green-400' if price_change >= 0 else 'text-red-400' }}">
+                    {{ '+' if price_change >= 0 else '' }}{{ price_change }} ({{ price_change_pct }}%)
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-12 gap-4 p-4">
+        <!-- Main Chart -->
+        <div class="col-span-8">
+            <div class="glass-card" style="height: 500px;">
+                <h2 class="text-lg font-semibold mb-3">Price Chart</h2>
+                <div id="tradingview_chart" style="height: 450px;"></div>
+            </div>
+            
+            <!-- Technical Indicators -->
+            <div class="glass-card mt-4">
+                <h2 class="text-lg font-semibold mb-4">Technical Indicators</h2>
+                <div class="grid grid-cols-3 gap-4">
+                    {% for indicator in indicators %}
+                    <div class="bg-gray-800/50 rounded-lg p-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-400">{{ indicator.name }}</span>
+                            <span class="indicator-badge {{ indicator.signal }}">
+                                {{ indicator.signal.upper() }}
+                            </span>
+                        </div>
+                        <div class="text-xl font-bold mt-1">{{ indicator.value }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Side Panel -->
+        <div class="col-span-4">
+            <!-- Key Metrics -->
+            <div class="glass-card mb-4">
+                <h2 class="text-lg font-semibold mb-3">Key Metrics</h2>
+                <div class="space-y-2">
+                    {% for metric in metrics %}
+                    <div class="flex justify-between py-2 border-b border-gray-700">
+                        <span class="text-gray-400">{{ metric.name }}</span>
+                        <span class="font-medium">{{ metric.value }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- News Feed -->
+            <div class="glass-card mb-4">
+                <h2 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-newspaper mr-2"></i>Latest News
+                </h2>
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    {% for article in news %}
+                    <div class="p-3 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition cursor-pointer">
+                        <h3 class="font-medium text-sm mb-1">{{ article.title }}</h3>
+                        <p class="text-xs text-gray-400 mb-1">{{ article.summary[:100] }}...</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-500">{{ article.source }}</span>
+                            <a href="{{ article.url }}" target="_blank" class="text-xs text-blue-400 hover:text-blue-300">
+                                Read more →
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Best Strategy -->
+            <div class="glass-card">
+                <h2 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-chart-line mr-2"></i>Recommended Strategy
+                </h2>
+                <div class="p-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-lg border border-blue-500/30">
+                    <h3 class="font-semibold mb-2">{{ best_strategy.name }}</h3>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                            <span class="text-gray-400">Return:</span>
+                            <span class="ml-2 text-green-400">{{ best_strategy.return }}%</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Sharpe:</span>
+                            <span class="ml-2">{{ best_strategy.sharpe }}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Win Rate:</span>
+                            <span class="ml-2">{{ best_strategy.win_rate }}%</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Trades:</span>
+                            <span class="ml-2">{{ best_strategy.total_trades }}</span>
+                        </div>
+                    </div>
+                    <button class="mt-3 w-full py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition">
+                        Apply Strategy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize TradingView widget
+        new TradingView.widget({
+            "width": "100%",
+            "height": 450,
+            "symbol": "{{ symbol }}",
+            "interval": "D",
+            "timezone": "Etc/UTC",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": "#f1f3f6",
+            "enable_publishing": false,
+            "hide_side_toolbar": false,
+            "allow_symbol_change": false,
+            "container_id": "tradingview_chart",
+            "studies": [
+                "RSI@tv-basicstudies",
+                "MASimple@tv-basicstudies"
+            ]
+        });
+    </script>
+</body>
+</html>
