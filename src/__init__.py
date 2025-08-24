@@ -1,0 +1,1 @@
+# Sofia V2 - Global Crypto Scanner

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sofia V2 - Crypto Scanner{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #1a1d29;
+            --secondary-color: #2c2f3e;
+            --accent-color: #f0b90b;
+            --success-color: #00d4aa;
+            --danger-color: #ff4757;
+            --text-primary: #ffffff;
+            --text-secondary: #8a8db3;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1d29 0%, #2c2f3e 100%);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: rgba(26, 29, 41, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(44, 47, 62, 0.5);
+        }
+        
+        .navbar-brand {
+            color: var(--accent-color) !important;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary) !important;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--accent-color) !important;
+        }
+        
+        .card {
+            background: rgba(44, 47, 62, 0.8);
+            border: 1px solid rgba(44, 47, 62, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-primary {
+            background: var(--accent-color);
+            border: none;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background: #d4a309;
+            color: var(--primary-color);
+        }
+        
+        .btn-success {
+            background: var(--success-color);
+            border: none;
+        }
+        
+        .btn-danger {
+            background: var(--danger-color);
+            border: none;
+        }
+        
+        .table-dark {
+            background: rgba(44, 47, 62, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        .table-dark th,
+        .table-dark td {
+            border-color: rgba(44, 47, 62, 0.5);
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.4em 0.6em;
+        }
+        
+        .spinner-border {
+            color: var(--accent-color);
+        }
+        
+        .form-control {
+            background: rgba(44, 47, 62, 0.8);
+            border: 1px solid rgba(44, 47, 62, 0.5);
+            color: var(--text-primary);
+        }
+        
+        .form-control:focus {
+            background: rgba(44, 47, 62, 0.9);
+            border-color: var(--accent-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(240, 185, 11, 0.25);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-healthy { background: var(--success-color); }
+        .status-warning { background: var(--accent-color); }
+        .status-error { background: var(--danger-color); }
+        
+        .score-high { color: var(--success-color); }
+        .score-medium { color: var(--accent-color); }
+        .score-low { color: var(--text-secondary); }
+        
+        .price-up { color: var(--success-color); }
+        .price-down { color: var(--danger-color); }
+        
+        @media (max-width: 768px) {
+            .navbar-nav {
+                text-align: center;
+                padding-top: 1rem;
+            }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 29, 41, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line"></i> Sofia V2
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signals">
+                            <i class="fas fa-signal"></i> Signals
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/heatmap">
+                            <i class="fas fa-th"></i> Heatmap
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="chartsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-chart-area"></i> Charts
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark">
+                            <li><a class="dropdown-item" href="/chart/BTC/USDT">BTC/USDT</a></li>
+                            <li><a class="dropdown-item" href="/chart/ETH/USDT">ETH/USDT</a></li>
+                            <li><a class="dropdown-item" href="/chart/BNB/USDT">BNB/USDT</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="searchSymbol()">Search Symbol...</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/news">
+                            <i class="fas fa-newspaper"></i> News
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api/status" target="_blank">
+                            <span class="status-indicator status-healthy"></span> Status
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid py-4">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="spinner-border mb-3" style="width: 3rem; height: 3rem;"></div>
+            <div class="h5">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <script>
+        // Global utilities
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+        
+        function formatPrice(price) {
+            if (price >= 1) {
+                return '$' + price.toFixed(2);
+            } else {
+                return '$' + price.toFixed(6);
+            }
+        }
+        
+        function formatPercentage(pct) {
+            return (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+        }
+        
+        function getScoreClass(score) {
+            if (score >= 3) return 'score-high';
+            if (score >= 1.5) return 'score-medium';
+            return 'score-low';
+        }
+        
+        function getPriceChangeClass(change) {
+            return change >= 0 ? 'price-up' : 'price-down';
+        }
+        
+        function timeAgo(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffInSeconds = (now - time) / 1000;
+            
+            if (diffInSeconds < 60) return 'Just now';
+            if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + 'm ago';
+            if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + 'h ago';
+            return Math.floor(diffInSeconds / 86400) + 'd ago';
+        }
+        
+        function searchSymbol() {
+            const symbol = prompt('Enter symbol to chart (e.g., BTC/USDT):');
+            if (symbol) {
+                window.location.href = '/chart/' + symbol.replace('/', '/');
+            }
+        }
+        
+        // Auto-refresh functionality
+        function setupAutoRefresh(intervalMinutes = 5) {
+            setInterval(() => {
+                location.reload();
+            }, intervalMinutes * 60 * 1000);
+        }
+        
+        // Status indicator
+        async function updateStatusIndicator() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                
+                const indicator = document.querySelector('.status-indicator');
+                if (status.status === 'healthy') {
+                    indicator.className = 'status-indicator status-healthy';
+                } else {
+                    indicator.className = 'status-indicator status-error';
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+                document.querySelector('.status-indicator').className = 'status-indicator status-error';
+            }
+        }
+        
+        // Initialize
+        $(document).ready(function() {
+            // Update active nav link
+            const currentPath = window.location.pathname;
+            $('.nav-link').each(function() {
+                if (this.pathname === currentPath) {
+                    $(this).addClass('active');
+                }
+            });
+            
+            // Update status indicator every 30 seconds
+            updateStatusIndicator();
+            setInterval(updateStatusIndicator, 30000);
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio - Sofia V2</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -27,40 +27,40 @@
             }
         }
     </script>
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-20px); }
         }
-        
+
         .glass {
             background: rgba(15, 23, 42, 0.3);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(59, 130, 246, 0.2);
         }
-        
+
         .glass-hover:hover {
             background: rgba(15, 23, 42, 0.5);
             border-color: rgba(59, 130, 246, 0.4);
             transform: translateY(-2px);
         }
-        
+
         .gradient-border {
             position: relative;
             background: linear-gradient(135deg, #1e293b, #0f172a);
             border-radius: 12px;
         }
-        
+
         .gradient-border::before {
             content: '';
             position: absolute;
@@ -73,27 +73,27 @@
             mask-composite: exclude;
             opacity: 0.5;
         }
-        
+
         .crypto-card {
             background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.5));
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
-        
+
         .crypto-card:hover {
             transform: translateY(-4px) scale(1.02);
             box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
         }
-        
+
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
-        
+
         ::-webkit-scrollbar-track {
             background: rgba(15, 23, 42, 0.5);
         }
-        
+
         ::-webkit-scrollbar-thumb {
             background: linear-gradient(135deg, #3b82f6, #8b5cf6);
             border-radius: 4px;
@@ -101,7 +101,7 @@
     </style>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950" x-data="{ 
+<body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950" x-data="{
     sidebarOpen: false,
     activeTab: 'positions',
     selectedAsset: null,
@@ -126,7 +126,7 @@
 
     <div class="relative flex h-screen">
         <!-- Sidebar -->
-        <aside class="fixed lg:relative w-64 h-full glass border-r border-slate-800 z-50 transform transition-transform duration-300 lg:translate-x-0" 
+        <aside class="fixed lg:relative w-64 h-full glass border-r border-slate-800 z-50 transform transition-transform duration-300 lg:translate-x-0"
                :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}"
                @click.away="sidebarOpen = false">
             <div class="p-6 border-b border-slate-800">
@@ -140,7 +140,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <nav class="p-4 space-y-2">
                 <a href="/" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
                     <i class="fas fa-th-large w-5"></i>
@@ -203,7 +203,7 @@
                             <span class="text-xs text-slate-500">24h</span>
                         </div>
                     </div>
-                    
+
                     <div class="gradient-border p-5 glass-hover transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs text-slate-400">Today's P&L</span>
@@ -215,7 +215,7 @@
                             <span class="text-xs text-green-400">6.7%</span>
                         </div>
                     </div>
-                    
+
                     <div class="gradient-border p-5 glass-hover transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs text-slate-400">Best Performer</span>
@@ -227,7 +227,7 @@
                             <span class="text-xs text-slate-500">24h</span>
                         </div>
                     </div>
-                    
+
                     <div class="gradient-border p-5 glass-hover transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-xs text-slate-400">Assets</span>
@@ -242,22 +242,22 @@
 
                 <!-- Tabs -->
                 <div class="flex space-x-1 mb-6 border-b border-slate-800">
-                    <button @click="activeTab = 'positions'" 
+                    <button @click="activeTab = 'positions'"
                             :class="activeTab === 'positions' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
                             class="px-4 py-3 font-medium transition-all">
                         Positions
                     </button>
-                    <button @click="activeTab = 'allocation'" 
+                    <button @click="activeTab = 'allocation'"
                             :class="activeTab === 'allocation' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
                             class="px-4 py-3 font-medium transition-all">
                         Allocation
                     </button>
-                    <button @click="activeTab = 'performance'" 
+                    <button @click="activeTab = 'performance'"
                             :class="activeTab === 'performance' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
                             class="px-4 py-3 font-medium transition-all">
                         Performance
                     </button>
-                    <button @click="activeTab = 'history'" 
+                    <button @click="activeTab = 'history'"
                             :class="activeTab === 'history' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
                             class="px-4 py-3 font-medium transition-all">
                         History
@@ -296,7 +296,7 @@
                                         <td class="p-4 text-right text-white" x-text="'$' + asset.price.toLocaleString()"></td>
                                         <td class="p-4 text-right text-white font-medium" x-text="'$' + asset.value.toLocaleString()"></td>
                                         <td class="p-4 text-right">
-                                            <span :class="asset.change > 0 ? 'text-green-400' : 'text-red-400'" 
+                                            <span :class="asset.change > 0 ? 'text-green-400' : 'text-red-400'"
                                                   x-text="(asset.change > 0 ? '+' : '') + asset.change + '%'"></span>
                                         </td>
                                         <td class="p-4 text-right">
@@ -452,7 +452,7 @@
                 const gradient = perfCtx.getContext('2d').createLinearGradient(0, 0, 0, 300);
                 gradient.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
                 gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
-                
+
                 new Chart(perfCtx.getContext('2d'), {
                     type: 'line',
                     data: {
@@ -474,18 +474,18 @@
                         },
                         scales: {
                             x: {
-                                grid: { 
+                                grid: {
                                     color: 'rgba(148, 163, 184, 0.1)',
                                     drawBorder: false
                                 },
                                 ticks: { color: '#64748b' }
                             },
                             y: {
-                                grid: { 
+                                grid: {
                                     color: 'rgba(148, 163, 184, 0.1)',
                                     drawBorder: false
                                 },
-                                ticks: { 
+                                ticks: {
                                     color: '#64748b',
                                     callback: function(value) {
                                         return '$' + (value / 1000) + 'k';

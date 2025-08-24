@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}{{ symbol }} Chart - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-line text-warning"></i> {{ symbol }} Chart</h2>
+                <div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-outline-primary btn-sm" data-timeframe="1h" onclick="changeTimeframe('1h')">1H</button>
+                        <button class="btn btn-outline-primary btn-sm" data-timeframe="1d" onclick="changeTimeframe('1d')">1D</button>
+                    </div>
+                    <button class="btn btn-primary btn-sm ms-2" onclick="refreshChart()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chart Controls -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <label class="form-label mb-0">Indicators:</label>
+                            <div class="form-check form-check-inline ms-3">
+                                <input class="form-check-input" type="checkbox" id="showSMA" checked>
+                                <label class="form-check-label" for="showSMA">SMA</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showBB">
+                                <label class="form-check-label" for="showBB">Bollinger Bands</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showVolume" checked>
+                                <label class="form-check-label" for="showVolume">Volume</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showRSI">
+                                <label class="form-check-label" for="showRSI">RSI</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showMACD">
+                                <label class="form-check-label" for="showMACD">MACD</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body py-2">
+                    <div id="priceInfo">
+                        <div class="row text-center">
+                            <div class="col-3">
+                                <small class="text-muted">Price</small>
+                                <div id="currentPrice">-</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">24h</small>
+                                <div id="priceChange24h">-</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">RSI</small>
+                                <div id="currentRSI">-</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">Volume</small>
+                                <div id="currentVolume">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Chart -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div id="chartContainer" style="height: 500px; position: relative;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="spinner-border text-warning" style="width: 3rem; height: 3rem;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sub Charts -->
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="card" id="rsiCard" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">RSI (14)</h6>
+                </div>
+                <div class="card-body">
+                    <div id="rsiChart" style="height: 150px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card" id="macdCard" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">MACD</h6>
+                </div>
+                <div class="card-body">
+                    <div id="macdChart" style="height: 150px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/lightweight-charts.standalone.production.js"></script>
+<script>
+let chart, candlestickSeries, volumeSeries;
+let sma20Series, sma50Series, bbUpperSeries, bbLowerSeries, bbMiddleSeries;
+let rsiChart, rsiSeries, macdChart, macdSeries, macdSignalSeries;
+let currentTimeframe = '1h';
+let currentData = [];
+
+// Initialize chart
+function initChart() {
+    const container = document.getElementById('chartContainer');
+    container.innerHTML = '';
+    
+    chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: 500,
+        layout: {
+            background: { color: 'transparent' },
+            textColor: '#d1d4dc',
+        },
+        grid: {
+            vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
+            horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+        },
+        crosshair: {
+            mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+            borderColor: 'rgba(197, 203, 206, 0.4)',
+        },
+        timeScale: {
+            borderColor: 'rgba(197, 203, 206, 0.4)',
+        },
+    });
+    
+    // Candlestick series
+    candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#00d4aa',
+        downColor: '#ff4757',
+        borderDownColor: '#ff4757',
+        borderUpColor: '#00d4aa',
+        wickDownColor: '#ff4757',
+        wickUpColor: '#00d4aa',
+    });
+    
+    // Volume series
+    volumeSeries = chart.addHistogramSeries({
+        color: 'rgba(240, 185, 11, 0.3)',
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'volume',
+        scaleMargins: { top: 0.8, bottom: 0 },
+    });
+    
+    // SMA series
+    sma20Series = chart.addLineSeries({
+        color: '#f0b90b',
+        lineWidth: 1,
+        title: 'SMA 20',
+    });
+    
+    sma50Series = chart.addLineSeries({
+        color: '#ff6b35',
+        lineWidth: 1,
+        title: 'SMA 50',
+    });
+    
+    // Bollinger Bands
+    bbUpperSeries = chart.addLineSeries({
+        color: 'rgba(156, 39, 176, 0.8)',
+        lineWidth: 1,
+        title: 'BB Upper',
+    });
+    
+    bbMiddleSeries = chart.addLineSeries({
+        color: 'rgba(156, 39, 176, 0.5)',
+        lineWidth: 1,
+        title: 'BB Middle',
+    });
+    
+    bbLowerSeries = chart.addLineSeries({
+        color: 'rgba(156, 39, 176, 0.8)',
+        lineWidth: 1,
+        title: 'BB Lower',
+    });
+    
+    // Handle resize
+    window.addEventListener('resize', () => {
+        chart.applyOptions({ width: container.clientWidth });
+    });
+}
+
+function initSubCharts() {
+    // RSI Chart
+    const rsiContainer = document.getElementById('rsiChart');
+    rsiChart = LightweightCharts.createChart(rsiContainer, {
+        width: rsiContainer.clientWidth,
+        height: 150,
+        layout: {
+            background: { color: 'transparent' },
+            textColor: '#d1d4dc',
+        },
+        grid: {
+            vertLines: { visible: false },
+            horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+        },
+        rightPriceScale: {
+            scaleMargins: { top: 0.1, bottom: 0.1 },
+        },
+    });
+    
+    rsiSeries = rsiChart.addLineSeries({
+        color: '#2962ff',
+        lineWidth: 2,
+    });
+    
+    // Add RSI levels
+    rsiChart.addLineSeries({
+        color: 'rgba(255, 71, 87, 0.5)',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+    }).setData([{ time: 0, value: 70 }]);
+    
+    rsiChart.addLineSeries({
+        color: 'rgba(0, 212, 170, 0.5)',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+    }).setData([{ time: 0, value: 30 }]);
+    
+    // MACD Chart
+    const macdContainer = document.getElementById('macdChart');
+    macdChart = LightweightCharts.createChart(macdContainer, {
+        width: macdContainer.clientWidth,
+        height: 150,
+        layout: {
+            background: { color: 'transparent' },
+            textColor: '#d1d4dc',
+        },
+        grid: {
+            vertLines: { visible: false },
+            horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+        },
+    });
+    
+    macdSeries = macdChart.addLineSeries({
+        color: '#2962ff',
+        lineWidth: 2,
+        title: 'MACD',
+    });
+    
+    macdSignalSeries = macdChart.addLineSeries({
+        color: '#ff6b35',
+        lineWidth: 1,
+        title: 'Signal',
+    });
+}
+
+async function loadChartData() {
+    try {
+        showLoading();
+        
+        const response = await fetch(`/api/ohlcv?symbol={{ symbol }}&timeframe=${currentTimeframe}`);
+        if (!response.ok) {
+            throw new Error('Failed to load chart data');
+        }
+        
+        const data = await response.json();
+        currentData = data.data || [];
+        
+        if (currentData.length === 0) {
+            throw new Error('No data available for this symbol');
+        }
+        
+        updateChart();
+        updatePriceInfo();
+        
+    } catch (error) {
+        console.error('Error loading chart data:', error);
+        showChartError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function updateChart() {
+    // Prepare data for different series
+    const candleData = currentData.map(d => ({
+        time: d.time,
+        open: d.open,
+        high: d.high,
+        low: d.low,
+        close: d.close,
+    }));
+    
+    const volumeData = currentData.map(d => ({
+        time: d.time,
+        value: d.volume,
+        color: d.close > d.open ? 'rgba(0, 212, 170, 0.3)' : 'rgba(255, 71, 87, 0.3)',
+    }));
+    
+    // Set main chart data
+    candlestickSeries.setData(candleData);
+    
+    if (document.getElementById('showVolume').checked) {
+        volumeSeries.setData(volumeData);
+    } else {
+        volumeSeries.setData([]);
+    }
+    
+    // Update indicators
+    updateIndicators();
+    
+    // Update sub-charts
+    updateSubCharts();
+}
+
+function updateIndicators() {
+    const showSMA = document.getElementById('showSMA').checked;
+    const showBB = document.getElementById('showBB').checked;
+    
+    if (showSMA) {
+        const sma20Data = currentData
+            .filter(d => d.sma_20 && d.sma_20 > 0)
+            .map(d => ({ time: d.time, value: d.sma_20 }));
+        const sma50Data = currentData
+            .filter(d => d.sma_50 && d.sma_50 > 0)
+            .map(d => ({ time: d.time, value: d.sma_50 }));
+            
+        sma20Series.setData(sma20Data);
+        sma50Series.setData(sma50Data);
+    } else {
+        sma20Series.setData([]);
+        sma50Series.setData([]);
+    }
+    
+    if (showBB) {
+        const bbUpperData = currentData
+            .filter(d => d.bb_upper && d.bb_upper > 0)
+            .map(d => ({ time: d.time, value: d.bb_upper }));
+        const bbMiddleData = currentData
+            .filter(d => d.bb_middle && d.bb_middle > 0)
+            .map(d => ({ time: d.time, value: d.bb_middle }));
+        const bbLowerData = currentData
+            .filter(d => d.bb_lower && d.bb_lower > 0)
+            .map(d => ({ time: d.time, value: d.bb_lower }));
+            
+        bbUpperSeries.setData(bbUpperData);
+        bbMiddleSeries.setData(bbMiddleData);
+        bbLowerSeries.setData(bbLowerData);
+    } else {
+        bbUpperSeries.setData([]);
+        bbMiddleSeries.setData([]);
+        bbLowerSeries.setData([]);
+    }
+}
+
+function updateSubCharts() {
+    // RSI
+    if (document.getElementById('showRSI').checked && rsiChart) {
+        const rsiData = currentData
+            .filter(d => d.rsi && d.rsi > 0)
+            .map(d => ({ time: d.time, value: d.rsi }));
+        rsiSeries.setData(rsiData);
+        document.getElementById('rsiCard').style.display = 'block';
+    } else {
+        document.getElementById('rsiCard').style.display = 'none';
+    }
+    
+    // MACD
+    if (document.getElementById('showMACD').checked && macdChart) {
+        const macdData = currentData
+            .filter(d => d.macd !== undefined)
+            .map(d => ({ time: d.time, value: d.macd }));
+        const macdSignalData = currentData
+            .filter(d => d.macd_signal !== undefined)
+            .map(d => ({ time: d.time, value: d.macd_signal }));
+            
+        macdSeries.setData(macdData);
+        macdSignalSeries.setData(macdSignalData);
+        document.getElementById('macdCard').style.display = 'block';
+    } else {
+        document.getElementById('macdCard').style.display = 'none';
+    }
+}
+
+function updatePriceInfo() {
+    if (currentData.length === 0) return;
+    
+    const latest = currentData[currentData.length - 1];
+    const previous = currentData.length > 24 ? currentData[currentData.length - 25] : null;
+    
+    document.getElementById('currentPrice').textContent = formatPrice(latest.close);
+    
+    if (previous) {
+        const change24h = ((latest.close - previous.close) / previous.close) * 100;
+        const changeElement = document.getElementById('priceChange24h');
+        changeElement.textContent = formatPercentage(change24h);
+        changeElement.className = getPriceChangeClass(change24h);
+    }
+    
+    document.getElementById('currentRSI').textContent = latest.rsi ? latest.rsi.toFixed(1) : '-';
+    document.getElementById('currentVolume').textContent = formatVolume(latest.volume);
+}
+
+function changeTimeframe(tf) {
+    currentTimeframe = tf;
+    
+    // Update button states
+    document.querySelectorAll('[data-timeframe]').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-timeframe="${tf}"]`).classList.add('active');
+    
+    loadChartData();
+}
+
+function refreshChart() {
+    loadChartData();
+}
+
+function showChartError(message) {
+    const container = document.getElementById('chartContainer');
+    container.innerHTML = `
+        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-danger">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <h5>Chart Loading Error</h5>
+            <p>${message}</p>
+            <button class="btn btn-primary" onclick="loadChartData()">Retry</button>
+        </div>
+    `;
+}
+
+// Event listeners
+document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', updateChart);
+});
+
+// Initialize page
+$(document).ready(function() {
+    initChart();
+    initSubCharts();
+    
+    // Set default timeframe
+    document.querySelector('[data-timeframe="1h"]').classList.add('active');
+    
+    // Load initial data
+    loadChartData();
+    
+    // Auto refresh every 2 minutes
+    setInterval(loadChartData, 2 * 60 * 1000);
+});
+
+function formatVolume(volume) {
+    if (volume >= 1e9) return (volume / 1e9).toFixed(1) + 'B';
+    if (volume >= 1e6) return (volume / 1e6).toFixed(1) + 'M';
+    if (volume >= 1e3) return (volume / 1e3).toFixed(1) + 'K';
+    return volume.toFixed(0);
+}
+</script>
+{% endblock %}

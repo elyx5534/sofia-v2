@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+
+{% block title %}Signal Heatmap - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-th text-warning"></i> Signal Heatmap</h2>
+                <div>
+                    <button class="btn btn-primary btn-sm" onclick="refreshHeatmap()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Controls -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Display Options</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Grid Size</label>
+                            <select class="form-select" id="gridSize">
+                                <option value="6">6 columns</option>
+                                <option value="8" selected>8 columns</option>
+                                <option value="10">10 columns</option>
+                                <option value="12">12 columns</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Min Score</label>
+                            <input type="range" class="form-range" id="minScoreHeatmap" min="0" max="5" step="0.1" value="0.5">
+                            <span id="minScoreHeatmapValue">0.5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Color Legend</h6>
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">Low</span>
+                        <div class="heatmap-legend flex-grow-1"></div>
+                        <span class="ms-2">High</span>
+                    </div>
+                    <small class="text-muted">Signal strength visualization</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Heatmap Grid -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div id="heatmapContainer">
+                        <div class="d-flex justify-content-center align-items-center" style="height: 400px;">
+                            <div class="spinner-border text-warning" style="width: 3rem; height: 3rem;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Symbol Details Modal -->
+    <div class="modal fade" id="symbolModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="symbolModalTitle">Symbol Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="symbolModalBody">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="openSymbolChart()">View Chart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.heatmap-grid {
+    display: grid;
+    gap: 8px;
+    padding: 20px 0;
+}
+
+.heatmap-item {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    padding: 8px;
+    text-align: center;
+    min-height: 80px;
+    position: relative;
+}
+
+.heatmap-item:hover {
+    transform: scale(1.05);
+    border-color: var(--accent-color);
+    z-index: 10;
+}
+
+.heatmap-item .symbol {
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.heatmap-item .score {
+    font-size: 0.8rem;
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.heatmap-item .price {
+    font-size: 0.7rem;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+.heatmap-legend {
+    height: 20px;
+    background: linear-gradient(to right, 
+        #2c2f3e 0%, 
+        #3a4f7a 20%,
+        #4a6fa5 40%, 
+        #5a8fd0 60%, 
+        #7bb3f0 80%, 
+        #f0b90b 100%);
+    border-radius: 10px;
+    border: 1px solid rgba(44, 47, 62, 0.5);
+}
+
+.grid-6 { grid-template-columns: repeat(6, 1fr); }
+.grid-8 { grid-template-columns: repeat(8, 1fr); }
+.grid-10 { grid-template-columns: repeat(10, 1fr); }
+.grid-12 { grid-template-columns: repeat(12, 1fr); }
+
+@media (max-width: 768px) {
+    .grid-6, .grid-8, .grid-10, .grid-12 { 
+        grid-template-columns: repeat(4, 1fr); 
+    }
+}
+
+@media (max-width: 576px) {
+    .grid-6, .grid-8, .grid-10, .grid-12 { 
+        grid-template-columns: repeat(3, 1fr); 
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let heatmapData = [];
+let selectedSymbol = '';
+
+async function loadHeatmapData() {
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/heatmap');
+        const data = await response.json();
+        
+        heatmapData = data.heatmap_data || [];
+        updateHeatmapDisplay();
+        
+    } catch (error) {
+        console.error('Error loading heatmap data:', error);
+        showHeatmapError('Failed to load heatmap data');
+    } finally {
+        hideLoading();
+    }
+}
+
+function updateHeatmapDisplay() {
+    const container = document.getElementById('heatmapContainer');
+    const gridSize = document.getElementById('gridSize').value;
+    const minScore = parseFloat(document.getElementById('minScoreHeatmap').value);
+    
+    // Filter data by minimum score
+    const filteredData = heatmapData.filter(item => item.score >= minScore);
+    
+    if (filteredData.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5>No signals match your criteria</h5>
+                <p class="text-muted">Try lowering the minimum score</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Create grid
+    const grid = document.createElement('div');
+    grid.className = `heatmap-grid grid-${gridSize}`;
+    
+    // Take top symbols that fit the view nicely
+    const maxItems = Math.min(filteredData.length, parseInt(gridSize) * 8);
+    const topItems = filteredData.slice(0, maxItems);
+    
+    topItems.forEach(item => {
+        const element = createHeatmapItem(item);
+        grid.appendChild(element);
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(grid);
+}
+
+function createHeatmapItem(item) {
+    const div = document.createElement('div');
+    div.className = 'heatmap-item';
+    div.onclick = () => showSymbolDetails(item.symbol);
+    
+    // Calculate color based on score
+    const color = getHeatmapColor(item.color_intensity);
+    div.style.background = color;
+    
+    // Determine text color based on background brightness
+    const textColor = item.color_intensity > 0.6 ? '#000' : '#fff';
+    div.style.color = textColor;
+    
+    div.innerHTML = `
+        <div class="symbol">${item.symbol.replace('/USDT', '')}</div>
+        <div class="score">${item.score.toFixed(1)}</div>
+        <div class="price">${formatPrice(item.price)}</div>
+        <div class="price ${getPriceChangeClass(item.change_24h)}" style="font-size: 0.65rem;">
+            ${formatPercentage(item.change_24h)}
+        </div>
+    `;
+    
+    return div;
+}
+
+function getHeatmapColor(intensity) {
+    // Create gradient from dark blue to bright yellow
+    const colors = [
+        { r: 44, g: 47, b: 62 },    // Dark (low intensity)
+        { r: 58, g: 79, b: 122 },   
+        { r: 74, g: 111, b: 165 },  
+        { r: 90, g: 143, b: 208 },  
+        { r: 123, g: 179, b: 240 }, 
+        { r: 240, g: 185, b: 11 }   // Bright yellow (high intensity)
+    ];
+    
+    const clampedIntensity = Math.max(0, Math.min(1, intensity));
+    const scaledIntensity = clampedIntensity * (colors.length - 1);
+    const index = Math.floor(scaledIntensity);
+    const fraction = scaledIntensity - index;
+    
+    if (index >= colors.length - 1) {
+        const color = colors[colors.length - 1];
+        return `rgb(${color.r}, ${color.g}, ${color.b})`;
+    }
+    
+    const color1 = colors[index];
+    const color2 = colors[index + 1];
+    
+    const r = Math.round(color1.r + (color2.r - color1.r) * fraction);
+    const g = Math.round(color1.g + (color2.g - color1.g) * fraction);
+    const b = Math.round(color1.b + (color2.b - color1.b) * fraction);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+async function showSymbolDetails(symbol) {
+    selectedSymbol = symbol;
+    
+    // Try to get detailed signal data
+    try {
+        const response = await fetch('/api/signals');
+        const data = await response.json();
+        const signalData = data.signals.find(s => s.symbol === symbol);
+        
+        document.getElementById('symbolModalTitle').textContent = `${symbol} Details`;
+        
+        const modalBody = document.getElementById('symbolModalBody');
+        
+        if (signalData) {
+            const indicators = signalData.indicators || {};
+            const signals = signalData.signals || [];
+            
+            modalBody.innerHTML = `
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Score:</strong> 
+                        <span class="badge bg-primary ${getScoreClass(signalData.score)}">
+                            ${signalData.score.toFixed(2)}
+                        </span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Signals:</strong> 
+                        <span class="badge bg-info">${signals.length}</span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Price:</strong> ${formatPrice(indicators.close || 0)}
+                    </div>
+                    <div class="col-6">
+                        <strong>24h Change:</strong> 
+                        <span class="${getPriceChangeClass(indicators.price_change_24h || 0)}">
+                            ${formatPercentage(indicators.price_change_24h || 0)}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>RSI:</strong> 
+                        <span class="badge ${getRSIClass(indicators.rsi || 50)}">
+                            ${(indicators.rsi || 50).toFixed(1)}
+                        </span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Volume:</strong> ${formatVolume(indicators.volume || 0)}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>Active Signals:</h6>
+                ${signals.length === 0 ? '<p class="text-muted">No active signals</p>' : 
+                  signals.map(s => `
+                    <div class="alert alert-info alert-sm">
+                        <strong>${s.rule_name}:</strong> ${s.message}
+                        <br><small class="text-muted">Strength: ${s.signal_strength.toFixed(2)}</small>
+                    </div>
+                  `).join('')
+                }
+            `;
+        } else {
+            // Fallback to heatmap data
+            const heatmapItem = heatmapData.find(item => item.symbol === symbol);
+            
+            if (heatmapItem) {
+                modalBody.innerHTML = `
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <strong>Score:</strong> 
+                            <span class="badge bg-primary">${heatmapItem.score.toFixed(2)}</span>
+                        </div>
+                        <div class="col-6">
+                            <strong>Price:</strong> ${formatPrice(heatmapItem.price)}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>24h Change:</strong> 
+                            <span class="${getPriceChangeClass(heatmapItem.change_24h)}">
+                                ${formatPercentage(heatmapItem.change_24h)}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        View detailed signals and charts for more information.
+                    </p>
+                `;
+            } else {
+                modalBody.innerHTML = '<p class="text-muted">No detailed data available</p>';
+            }
+        }
+        
+        new bootstrap.Modal(document.getElementById('symbolModal')).show();
+        
+    } catch (error) {
+        console.error('Error loading symbol details:', error);
+    }
+}
+
+function openSymbolChart() {
+    if (selectedSymbol) {
+        window.open(`/chart/${selectedSymbol}`, '_blank');
+    }
+}
+
+function refreshHeatmap() {
+    loadHeatmapData();
+}
+
+function showHeatmapError(message) {
+    const container = document.getElementById('heatmapContainer');
+    container.innerHTML = `
+        <div class="text-center py-5 text-danger">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <h5>Heatmap Loading Error</h5>
+            <p>${message}</p>
+            <button class="btn btn-primary" onclick="loadHeatmapData()">Retry</button>
+        </div>
+    `;
+}
+
+function getRSIClass(rsi) {
+    if (rsi < 30) return 'bg-success';
+    if (rsi > 70) return 'bg-danger';
+    return 'bg-secondary';
+}
+
+function formatVolume(volume) {
+    if (volume >= 1e9) return (volume / 1e9).toFixed(1) + 'B';
+    if (volume >= 1e6) return (volume / 1e6).toFixed(1) + 'M';
+    if (volume >= 1e3) return (volume / 1e3).toFixed(1) + 'K';
+    return volume.toFixed(0);
+}
+
+// Event listeners
+document.getElementById('gridSize').addEventListener('change', updateHeatmapDisplay);
+
+document.getElementById('minScoreHeatmap').addEventListener('input', function() {
+    document.getElementById('minScoreHeatmapValue').textContent = this.value;
+    updateHeatmapDisplay();
+});
+
+// Initialize page
+$(document).ready(function() {
+    loadHeatmapData();
+    
+    // Auto refresh every 10 minutes
+    setInterval(loadHeatmapData, 10 * 60 * 1000);
+});
+</script>
+{% endblock %}

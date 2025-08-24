@@ -1,527 +1,398 @@
-#!/usr/bin/env python
-"""Sofia Trading Platform CLI - Modular command-line interface."""
-
-import click
+#!/usr/bin/env python3
+"""
+Sofia V2 - Global Crypto Scanner CLI
+Command-line interface for managing the crypto scanner system
+"""
+import sys
+import os
 import asyncio
-from rich.console import Console
-from rich.table import Table
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich.panel import Panel
-from rich.syntax import Syntax
-from rich import print as rprint
+import argparse
 import json
-import pandas as pd
-from datetime import datetime
 from pathlib import Path
-import yfinance as yf
+from datetime import datetime
+import uvicorn
+from loguru import logger
 
-# Import Sofia modules
-from src.backtester.strategies.registry import StrategyRegistry
-from src.backtester.engine import BacktestEngine
-from src.optimizer.optimizer_queue import optimizer_queue, JobPriority
-from src.ml.price_predictor import PricePredictor
-from src.data_hub.providers.multi_source import MultiSourceDataProvider, DataSource
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-console = Console()
-
-
-@click.group()
-@click.version_option(version='2.0.0', prog_name='Sofia Trading Platform')
-def cli():
-    """Sofia Trading Platform - Professional Trading CLI"""
-    pass
+from src.data.pipeline import data_pipeline
+from src.scan.scanner import scanner
+from src.news.aggregator import news_aggregator
+from src.scheduler.run import crypto_scheduler
+from src.web.app import app
 
 
-# ==================== Strategy Commands ====================
+def setup_logging(verbose: bool = False):
+    """Setup logging configuration"""
+    level = "DEBUG" if verbose else "INFO"
+    logger.remove()
+    logger.add(sys.stdout, level=level, format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>")
 
-@cli.group()
-def strategy():
-    """Manage trading strategies"""
-    pass
 
-
-@strategy.command('list')
-@click.option('--category', '-c', help='Filter by category')
-def list_strategies(category):
-    """List all available strategies"""
-    registry = StrategyRegistry()
-    strategies = registry.list_strategies(category)
+def cmd_fetch_all(args):
+    """Fetch OHLCV data for all USDT pairs"""
+    print("🔄 Fetching OHLCV data from exchanges...")
     
-    table = Table(title="Available Trading Strategies", show_header=True)
-    table.add_column("Name", style="cyan")
-    table.add_column("Display Name", style="green")
-    table.add_column("Category", style="yellow")
-    table.add_column("Risk Level", style="magenta")
-    table.add_column("Parameters", style="blue")
+    timeframes = args.timeframes.split(',') if args.timeframes else ['1h', '1d']
     
-    for s in strategies:
-        params = f"{len(s.parameters)} params"
-        table.add_row(
-            s.name,
-            s.display_name,
-            s.category,
-            s.risk_level,
-            params
+    try:
+        results = data_pipeline.fetch_universe_data(
+            timeframes=timeframes,
+            days_back=args.days,
+            max_workers=args.max_workers
         )
-    
-    console.print(table)
-
-
-@strategy.command('info')
-@click.argument('name')
-def strategy_info(name):
-    """Show detailed information about a strategy"""
-    registry = StrategyRegistry()
-    metadata = registry.get_metadata(name)
-    
-    if not metadata:
-        console.print(f"[red]Strategy '{name}' not found[/red]")
-        return
-    
-    # Basic info panel
-    info_text = f"""
-[bold cyan]Name:[/bold cyan] {metadata.name}
-[bold cyan]Display Name:[/bold cyan] {metadata.display_name}
-[bold cyan]Description:[/bold cyan] {metadata.description}
-[bold cyan]Category:[/bold cyan] {metadata.category}
-[bold cyan]Author:[/bold cyan] {metadata.author}
-[bold cyan]Version:[/bold cyan] {metadata.version}
-[bold cyan]Risk Level:[/bold cyan] {metadata.risk_level}
-[bold cyan]Timeframes:[/bold cyan] {', '.join(metadata.timeframes)}
-[bold cyan]Tags:[/bold cyan] {', '.join(metadata.tags)}
-    """
-    console.print(Panel(info_text, title=f"Strategy: {metadata.display_name}"))
-    
-    # Parameters table
-    if metadata.parameters:
-        table = Table(title="Strategy Parameters", show_header=True)
-        table.add_column("Parameter", style="cyan")
-        table.add_column("Type", style="green")
-        table.add_column("Default", style="yellow")
-        table.add_column("Range", style="magenta")
-        table.add_column("Description", style="white")
         
-        for param in metadata.parameters:
-            range_str = ""
-            if param.min_value is not None and param.max_value is not None:
-                range_str = f"{param.min_value} - {param.max_value}"
+        print(f"✅ Data fetch completed:")
+        print(f"   📊 Symbols processed: {results['symbols_processed']}")
+        print(f"   ❌ Symbols failed: {results['symbols_failed']}")
+        print(f"   📈 Total records: {results['total_records']}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Data fetch failed: {e}")
+        return False
+
+
+def cmd_update_data(args):
+    """Update recent OHLCV data"""
+    print(f"🔄 Updating recent data (last {args.hours} hours)...")
+    
+    try:
+        results = data_pipeline.update_recent_data(hours_back=args.hours)
+        
+        print(f"✅ Data update completed:")
+        print(f"   📊 Symbols processed: {results['symbols_processed']}")
+        print(f"   ❌ Symbols failed: {results['symbols_failed']}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Data update failed: {e}")
+        return False
+
+
+def cmd_scan(args):
+    """Run signal scanner"""
+    print("🔍 Scanning for trading signals...")
+    
+    try:
+        results = scanner.run_scan(timeframe=args.timeframe, save_results=True)
+        
+        signal_count = len([r for r in results if r.get('score', 0) > 0])
+        top_score = max([r.get('score', 0) for r in results]) if results else 0
+        top_symbols = [r['symbol'] for r in results[:5] if r.get('score', 0) > 0]
+        
+        print(f"✅ Signal scan completed:")
+        print(f"   📊 Total symbols: {len(results)}")
+        print(f"   🚨 Symbols with signals: {signal_count}")
+        print(f"   🎯 Top score: {top_score:.2f}")
+        
+        if top_symbols:
+            print(f"   🏆 Top signals: {', '.join(top_symbols)}")
             
-            table.add_row(
-                param.display_name,
-                param.type.value,
-                str(param.default),
-                range_str,
-                param.description
-            )
+        return True
         
-        console.print(table)
+    except Exception as e:
+        print(f"❌ Signal scan failed: {e}")
+        return False
 
 
-# ==================== Backtest Commands ====================
-
-@cli.group()
-def backtest():
-    """Run and manage backtests"""
-    pass
-
-
-@backtest.command('run')
-@click.option('--strategy', '-s', required=True, help='Strategy name')
-@click.option('--symbol', '-sym', required=True, help='Trading symbol')
-@click.option('--period', '-p', default='1y', help='Data period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y)')
-@click.option('--initial-capital', '-c', default=100000, type=float, help='Initial capital')
-@click.option('--params', '-pr', help='Strategy parameters as JSON')
-def run_backtest(strategy, symbol, period, initial_capital, params):
-    """Run a backtest for a strategy"""
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        # Parse parameters
-        strategy_params = {}
-        if params:
-            try:
-                strategy_params = json.loads(params)
-            except json.JSONDecodeError:
-                console.print("[red]Invalid JSON parameters[/red]")
-                return
+async def cmd_news_async(args):
+    """Update news from all sources"""
+    print("📰 Updating news from CryptoPanic and GDELT...")
+    
+    try:
+        # Get top symbols for symbol-specific news
+        available_symbols = data_pipeline.get_available_symbols()
+        top_symbols = available_symbols[:args.symbol_limit]
         
-        # Get strategy
-        task = progress.add_task("Loading strategy...", total=None)
-        registry = StrategyRegistry()
-        strategy_class = registry.get_strategy(strategy)
-        
-        if not strategy_class:
-            console.print(f"[red]Strategy '{strategy}' not found[/red]")
-            return
-        
-        # Fetch data
-        progress.update(task, description="Fetching market data...")
-        ticker = yf.Ticker(symbol)
-        data = ticker.history(period=period)
-        
-        if data.empty:
-            console.print(f"[red]No data found for {symbol}[/red]")
-            return
-        
-        # Run backtest
-        progress.update(task, description="Running backtest...")
-        strategy_instance = strategy_class(**strategy_params)
-        engine = BacktestEngine(initial_capital=initial_capital)
-        results = engine.run(data, strategy_instance)
-        
-        progress.stop()
-    
-    # Display results
-    result_text = f"""
-[bold green]Backtest Results[/bold green]
-[bold]Symbol:[/bold] {symbol}
-[bold]Strategy:[/bold] {strategy}
-[bold]Period:[/bold] {period}
-[bold]Data Points:[/bold] {len(data)}
-
-[bold cyan]Performance Metrics:[/bold cyan]
-• Initial Capital: ${initial_capital:,.2f}
-• Final Value: ${results.get('final_value', 0):,.2f}
-• Total Return: {results.get('total_return', 0):.2%}
-• Sharpe Ratio: {results.get('sharpe', 0):.2f}
-• Max Drawdown: {results.get('max_drawdown', 0):.2%}
-• Win Rate: {results.get('win_rate', 0):.2%}
-• Total Trades: {results.get('total_trades', 0)}
-• Profit Factor: {results.get('profit_factor', 0):.2f}
-    """
-    console.print(Panel(result_text, title="Backtest Complete"))
-
-
-# ==================== Optimization Commands ====================
-
-@cli.group()
-def optimize():
-    """Strategy optimization with GA"""
-    pass
-
-
-@optimize.command('submit')
-@click.option('--strategy', '-s', required=True, help='Strategy name')
-@click.option('--symbol', '-sym', required=True, help='Trading symbol')
-@click.option('--target', '-t', default='sharpe', type=click.Choice(['sharpe', 'return', 'calmar']))
-@click.option('--generations', '-g', default=50, type=int, help='Number of generations')
-@click.option('--population', '-p', default=30, type=int, help='Population size')
-@click.option('--priority', default='normal', type=click.Choice(['low', 'normal', 'high', 'urgent']))
-def submit_optimization(strategy, symbol, target, generations, population, priority):
-    """Submit an optimization job"""
-    
-    # Get strategy metadata for parameter space
-    registry = StrategyRegistry()
-    metadata = registry.get_metadata(strategy)
-    
-    if not metadata:
-        console.print(f"[red]Strategy '{strategy}' not found[/red]")
-        return
-    
-    # Build parameter space from metadata
-    param_space = {}
-    for param in metadata.parameters:
-        if param.min_value is not None and param.max_value is not None:
-            param_space[param.name] = (param.min_value, param.max_value)
-    
-    if not param_space:
-        console.print("[red]Strategy has no optimizable parameters[/red]")
-        return
-    
-    # GA parameters
-    ga_params = {
-        'generations': generations,
-        'population_size': population
-    }
-    
-    # Map priority
-    priority_map = {
-        'low': JobPriority.LOW,
-        'normal': JobPriority.NORMAL,
-        'high': JobPriority.HIGH,
-        'urgent': JobPriority.URGENT
-    }
-    
-    # Submit job asynchronously
-    async def submit():
-        await optimizer_queue.start()
-        job_id = await optimizer_queue.submit_job(
-            strategy_name=strategy,
-            symbol=symbol,
-            param_space=param_space,
-            optimization_target=target,
-            ga_params=ga_params,
-            priority=priority_map[priority]
+        await news_aggregator.update_all_news(
+            symbols=top_symbols,
+            hours_back=args.hours
         )
-        return job_id
-    
-    with console.status("Submitting optimization job..."):
-        job_id = asyncio.run(submit())
-    
-    console.print(f"[green]✓ Optimization job submitted[/green]")
-    console.print(f"[cyan]Job ID:[/cyan] {job_id}")
-    console.print(f"[cyan]Strategy:[/cyan] {strategy}")
-    console.print(f"[cyan]Symbol:[/cyan] {symbol}")
-    console.print(f"[cyan]Target:[/cyan] {target}")
-    console.print(f"[cyan]Generations:[/cyan] {generations}")
-    console.print(f"[cyan]Population:[/cyan] {population}")
-
-
-@optimize.command('status')
-@click.argument('job_id', required=False)
-def optimization_status(job_id):
-    """Check optimization job status"""
-    if job_id:
-        # Get specific job
-        job = optimizer_queue.get_job(job_id)
-        if not job:
-            console.print(f"[red]Job '{job_id}' not found[/red]")
-            return
         
-        status_color = {
-            'queued': 'yellow',
-            'running': 'cyan',
-            'completed': 'green',
-            'failed': 'red',
-            'cancelled': 'orange'
-        }.get(job.status.value, 'white')
+        print(f"✅ News update completed:")
+        print(f"   📰 Global news updated")
+        print(f"   🔸 Symbol-specific news: {len(top_symbols)} symbols")
         
-        info_text = f"""
-[bold]Job ID:[/bold] {job.id}
-[bold]Status:[/bold] [{status_color}]{job.status.value}[/{status_color}]
-[bold]Strategy:[/bold] {job.strategy_name}
-[bold]Symbol:[/bold] {job.symbol}
-[bold]Target:[/bold] {job.optimization_target}
-[bold]Progress:[/bold] {job.progress:.1f}%
-[bold]Generation:[/bold] {job.current_generation}
-[bold]Best Fitness:[/bold] {job.best_fitness:.4f}
-[bold]Created:[/bold] {job.created_at}
-        """
+        return True
         
-        if job.best_params:
-            info_text += "\n[bold]Best Parameters:[/bold]"
-            for k, v in job.best_params.items():
-                info_text += f"\n  • {k}: {v}"
+    except Exception as e:
+        print(f"❌ News update failed: {e}")
+        return False
+
+
+def cmd_news(args):
+    """Update news (wrapper for async function)"""
+    return asyncio.run(cmd_news_async(args))
+
+
+def cmd_web(args):
+    """Start web server"""
+    print("🌐 Starting web server...")
+    print(f"   📍 URL: http://{args.host}:{args.port}")
+    print(f"   🔄 Auto-reload: {args.reload}")
+    
+    try:
+        uvicorn.run(
+            "src.web.app:app",
+            host=args.host,
+            port=args.port,
+            reload=args.reload,
+            log_level="info" if not args.verbose else "debug"
+        )
         
-        console.print(Panel(info_text, title="Optimization Job Status"))
-    else:
-        # List all jobs
-        jobs = optimizer_queue.list_jobs(limit=10)
+    except KeyboardInterrupt:
+        print("\n⏹️  Web server stopped")
+        return True
+    except Exception as e:
+        print(f"❌ Web server failed: {e}")
+        return False
+
+
+def cmd_scheduler(args):
+    """Start/stop scheduler"""
+    if args.action == "start":
+        print("⏰ Starting crypto scheduler...")
         
-        table = Table(title="Recent Optimization Jobs", show_header=True)
-        table.add_column("Job ID", style="cyan")
-        table.add_column("Status", style="green")
-        table.add_column("Strategy", style="yellow")
-        table.add_column("Symbol", style="magenta")
-        table.add_column("Progress", style="blue")
-        
-        for job in jobs:
-            status_color = {
-                'queued': 'yellow',
-                'running': 'cyan',
-                'completed': 'green',
-                'failed': 'red',
-                'cancelled': 'orange'
-            }.get(job.status.value, 'white')
-            
-            table.add_row(
-                job.id[:8],
-                f"[{status_color}]{job.status.value}[/{status_color}]",
-                job.strategy_name,
-                job.symbol,
-                f"{job.progress:.1f}%"
-            )
-        
-        console.print(table)
-
-
-# ==================== ML Commands ====================
-
-@cli.group()
-def ml():
-    """Machine Learning predictions"""
-    pass
-
-
-@ml.command('predict')
-@click.option('--symbol', '-s', required=True, help='Trading symbol')
-@click.option('--model', '-m', default='classification', type=click.Choice(['classification', 'regression']))
-@click.option('--algorithm', '-a', default='xgboost', type=click.Choice(['xgboost', 'random_forest']))
-@click.option('--horizon', '-h', default=1, type=int, help='Prediction horizon (periods ahead)')
-def ml_predict(symbol, model, algorithm, horizon):
-    """Predict price movement with ML"""
-    with console.status("Training model and making predictions..."):
-        # Fetch data
-        ticker = yf.Ticker(symbol)
-        data = ticker.history(period="3mo")
-        
-        if data.empty:
-            console.print(f"[red]No data found for {symbol}[/red]")
-            return
-        
-        # Train model
-        predictor = PricePredictor(model_type=model, algorithm=algorithm)
-        train_data = data.iloc[:-20]
-        metrics = predictor.train(train_data, prediction_horizon=horizon)
-        
-        # Make predictions
-        recent_data = data.iloc[-20:]
-        predictions = predictor.predict(recent_data, return_confidence=True)
-    
-    # Display results
-    console.print(Panel(f"[bold green]ML Predictions for {symbol}[/bold green]", expand=False))
-    
-    # Model metrics
-    if model == 'classification':
-        console.print(f"[cyan]Model Accuracy:[/cyan] {metrics.get('test_accuracy', 0):.2%}")
-        console.print(f"[cyan]Precision:[/cyan] {metrics.get('precision', 0):.2%}")
-        console.print(f"[cyan]Recall:[/cyan] {metrics.get('recall', 0):.2%}")
-    else:
-        console.print(f"[cyan]R² Score:[/cyan] {metrics.get('test_r2', 0):.2f}")
-        console.print(f"[cyan]MAE:[/cyan] {metrics.get('test_mae', 0):.2f}")
-    
-    # Latest predictions
-    console.print("\n[bold]Recent Predictions:[/bold]")
-    
-    table = Table(show_header=True)
-    table.add_column("Date", style="cyan")
-    
-    if model == 'classification':
-        table.add_column("Direction", style="green")
-        table.add_column("Confidence", style="yellow")
-        
-        for idx, row in predictions.tail(5).iterrows():
-            direction_color = "green" if row['direction'] == 'UP' else "red"
-            table.add_row(
-                str(idx.date()),
-                f"[{direction_color}]{row['direction']}[/{direction_color}]",
-                f"{row['confidence']:.2%}"
-            )
-    else:
-        table.add_column("Predicted Price", style="green")
-        table.add_column("Expected Return", style="yellow")
-        
-        for idx, row in predictions.tail(5).iterrows():
-            return_color = "green" if row['predicted_return'] > 0 else "red"
-            table.add_row(
-                str(idx.date()),
-                f"${row['predicted_price']:.2f}",
-                f"[{return_color}]{row['predicted_return']:.2%}[/{return_color}]"
-            )
-    
-    console.print(table)
-    
-    # Top features
-    if predictor.feature_importance is not None:
-        console.print("\n[bold]Top Features:[/bold]")
-        for feature, importance in predictor.get_top_features(5).items():
-            console.print(f"  • {feature}: {importance:.3f}")
-
-
-# ==================== Data Commands ====================
-
-@cli.group()
-def data():
-    """Data source management"""
-    pass
-
-
-@data.command('sources')
-def list_data_sources():
-    """Check status of all data sources"""
-    provider = MultiSourceDataProvider()
-    status = provider.get_source_status()
-    
-    table = Table(title="Data Source Status", show_header=True)
-    table.add_column("Source", style="cyan")
-    table.add_column("Status", style="green")
-    
-    for source, is_connected in status.items():
-        status_text = "[green]✓ Connected[/green]" if is_connected else "[red]✗ Disconnected[/red]"
-        table.add_row(source, status_text)
-    
-    console.print(table)
-
-
-@data.command('fetch')
-@click.option('--symbol', '-s', required=True, help='Trading symbol')
-@click.option('--timeframe', '-t', default='1d', help='Timeframe (1m, 5m, 1h, 1d, etc.)')
-@click.option('--limit', '-l', default=100, type=int, help='Number of candles')
-@click.option('--source', help='Specific data source to use')
-def fetch_data(symbol, timeframe, limit, source):
-    """Fetch market data with fallback"""
-    provider = MultiSourceDataProvider()
-    
-    sources = None
-    if source:
         try:
-            sources = [DataSource(source)]
-        except ValueError:
-            console.print(f"[red]Invalid source: {source}[/red]")
-            return
-    
-    with console.status(f"Fetching {symbol} data..."):
-        data = provider.fetch_ohlcv(
-            symbol=symbol,
-            timeframe=timeframe,
-            limit=limit,
-            sources=sources
-        )
-    
-    if data is None or data.empty:
-        console.print("[red]Failed to fetch data from all sources[/red]")
-        return
-    
-    # Display data info
-    info_text = f"""
-[bold]Symbol:[/bold] {symbol}
-[bold]Timeframe:[/bold] {timeframe}
-[bold]Data Points:[/bold] {len(data)}
-[bold]Start:[/bold] {data.index[0]}
-[bold]End:[/bold] {data.index[-1]}
-    """
-    console.print(Panel(info_text, title="Data Fetched Successfully"))
-    
-    # Show recent data
-    table = Table(title="Recent Data", show_header=True)
-    table.add_column("Date", style="cyan")
-    table.add_column("Open", style="green")
-    table.add_column("High", style="yellow")
-    table.add_column("Low", style="red")
-    table.add_column("Close", style="blue")
-    table.add_column("Volume", style="magenta")
-    
-    for idx, row in data.tail(5).iterrows():
-        table.add_row(
-            str(idx),
-            f"{row['open']:.2f}",
-            f"{row['high']:.2f}",
-            f"{row['low']:.2f}",
-            f"{row['close']:.2f}",
-            f"{row['volume']:.0f}"
-        )
-    
-    console.print(table)
+            crypto_scheduler.start()
+            print("✅ Scheduler started successfully")
+            
+            # Keep running
+            try:
+                while True:
+                    import time
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                print("\n⏹️  Stopping scheduler...")
+                crypto_scheduler.stop()
+                print("✅ Scheduler stopped")
+                
+        except Exception as e:
+            print(f"❌ Scheduler failed: {e}")
+            return False
+            
+    elif args.action == "status":
+        status = crypto_scheduler.get_job_status()
+        print(f"📊 Scheduler Status:")
+        print(f"   🔄 Running: {status['scheduler_running']}")
+        print(f"   📋 Total jobs: {status['total_jobs']}")
+        
+        for job_name, job_status in status['jobs'].items():
+            last_run = job_status['last_run']
+            last_status = job_status['last_status']
+            
+            status_emoji = "✅" if last_status == "success" else "❌" if last_status == "error" else "⏸️"
+            print(f"   {status_emoji} {job_name}: {last_status} ({last_run or 'Never'})")
+            
+    elif args.action == "run":
+        if not args.job:
+            print("❌ Job name required for 'run' action")
+            return False
+            
+        print(f"▶️  Running job: {args.job}")
+        result = crypto_scheduler.run_job_now(args.job)
+        
+        if result.get('status') == 'success':
+            print(f"✅ Job completed successfully")
+        else:
+            print(f"❌ Job failed: {result.get('error', 'Unknown error')}")
+            
+    return True
 
 
-# ==================== Main Server Command ====================
-
-@cli.command('server')
-@click.option('--port', '-p', default=8080, help='Port to run on')
-@click.option('--host', '-h', default='0.0.0.0', help='Host to bind to')
-def run_server(port, host):
-    """Start the API server"""
-    console.print(f"[green]Starting Sofia API Server on {host}:{port}[/green]")
+def cmd_status(args):
+    """Show system status"""
+    print("📊 Sofia V2 System Status")
+    print("=" * 50)
     
-    import uvicorn
-    from src.api.main import app
+    try:
+        # Data status
+        available_symbols = data_pipeline.get_available_symbols()
+        print(f"📈 Data:")
+        print(f"   Available symbols: {len(available_symbols)}")
+        
+        # Signals status
+        outputs_dir = Path("./outputs")
+        signals_file = outputs_dir / "signals.json"
+        
+        if signals_file.exists():
+            signals_age = (datetime.now() - 
+                          datetime.fromtimestamp(signals_file.stat().st_mtime)).total_seconds()
+            
+            with open(signals_file, 'r') as f:
+                signals = json.load(f)
+                
+            signal_count = len([s for s in signals if s.get('score', 0) > 0])
+            
+            print(f"🚨 Signals:")
+            print(f"   Active signals: {signal_count}")
+            print(f"   Last updated: {signals_age / 60:.1f} minutes ago")
+        else:
+            print(f"🚨 Signals: No signals file found")
+            
+        # News status
+        news_file = outputs_dir / "news" / "global.json"
+        
+        if news_file.exists():
+            news_age = (datetime.now() - 
+                       datetime.fromtimestamp(news_file.stat().st_mtime)).total_seconds()
+            
+            with open(news_file, 'r') as f:
+                news_data = json.load(f)
+                
+            news_count = news_data.get('total_articles', 0)
+            
+            print(f"📰 News:")
+            print(f"   Total articles: {news_count}")
+            print(f"   Last updated: {news_age / 60:.1f} minutes ago")
+        else:
+            print(f"📰 News: No news data found")
+            
+        # Scheduler status
+        scheduler_status = crypto_scheduler.get_job_status()
+        print(f"⏰ Scheduler:")
+        print(f"   Running: {scheduler_status['scheduler_running']}")
+        print(f"   Active jobs: {scheduler_status['total_jobs']}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Status check failed: {e}")
+        return False
+
+
+def cmd_list_symbols(args):
+    """List available symbols"""
+    try:
+        symbols = data_pipeline.get_available_symbols()
+        
+        print(f"📊 Available Symbols ({len(symbols)}):")
+        
+        if args.limit:
+            symbols = symbols[:args.limit]
+            
+        for i, symbol in enumerate(symbols, 1):
+            print(f"   {i:3d}. {symbol}")
+            
+        if args.limit and len(data_pipeline.get_available_symbols()) > args.limit:
+            remaining = len(data_pipeline.get_available_symbols()) - args.limit
+            print(f"   ... and {remaining} more")
+            
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to list symbols: {e}")
+        return False
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Sofia V2 - Global Crypto Scanner CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Fetch all data for last 30 days
+  python sofia_cli.py fetch-all --days 30
+  
+  # Update recent data and scan for signals
+  python sofia_cli.py update && python sofia_cli.py scan
+  
+  # Update news
+  python sofia_cli.py news
+  
+  # Start web server
+  python sofia_cli.py web
+  
+  # Start scheduler
+  python sofia_cli.py scheduler start
+  
+  # Show system status
+  python sofia_cli.py status
+        """
+    )
     
-    uvicorn.run(app, host=host, port=port)
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging")
+    
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # fetch-all command
+    fetch_parser = subparsers.add_parser("fetch-all", help="Fetch OHLCV data for all symbols")
+    fetch_parser.add_argument("--days", type=int, default=365, help="Days of data to fetch (default: 365)")
+    fetch_parser.add_argument("--timeframes", default="1h,1d", help="Timeframes to fetch (default: 1h,1d)")
+    fetch_parser.add_argument("--max-workers", type=int, default=5, help="Max worker threads (default: 5)")
+    
+    # update command
+    update_parser = subparsers.add_parser("update", help="Update recent OHLCV data")
+    update_parser.add_argument("--hours", type=int, default=24, help="Hours back to update (default: 24)")
+    
+    # scan command
+    scan_parser = subparsers.add_parser("scan", help="Run signal scanner")
+    scan_parser.add_argument("--timeframe", default="1h", choices=["1h", "1d"], help="Timeframe for scanning (default: 1h)")
+    
+    # news command
+    news_parser = subparsers.add_parser("news", help="Update news from all sources")
+    news_parser.add_argument("--hours", type=int, default=24, help="Hours back to fetch news (default: 24)")
+    news_parser.add_argument("--symbol-limit", type=int, default=10, help="Max symbols for specific news (default: 10)")
+    
+    # web command
+    web_parser = subparsers.add_parser("web", help="Start web server")
+    web_parser.add_argument("--host", default="127.0.0.1", help="Host to bind (default: 127.0.0.1)")
+    web_parser.add_argument("--port", type=int, default=8000, help="Port to bind (default: 8000)")
+    web_parser.add_argument("--reload", action="store_true", help="Enable auto-reload")
+    
+    # scheduler command
+    scheduler_parser = subparsers.add_parser("scheduler", help="Manage scheduler")
+    scheduler_parser.add_argument("action", choices=["start", "status", "run"], help="Scheduler action")
+    scheduler_parser.add_argument("--job", help="Job name for 'run' action")
+    
+    # status command
+    subparsers.add_parser("status", help="Show system status")
+    
+    # list-symbols command
+    symbols_parser = subparsers.add_parser("list-symbols", help="List available symbols")
+    symbols_parser.add_argument("--limit", type=int, help="Limit number of symbols shown")
+    
+    args = parser.parse_args()
+    
+    # Setup logging
+    setup_logging(args.verbose)
+    
+    if not args.command:
+        parser.print_help()
+        return 1
+    
+    # Command dispatch
+    commands = {
+        "fetch-all": cmd_fetch_all,
+        "update": cmd_update_data,
+        "scan": cmd_scan,
+        "news": cmd_news,
+        "web": cmd_web,
+        "scheduler": cmd_scheduler,
+        "status": cmd_status,
+        "list-symbols": cmd_list_symbols
+    }
+    
+    command_func = commands.get(args.command)
+    if not command_func:
+        print(f"❌ Unknown command: {args.command}")
+        return 1
+    
+    try:
+        success = command_func(args)
+        return 0 if success else 1
+        
+    except KeyboardInterrupt:
+        print("\n⏹️  Operation cancelled by user")
+        return 1
+    except Exception as e:
+        logger.error(f"Command failed: {e}")
+        return 1
 
 
-# ==================== Main Entry Point ====================
-
-if __name__ == '__main__':
-    cli()
+if __name__ == "__main__":
+    sys.exit(main())

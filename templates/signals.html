@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Crypto Signals - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-signal text-warning"></i> Crypto Signals</h2>
+                <div>
+                    <button class="btn btn-primary btn-sm" onclick="refreshSignals()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <span class="text-muted ms-3" id="lastUpdated">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Filters</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Minimum Score</label>
+                            <input type="range" class="form-range" id="minScore" min="0" max="10" step="0.5" value="0.5">
+                            <span id="minScoreValue">0.5</span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Search Symbol</label>
+                            <input type="text" class="form-control" id="symbolSearch" placeholder="BTC, ETH...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Statistics</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h4 text-success mb-0" id="totalSignals">-</div>
+                            <small class="text-muted">Total Signals</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 text-warning mb-0" id="avgScore">-</div>
+                            <small class="text-muted">Avg Score</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 text-info mb-0" id="topScore">-</div>
+                            <small class="text-muted">Top Score</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Signals Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Score</th>
+                                    <th>Price</th>
+                                    <th>24h Change</th>
+                                    <th>RSI</th>
+                                    <th>Volume</th>
+                                    <th>Signals</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="signalsTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div class="spinner-border text-warning" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <div class="mt-2">Loading signals...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Signal Details Modal -->
+    <div class="modal fade" id="signalModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="signalModalTitle">Signal Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="signalModalBody">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="openChart()">View Chart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentSignals = [];
+let selectedSymbol = '';
+
+// Load and display signals
+async function loadSignals() {
+    try {
+        showLoading();
+        const response = await fetch('/api/signals');
+        const data = await response.json();
+        
+        currentSignals = data.signals || [];
+        updateSignalsTable();
+        updateStatistics(data);
+        
+        if (data.last_updated) {
+            document.getElementById('lastUpdated').textContent = 
+                'Last updated: ' + timeAgo(data.last_updated);
+        }
+    } catch (error) {
+        console.error('Error loading signals:', error);
+        showError('Failed to load signals');
+    } finally {
+        hideLoading();
+    }
+}
+
+function updateSignalsTable() {
+    const tbody = document.getElementById('signalsTableBody');
+    const minScore = parseFloat(document.getElementById('minScore').value);
+    const searchTerm = document.getElementById('symbolSearch').value.toLowerCase();
+    
+    // Filter signals
+    let filteredSignals = currentSignals.filter(signal => {
+        const matchesScore = signal.score >= minScore;
+        const matchesSearch = !searchTerm || 
+            signal.symbol.toLowerCase().includes(searchTerm);
+        return matchesScore && matchesSearch;
+    });
+    
+    if (filteredSignals.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <i class="fas fa-search fa-2x text-muted mb-2"></i>
+                    <div>No signals match your criteria</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = filteredSignals.map(signal => {
+        const indicators = signal.indicators || {};
+        const price = indicators.close || 0;
+        const change24h = indicators.price_change_24h || 0;
+        const rsi = indicators.rsi || 50;
+        const volume = indicators.volume || 0;
+        const signalCount = signal.signals ? signal.signals.length : 0;
+        
+        return `
+            <tr class="cursor-pointer" onclick="showSignalDetails('${signal.symbol}')">
+                <td>
+                    <strong>${signal.symbol}</strong>
+                </td>
+                <td>
+                    <span class="badge bg-primary ${getScoreClass(signal.score)}">
+                        ${signal.score.toFixed(2)}
+                    </span>
+                </td>
+                <td>${formatPrice(price)}</td>
+                <td class="${getPriceChangeClass(change24h)}">
+                    ${formatPercentage(change24h)}
+                </td>
+                <td>
+                    <span class="badge ${getRSIClass(rsi)}">
+                        ${rsi.toFixed(1)}
+                    </span>
+                </td>
+                <td>${formatVolume(volume)}</td>
+                <td>
+                    <span class="badge bg-info">${signalCount}</span>
+                    ${getSignalSummary(signal.signals)}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            onclick="event.stopPropagation(); window.open('/chart/${signal.symbol}', '_blank')">
+                        <i class="fas fa-chart-line"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function updateStatistics(data) {
+    const signals = data.signals || [];
+    const totalSignals = signals.length;
+    const avgScore = totalSignals > 0 ? 
+        (signals.reduce((sum, s) => sum + s.score, 0) / totalSignals).toFixed(2) : '0';
+    const topScore = totalSignals > 0 ? 
+        Math.max(...signals.map(s => s.score)).toFixed(2) : '0';
+    
+    document.getElementById('totalSignals').textContent = totalSignals;
+    document.getElementById('avgScore').textContent = avgScore;
+    document.getElementById('topScore').textContent = topScore;
+}
+
+function showSignalDetails(symbol) {
+    const signal = currentSignals.find(s => s.symbol === symbol);
+    if (!signal) return;
+    
+    selectedSymbol = symbol;
+    
+    const indicators = signal.indicators || {};
+    const signals = signal.signals || [];
+    
+    document.getElementById('signalModalTitle').textContent = `${symbol} Signal Details`;
+    
+    const modalBody = document.getElementById('signalModalBody');
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Price Information</h6>
+                <table class="table table-sm table-dark">
+                    <tr><td>Current Price:</td><td>${formatPrice(indicators.close || 0)}</td></tr>
+                    <tr><td>24h Change:</td><td class="${getPriceChangeClass(indicators.price_change_24h || 0)}">${formatPercentage(indicators.price_change_24h || 0)}</td></tr>
+                    <tr><td>1h Change:</td><td class="${getPriceChangeClass(indicators.price_change_1h || 0)}">${formatPercentage(indicators.price_change_1h || 0)}</td></tr>
+                    <tr><td>Volume:</td><td>${formatVolume(indicators.volume || 0)}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Technical Indicators</h6>
+                <table class="table table-sm table-dark">
+                    <tr><td>RSI:</td><td><span class="badge ${getRSIClass(indicators.rsi || 50)}">${(indicators.rsi || 50).toFixed(1)}</span></td></tr>
+                    <tr><td>SMA 20:</td><td>${formatPrice(indicators.sma_20 || 0)}</td></tr>
+                    <tr><td>SMA 50:</td><td>${formatPrice(indicators.sma_50 || 0)}</td></tr>
+                    <tr><td>ATR:</td><td>${(indicators.atr || 0).toFixed(4)}</td></tr>
+                </table>
+            </div>
+        </div>
+        
+        <hr class="border-secondary">
+        
+        <h6>Active Signals (Score: ${signal.score.toFixed(2)})</h6>
+        ${signals.length === 0 ? '<p class="text-muted">No active signals</p>' : 
+          signals.map(s => `
+            <div class="alert alert-info">
+                <strong>${s.rule_name}:</strong> ${s.message}
+                <br><small class="text-muted">Strength: ${s.signal_strength.toFixed(2)}</small>
+            </div>
+          `).join('')
+        }
+    `;
+    
+    new bootstrap.Modal(document.getElementById('signalModal')).show();
+}
+
+function openChart() {
+    if (selectedSymbol) {
+        window.open(`/chart/${selectedSymbol}`, '_blank');
+    }
+}
+
+function refreshSignals() {
+    loadSignals();
+}
+
+function getRSIClass(rsi) {
+    if (rsi < 30) return 'bg-success';
+    if (rsi > 70) return 'bg-danger';
+    return 'bg-secondary';
+}
+
+function formatVolume(volume) {
+    if (volume >= 1e9) return (volume / 1e9).toFixed(1) + 'B';
+    if (volume >= 1e6) return (volume / 1e6).toFixed(1) + 'M';
+    if (volume >= 1e3) return (volume / 1e3).toFixed(1) + 'K';
+    return volume.toFixed(0);
+}
+
+function getSignalSummary(signals) {
+    if (!signals || signals.length === 0) return '';
+    const firstSignal = signals[0];
+    const moreCount = signals.length - 1;
+    return `<br><small class="text-muted">${firstSignal.rule_name}${moreCount > 0 ? ` +${moreCount} more` : ''}</small>`;
+}
+
+function showError(message) {
+    const tbody = document.getElementById('signalsTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="8" class="text-center py-4 text-danger">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <div>${message}</div>
+            </td>
+        </tr>
+    `;
+}
+
+// Event listeners
+document.getElementById('minScore').addEventListener('input', function() {
+    document.getElementById('minScoreValue').textContent = this.value;
+    updateSignalsTable();
+});
+
+document.getElementById('symbolSearch').addEventListener('input', function() {
+    updateSignalsTable();
+});
+
+// Initialize page
+$(document).ready(function() {
+    loadSignals();
+    
+    // Auto refresh every 5 minutes
+    setInterval(loadSignals, 5 * 60 * 1000);
+});
+
+// Add cursor pointer style
+const style = document.createElement('style');
+style.textContent = '.cursor-pointer { cursor: pointer; }';
+document.head.appendChild(style);
+</script>
+{% endblock %}

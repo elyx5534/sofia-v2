@@ -57,11 +57,13 @@ app = FastAPI(
 )
 
 # Static dosyalar ve template'ler
-static_path = Path(__file__).parent / "static"
-template_path = Path(__file__).parent / "templates"
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+static_path = os.path.join(current_dir, "static")
+template_path = os.path.join(current_dir, "templates")
 
-app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
-templates = Jinja2Templates(directory=str(template_path))
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+templates = Jinja2Templates(directory=template_path)
 
 
 # Mock data functions
@@ -294,6 +296,21 @@ async def get_multiple_quotes(symbols: str = "BTC-USD,ETH-USD,AAPL"):
         # Fallback
         symbol_list = [s.strip() for s in symbols.split(",")]
         return {symbol: get_live_btc_data() for symbol in symbol_list}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "ok", "timestamp": datetime.now().isoformat()}
+
+@app.get("/test", response_class=HTMLResponse)
+async def test_page(request: Request):
+    """Basit test sayfası"""
+    context = {
+        "request": request,
+        "page_title": "Test Page",
+        "btc_data": get_live_btc_data(),
+    }
+    return templates.TemplateResponse("test.html", context)
 
 
 # WebSocket connection manager
