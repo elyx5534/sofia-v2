@@ -12,7 +12,7 @@ import asyncio
 from pathlib import Path
 import random
 from datetime import datetime
-from live_data import live_data_service
+from sofia_ui.live_data import live_data_service
 
 # FastAPI uygulaması
 app = FastAPI(
@@ -30,21 +30,22 @@ templates = Jinja2Templates(directory=str(template_path))
 
 
 # Mock data functions
-def get_live_btc_data():
+async def get_live_btc_data():
     """BTC için canlı veri döndürür"""
     try:
-        return live_data_service.get_live_price("BTC-USD")
+        return await live_data_service.get_live_price("BTC/USDT")
     except Exception as e:
         print(f"Live data error: {e}")
         # Fallback to mock data
         return {
-            "symbol": "BTC-USD",
+            "symbol": "BTC/USDT",
             "name": "Bitcoin",
             "price": 67845.32,
             "change": 2.45,
             "change_percent": 3.74,
             "volume": "28.5B",
-            "market_cap": "1.34T",
+            "high_24h": 68500.0,
+            "low_24h": 67200.0,
             "last_updated": datetime.now().strftime("%H:%M:%S")
         }
 
@@ -122,10 +123,23 @@ def get_mock_strategies():
 @app.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
     """Ana sayfa"""
+    try:
+        btc_data = await get_live_btc_data()
+    except:
+        btc_data = {
+            "symbol": "BTC/USDT",
+            "name": "Bitcoin",
+            "price": 67845.32,
+            "change": 2.45,
+            "change_percent": 3.74,
+            "volume": "28.5B",
+            "last_updated": datetime.now().strftime("%H:%M:%S")
+        }
+    
     context = {
         "request": request,
         "page_title": "Sofia V2 - Trading Platform",
-        "btc_data": get_live_btc_data(),
+        "btc_data": btc_data,
         "featured_strategies": get_mock_strategies()[:2],
         "latest_news": get_mock_news()[:3]
     }
@@ -243,13 +257,13 @@ async def get_multiple_quotes(symbols: str = "BTC-USD,ETH-USD,AAPL"):
 async def get_crypto_prices():
     """Tüm desteklenen crypto coinlerin fiyatları"""
     try:
-        return live_data_service.get_crypto_prices()
+        return await live_data_service.get_all_crypto_prices()
     except Exception as e:
         # Fallback - sadece BTC ve ETH
         return {
-            "BTC-USD": get_live_btc_data(),
-            "ETH-USD": {
-                "symbol": "ETH-USD",
+            "BTC/USDT": get_live_btc_data(),
+            "ETH/USDT": {
+                "symbol": "ETH/USDT",
                 "name": "Ethereum",
                 "price": 3456.78,
                 "change": 45.67,
@@ -261,17 +275,74 @@ async def get_crypto_prices():
         }
 
 
-@app.get("/api/chart/{symbol}")
-async def get_chart_data(symbol: str, period: str = "1mo"):
-    """Grafik verisi API"""
+@app.get("/api/ohlcv/{symbol}")
+async def get_ohlcv_data(symbol: str, timeframe: str = "1h", limit: int = 100):
+    """OHLCV verisi API (TradingView uyumlu)"""
     try:
-        return live_data_service.get_chart_data(symbol.upper(), period)
+        return await live_data_service.get_ohlcv(symbol.upper(), timeframe, limit)
     except Exception as e:
         return {
-            "error": f"Chart data unavailable for {symbol}",
+            "error": f"OHLCV data unavailable for {symbol}",
             "symbol": symbol.upper(),
-            "period": period
+            "timeframe": timeframe
         }
+
+
+@app.get("/api/indicators/{symbol}")
+async def get_indicators(symbol: str, timeframe: str = "1h"):
+    """Trading indicators API (RSI, MACD, Bollinger Bands)"""
+    try:
+        return await live_data_service.get_indicators(symbol.upper(), timeframe)
+    except Exception as e:
+        return {
+            "error": f"Indicators unavailable for {symbol}",
+            "symbol": symbol.upper(),
+            "timeframe": timeframe
+        }
+
+
+@app.websocket("/ws/price/{symbol}")
+async def websocket_price_stream(websocket, symbol: str):
+    """WebSocket price stream"""
+    try:
+        # WebSocket connection'ı kaydet
+        if symbol not in live_data_service.websocket_connections:
+            live_data_service.websocket_connections[symbol] = []
+        live_data_service.websocket_connections[symbol].append(websocket)
+        
+        # Price stream'i başlat
+        await live_data_service.start_price_stream(symbol)
+        
+        try:
+            while True:
+                # Keep connection alive
+                await websocket.ping()
+                await asyncio.sleep(1)
+        except:
+            # Connection kapandığında temizle
+            if symbol in live_data_service.websocket_connections:
+                live_data_service.websocket_connections[symbol].remove(websocket)
+                
+    except Exception as e:
+        logger.error(f"WebSocket error for {symbol}: {e}")
+
+
+@app.post("/api/trade")
+async def save_trade(request: Request):
+    """Trade kaydet"""
+    try:
+        data = await request.json()
+        await live_data_service.save_trade(
+            symbol=data['symbol'],
+            side=data['side'],
+            amount=data['amount'],
+            price=data['price'],
+            strategy=data.get('strategy'),
+            pnl=data.get('pnl')
+        )
+        return {"status": "success", "message": "Trade saved"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @app.get("/api/market-summary")
