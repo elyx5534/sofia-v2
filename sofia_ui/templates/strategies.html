@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Page Header -->
+<section class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center justify-between">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">
+                    <i class="fas fa-layer-group mr-4"></i>
+                    Trading Strategies
+                </h1>
+                <p class="text-xl text-purple-100 max-w-3xl">
+                    Manage, optimize and deploy your AI-powered trading strategies
+                </p>
+            </div>
+            <div class="mt-6 md:mt-0">
+                <button @click="showCreateModal = true" class="bg-yellow-400 hover:bg-yellow-300 text-purple-900 px-6 py-3 rounded-lg font-bold text-lg transition-all">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create New Strategy
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Main Content -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="strategiesApp()">
+    
+    <!-- Filter & Search Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <!-- Search -->
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" x-model="searchTerm" placeholder="Search strategies..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-2">
+                <select x-model="statusFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="testing">Testing</option>
+                    <option value="disabled">Disabled</option>
+                </select>
+                
+                <select x-model="typeFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                    <option value="">All Types</option>
+                    <option value="momentum">Momentum</option>
+                    <option value="mean_reversion">Mean Reversion</option>
+                    <option value="trend_following">Trend Following</option>
+                    <option value="ai_generated">AI Generated</option>
+                </select>
+                
+                <button @click="sortBy = sortBy === 'performance' ? 'name' : 'performance'" 
+                        class="px-3 py-2 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-lg text-sm hover:bg-purple-200 dark:hover:bg-purple-800">
+                    <i class="fas fa-sort mr-1"></i>
+                    Sort by <span x-text="sortBy === 'performance' ? 'Performance' : 'Name'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Strategies Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <template x-for="strategy in filteredStrategies" :key="strategy.id">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300">
+                <!-- Strategy Header -->
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white" x-text="strategy.name"></h3>
+                        <div class="flex items-center space-x-2">
+                            <!-- Status Badge -->
+                            <span :class="{
+                                'bg-green-100 text-green-800': strategy.status === 'active',
+                                'bg-yellow-100 text-yellow-800': strategy.status === 'paused',
+                                'bg-blue-100 text-blue-800': strategy.status === 'testing',
+                                'bg-red-100 text-red-800': strategy.status === 'disabled'
+                            }" class="px-2 py-1 rounded-full text-xs font-semibold" x-text="strategy.status.toUpperCase()"></span>
+                            
+                            <!-- Toggle Switch -->
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" :checked="strategy.status === 'active'" @change="toggleStrategy(strategy)" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4 text-sm text-gray-500">
+                        <span><i class="fas fa-tag mr-1"></i><span x-text="strategy.type"></span></span>
+                        <span><i class="fas fa-calendar mr-1"></i><span x-text="strategy.created_date"></span></span>
+                    </div>
+                </div>
+                
+                <!-- Performance Metrics -->
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold" :class="strategy.total_return >= 0 ? 'text-green-600' : 'text-red-600'" x-text="strategy.total_return + '%'"></div>
+                            <div class="text-xs text-gray-500">Total Return</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white" x-text="strategy.sharpe_ratio"></div>
+                            <div class="text-xs text-gray-500">Sharpe Ratio</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-red-600" x-text="strategy.max_drawdown + '%'"></div>
+                            <div class="text-xs text-gray-500">Max Drawdown</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-gray-900 dark:text-white" x-text="strategy.win_rate + '%'"></div>
+                            <div class="text-xs text-gray-500">Win Rate</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Parameters Preview -->
+                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-3">Key Parameters</h4>
+                    <div class="space-y-2 text-sm">
+                        <template x-for="(value, key) in strategy.parameters" :key="key">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400" x-text="key.replace('_', ' ').toUpperCase()"></span>
+                                <span class="text-gray-900 dark:text-white font-mono" x-text="value"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="p-6">
+                    <div class="flex flex-col space-y-2">
+                        <button @click="editStrategy(strategy)" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition-all">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit Parameters
+                        </button>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <a :href="'/backtest?strategy=' + strategy.id" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition-all text-center text-sm">
+                                <i class="fas fa-chart-line mr-1"></i>
+                                Backtest
+                            </a>
+                            <button @click="cloneStrategy(strategy)" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-semibold transition-all text-sm">
+                                <i class="fas fa-copy mr-1"></i>
+                                Clone
+                            </button>
+                        </div>
+                        
+                        <button @click="deleteStrategy(strategy)" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold transition-all text-sm">
+                            <i class="fas fa-trash mr-2"></i>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+    
+    <!-- Empty State -->
+    <div x-show="filteredStrategies.length === 0" class="text-center py-16">
+        <i class="fas fa-layer-group text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Strategies Found</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">Create your first trading strategy or adjust your filters.</p>
+        <button @click="showCreateModal = true" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold">
+            <i class="fas fa-plus mr-2"></i>
+            Create Strategy
+        </button>
+    </div>
+    
+    <!-- Create/Edit Strategy Modal -->
+    <div x-show="showCreateModal || editingStrategy" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div @click.away="closeModal()" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        <span x-text="editingStrategy ? 'Edit Strategy' : 'Create New Strategy'"></span>
+                    </h2>
+                    <button @click="closeModal()" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form @submit.prevent="saveStrategy()" class="p-6 space-y-6">
+                <!-- Basic Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Strategy Name</label>
+                        <input type="text" x-model="modalData.name" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Strategy Type</label>
+                        <select x-model="modalData.type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                            <option value="momentum">Momentum</option>
+                            <option value="mean_reversion">Mean Reversion</option>
+                            <option value="trend_following">Trend Following</option>
+                            <option value="ai_generated">AI Generated</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                    <textarea x-model="modalData.description" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"></textarea>
+                </div>
+                
+                <!-- Parameters -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Strategy Parameters</h3>
+                    <div class="space-y-4">
+                        <template x-for="(param, index) in modalData.parameters" :key="index">
+                            <div class="flex items-center space-x-4">
+                                <input type="text" x-model="param.name" placeholder="Parameter Name" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                <input type="number" x-model="param.value" placeholder="Value" class="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                                <button type="button" @click="removeParameter(index)" class="text-red-600 hover:text-red-700">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </template>
+                        
+                        <button type="button" @click="addParameter()" class="text-purple-600 hover:text-purple-700 font-semibold">
+                            <i class="fas fa-plus mr-1"></i>
+                            Add Parameter
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" @click="closeModal()" class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold">
+                        <span x-text="editingStrategy ? 'Update Strategy' : 'Create Strategy'"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function strategiesApp() {
+    return {
+        showCreateModal: false,
+        editingStrategy: null,
+        searchTerm: '',
+        statusFilter: '',
+        typeFilter: '',
+        sortBy: 'name',
+        modalData: {
+            name: '',
+            type: 'momentum',
+            description: '',
+            parameters: []
+        },
+        strategies: [
+            {
+                id: 1,
+                name: 'SMA Crossover Pro',
+                type: 'trend_following',
+                status: 'active',
+                created_date: '2024-01-15',
+                total_return: 45.6,
+                sharpe_ratio: 1.23,
+                max_drawdown: -12.4,
+                win_rate: 68.5,
+                parameters: {
+                    fast_sma: 20,
+                    slow_sma: 50,
+                    stop_loss: 5
+                }
+            },
+            {
+                id: 2,
+                name: 'RSI Mean Reversion',
+                type: 'mean_reversion',
+                status: 'testing',
+                created_date: '2024-01-10',
+                total_return: 32.1,
+                sharpe_ratio: 0.98,
+                max_drawdown: -18.7,
+                win_rate: 61.2,
+                parameters: {
+                    rsi_period: 14,
+                    oversold: 30,
+                    overbought: 70
+                }
+            },
+            {
+                id: 3,
+                name: 'AI Momentum Hunter',
+                type: 'ai_generated',
+                status: 'paused',
+                created_date: '2024-01-05',
+                total_return: 28.9,
+                sharpe_ratio: 0.87,
+                max_drawdown: -15.2,
+                win_rate: 58.7,
+                parameters: {
+                    ml_model: 'xgboost',
+                    lookback: 30,
+                    threshold: 0.75
+                }
+            },
+            {
+                id: 4,
+                name: 'Bollinger Bands Squeeze',
+                type: 'momentum',
+                status: 'active',
+                created_date: '2023-12-28',
+                total_return: 51.3,
+                sharpe_ratio: 1.45,
+                max_drawdown: -9.8,
+                win_rate: 72.1,
+                parameters: {
+                    bb_period: 20,
+                    bb_std: 2,
+                    squeeze_period: 10
+                }
+            },
+            {
+                id: 5,
+                name: 'MACD Divergence',
+                type: 'momentum',
+                status: 'disabled',
+                created_date: '2023-12-20',
+                total_return: -8.2,
+                sharpe_ratio: -0.34,
+                max_drawdown: -22.1,
+                win_rate: 45.3,
+                parameters: {
+                    fast_ema: 12,
+                    slow_ema: 26,
+                    signal_ema: 9
+                }
+            }
+        ],
+        
+        get filteredStrategies() {
+            let filtered = this.strategies;
+            
+            // Search filter
+            if (this.searchTerm) {
+                filtered = filtered.filter(s => 
+                    s.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+                    s.type.toLowerCase().includes(this.searchTerm.toLowerCase())
+                );
+            }
+            
+            // Status filter
+            if (this.statusFilter) {
+                filtered = filtered.filter(s => s.status === this.statusFilter);
+            }
+            
+            // Type filter
+            if (this.typeFilter) {
+                filtered = filtered.filter(s => s.type === this.typeFilter);
+            }
+            
+            // Sort
+            filtered.sort((a, b) => {
+                if (this.sortBy === 'performance') {
+                    return b.total_return - a.total_return;
+                } else {
+                    return a.name.localeCompare(b.name);
+                }
+            });
+            
+            return filtered;
+        },
+        
+        toggleStrategy(strategy) {
+            strategy.status = strategy.status === 'active' ? 'paused' : 'active';
+            this.showToast(`Strategy ${strategy.name} ${strategy.status === 'active' ? 'activated' : 'paused'}`);
+        },
+        
+        editStrategy(strategy) {
+            this.editingStrategy = strategy;
+            this.modalData = {
+                name: strategy.name,
+                type: strategy.type,
+                description: strategy.description || '',
+                parameters: Object.entries(strategy.parameters).map(([name, value]) => ({name, value}))
+            };
+            this.showCreateModal = true;
+        },
+        
+        cloneStrategy(strategy) {
+            const newStrategy = {
+                ...strategy,
+                id: this.strategies.length + 1,
+                name: strategy.name + ' (Copy)',
+                status: 'testing',
+                created_date: new Date().toISOString().split('T')[0]
+            };
+            this.strategies.push(newStrategy);
+            this.showToast(`Strategy ${newStrategy.name} cloned successfully`);
+        },
+        
+        deleteStrategy(strategy) {
+            if (confirm(`Are you sure you want to delete "${strategy.name}"?`)) {
+                const index = this.strategies.findIndex(s => s.id === strategy.id);
+                if (index > -1) {
+                    this.strategies.splice(index, 1);
+                    this.showToast(`Strategy ${strategy.name} deleted`);
+                }
+            }
+        },
+        
+        closeModal() {
+            this.showCreateModal = false;
+            this.editingStrategy = null;
+            this.modalData = {
+                name: '',
+                type: 'momentum',
+                description: '',
+                parameters: []
+            };
+        },
+        
+        addParameter() {
+            this.modalData.parameters.push({ name: '', value: '' });
+        },
+        
+        removeParameter(index) {
+            this.modalData.parameters.splice(index, 1);
+        },
+        
+        saveStrategy() {
+            const parameters = {};
+            this.modalData.parameters.forEach(p => {
+                if (p.name && p.value) {
+                    parameters[p.name] = parseFloat(p.value) || p.value;
+                }
+            });
+            
+            if (this.editingStrategy) {
+                // Update existing strategy
+                Object.assign(this.editingStrategy, {
+                    name: this.modalData.name,
+                    type: this.modalData.type,
+                    description: this.modalData.description,
+                    parameters: parameters
+                });
+                this.showToast(`Strategy ${this.modalData.name} updated successfully`);
+            } else {
+                // Create new strategy
+                const newStrategy = {
+                    id: this.strategies.length + 1,
+                    name: this.modalData.name,
+                    type: this.modalData.type,
+                    status: 'testing',
+                    created_date: new Date().toISOString().split('T')[0],
+                    total_return: 0,
+                    sharpe_ratio: 0,
+                    max_drawdown: 0,
+                    win_rate: 0,
+                    parameters: parameters,
+                    description: this.modalData.description
+                };
+                this.strategies.push(newStrategy);
+                this.showToast(`Strategy ${this.modalData.name} created successfully`);
+            }
+            
+            this.closeModal();
+        },
+        
+        showToast(message) {
+            // Simple toast implementation
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }
+    }
+}
+</script>
+{% endblock %}
