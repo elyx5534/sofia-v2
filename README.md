@@ -46,6 +46,64 @@ Sofia V2 is an enterprise-grade algorithmic trading platform that combines:
 - **Comprehensive CLI**: Full command-line interface for all operations
 - **REST API**: Complete API for integration with external tools
 
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.9+ 
+- Node.js 16+ (for web UI)
+- Git
+
+### Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/elyx5534/sofia-v2.git
+cd sofia-v2
+
+# 2. Create virtual environment (Windows)
+py -m venv .venv
+.venv\Scripts\activate
+
+# For Mac/Linux:
+# python -m venv .venv
+# source .venv/bin/activate
+
+# 3. Install Python dependencies
+python -m pip install -r requirements.txt
+
+# 4. Install frontend dependencies
+cd sofia_ui
+npm install
+cd ..
+```
+
+### Running the Application
+
+#### Option 1: Use the startup script (Recommended)
+```bash
+# Windows
+.\start.bat
+
+# Mac/Linux
+./start.sh
+```
+
+#### Option 2: Manual start
+```bash
+# Terminal 1: Start the backend API
+cd sofia_ui
+python -m uvicorn server:app --reload --port 8000
+
+# Terminal 2: Start the frontend
+cd sofia_ui
+npm run dev
+```
+
+### Access the Application
+- **Web UI**: http://localhost:3000
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
 ## 📋 Requirements
 
 - **Python 3.11+**
