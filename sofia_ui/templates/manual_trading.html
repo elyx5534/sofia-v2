@@ -1,0 +1,513 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-20"> <!-- Add top padding for fixed navbar -->
+    <!-- Page Header -->
+    <div class="px-6 py-6 border-b border-gray-800/50 bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-3xl font-bold text-white flex items-center">
+                    <i class="fas fa-hand-paper mr-3 text-orange-400"></i>
+                    Manuel Al/Sat İşlemleri
+                    <span class="ml-3 text-sm bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full">
+                        Manual Trading
+                    </span>
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm">
+                        <span class="text-gray-400">Portfolio:</span>
+                        <span class="text-white font-semibold ml-2">$100,000</span>
+                        <span class="text-green-400 ml-2">Paper Trading</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4 text-center">
+                    <div class="text-2xl font-bold text-white">{{ top_coins|length }}</div>
+                    <div class="text-sm text-gray-400">En Aktif Coinler</div>
+                </div>
+                <div class="bg-green-900/30 backdrop-blur-xl rounded-xl border border-green-500/30 p-4 text-center">
+                    <div class="text-2xl font-bold text-green-400">
+                        ${{ "%.1f"|format(total_volume/1000000000) }}B
+                    </div>
+                    <div class="text-sm text-green-300">24h Volume</div>
+                </div>
+                <div class="bg-blue-900/30 backdrop-blur-xl rounded-xl border border-blue-500/30 p-4 text-center">
+                    <div class="text-2xl font-bold text-blue-400">
+                        {% if avg_change >= 0 %}+{% endif %}{{ "%.1f"|format(avg_change) }}%
+                    </div>
+                    <div class="text-sm text-blue-300">Ortalama Değişim</div>
+                </div>
+                <div class="bg-purple-900/30 backdrop-blur-xl rounded-xl border border-purple-500/30 p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-400">Canlı</div>
+                    <div class="text-sm text-purple-300">Gerçek Veriler</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Trading Interface -->
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <!-- Trading Form -->
+            <div class="xl:col-span-1">
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6 sticky top-6">
+                    <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+                        <i class="fas fa-exchange-alt mr-3 text-green-400"></i>
+                        İşlem Paneli
+                    </h2>
+                    
+                    <!-- Buy/Sell Tabs -->
+                    <div class="flex mb-6">
+                        <button onclick="setTradeType('buy')" id="buyTab" 
+                                class="flex-1 py-3 bg-green-600 text-white rounded-l-lg font-medium transition-all">
+                            <i class="fas fa-arrow-up mr-2"></i>Alış
+                        </button>
+                        <button onclick="setTradeType('sell')" id="sellTab"
+                                class="flex-1 py-3 bg-gray-700 text-gray-300 rounded-r-lg font-medium transition-all">
+                            <i class="fas fa-arrow-down mr-2"></i>Satış
+                        </button>
+                    </div>
+                    
+                    <!-- Coin Selection -->
+                    <div class="mb-4">
+                        <label class="text-sm text-gray-400 mb-2 block">Kripto Para Seçin</label>
+                        <select id="coinSelect" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
+                            <option value="">Coin seçiniz...</option>
+                            {% for coin in top_coins %}
+                            <option value="{{ coin.id }}" data-price="{{ coin.current_price }}" data-symbol="{{ coin.symbol }}">
+                                {{ coin.name }} ({{ coin.symbol.upper() }}) - ${{ "%.4f"|format(coin.current_price) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Amount -->
+                    <div class="mb-4">
+                        <label class="text-sm text-gray-400 mb-2 block">Miktar</label>
+                        <div class="relative">
+                            <input type="number" id="amountInput" placeholder="0.00" 
+                                   class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
+                            <span id="amountCurrency" class="absolute right-3 top-3 text-gray-400">USD</span>
+                        </div>
+                        <div class="mt-2 flex space-x-2">
+                            <button onclick="setAmount(100)" class="text-xs px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600">$100</button>
+                            <button onclick="setAmount(500)" class="text-xs px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600">$500</button>
+                            <button onclick="setAmount(1000)" class="text-xs px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600">$1,000</button>
+                            <button onclick="setAmount(5000)" class="text-xs px-3 py-1 bg-gray-700 text-gray-300 rounded hover:bg-gray-600">$5,000</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Type -->
+                    <div class="mb-4">
+                        <label class="text-sm text-gray-400 mb-2 block">Emir Tipi</label>
+                        <select id="orderType" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
+                            <option value="market">Market (Anında)</option>
+                            <option value="limit">Limit (Belirli Fiyat)</option>
+                            <option value="stop">Stop Loss</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Limit Price (hidden by default) -->
+                    <div id="limitPriceDiv" class="mb-4 hidden">
+                        <label class="text-sm text-gray-400 mb-2 block">Limit Fiyatı</label>
+                        <input type="number" id="limitPrice" placeholder="0.00" 
+                               class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
+                    </div>
+                    
+                    <!-- Order Summary -->
+                    <div id="orderSummary" class="mb-6 p-4 bg-slate-800/50 rounded-lg hidden">
+                        <h3 class="text-sm font-medium text-white mb-2">İşlem Özeti</h3>
+                        <div class="space-y-1 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Coin:</span>
+                                <span class="text-white" id="summarySymbol">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Miktar:</span>
+                                <span class="text-white" id="summaryAmount">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Fiyat:</span>
+                                <span class="text-white" id="summaryPrice">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Toplam:</span>
+                                <span class="text-white font-bold" id="summaryTotal">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Execute Button -->
+                    <button id="executeBtn" onclick="executeManualTrade()" 
+                            class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed" 
+                            disabled>
+                        <i class="fas fa-rocket mr-2"></i>
+                        İşlemi Gerçekleştir
+                    </button>
+                    
+                    <div class="mt-3 text-xs text-center text-gray-500">
+                        ⚠️ Bu paper trading modudur. Gerçek para kullanılmaz.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Coin List -->
+            <div class="xl:col-span-2">
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h2 class="text-xl font-bold text-white mb-6">En Aktif Coinler</h2>
+                    
+                    <div class="space-y-3">
+                        {% for coin in top_coins %}
+                        <div class="trading-coin-item p-4 bg-slate-800/50 border border-slate-700 rounded-lg hover:border-blue-500/50 transition-all cursor-pointer"
+                             onclick="selectCoin('{{ coin.id }}', '{{ coin.symbol }}', {{ coin.current_price }}, '{{ coin.name }}')">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                                        {% if coin.image %}
+                                            <img src="{{ coin.image }}" alt="{{ coin.name }}" class="w-8 h-8 rounded-full">
+                                        {% else %}
+                                            <span class="text-white font-bold text-sm">{{ coin.symbol[:2].upper() }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="text-white font-semibold">{{ coin.name }}</div>
+                                        <div class="text-sm text-gray-400">{{ coin.symbol.upper() }} • #{{ coin.market_cap_rank }}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-white">
+                                        {% if coin.current_price > 1 %}
+                                            ${{ "%.2f"|format(coin.current_price) }}
+                                        {% elif coin.current_price > 0.01 %}
+                                            ${{ "%.4f"|format(coin.current_price) }}
+                                        {% else %}
+                                            ${{ "%.8f"|format(coin.current_price) }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-sm {% if coin.price_change_percentage_24h >= 0 %}text-green-400{% else %}text-red-400{% endif %}">
+                                        {% if coin.price_change_percentage_24h >= 0 %}+{% endif %}{{ "%.2f"|format(coin.price_change_percentage_24h) }}%
+                                    </div>
+                                </div>
+                                
+                                <div class="flex space-x-2">
+                                    <button onclick="event.stopPropagation(); quickTrade('{{ coin.id }}', 'buy', 100)" 
+                                            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-all">
+                                        <i class="fas fa-plus mr-1"></i>Al
+                                    </button>
+                                    <button onclick="event.stopPropagation(); quickTrade('{{ coin.id }}', 'sell', 100)" 
+                                            class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-all">
+                                        <i class="fas fa-minus mr-1"></i>Sat
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Volume and Market Cap -->
+                            <div class="mt-3 pt-3 border-t border-gray-700 grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <span class="text-gray-400">24h Volume:</span>
+                                    <span class="text-white ml-2">
+                                        {% if coin.total_volume > 1000000000 %}
+                                            ${{ "%.1f"|format(coin.total_volume/1000000000) }}B
+                                        {% else %}
+                                            ${{ "%.1f"|format(coin.total_volume/1000000) }}M
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">Market Cap:</span>
+                                    <span class="text-white ml-2">
+                                        {% if coin.market_cap > 1000000000000 %}
+                                            ${{ "%.1f"|format(coin.market_cap/1000000000000) }}T
+                                        {% elif coin.market_cap > 1000000000 %}
+                                            ${{ "%.1f"|format(coin.market_cap/1000000000) }}B
+                                        {% else %}
+                                            ${{ "%.1f"|format(coin.market_cap/1000000) }}M
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Trades -->
+        <div class="mt-6">
+            <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                <h2 class="text-xl font-bold text-white mb-4">Son İşlemler</h2>
+                <div id="recentTrades" class="space-y-2">
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-clipboard-list text-3xl mb-2"></i>
+                        <div>Henüz işlem yapmadınız</div>
+                        <div class="text-sm">İlk işleminizi yapmak için yukarıdaki coinlerden birini seçin</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTradeType = 'buy';
+let selectedCoin = null;
+let tradeHistory = [];
+
+function setTradeType(type) {
+    currentTradeType = type;
+    
+    const buyTab = document.getElementById('buyTab');
+    const sellTab = document.getElementById('sellTab');
+    
+    if (type === 'buy') {
+        buyTab.className = 'flex-1 py-3 bg-green-600 text-white rounded-l-lg font-medium transition-all';
+        sellTab.className = 'flex-1 py-3 bg-gray-700 text-gray-300 rounded-r-lg font-medium transition-all';
+    } else {
+        buyTab.className = 'flex-1 py-3 bg-gray-700 text-gray-300 rounded-l-lg font-medium transition-all';
+        sellTab.className = 'flex-1 py-3 bg-red-600 text-white rounded-r-lg font-medium transition-all';
+    }
+    
+    updateExecuteButton();
+}
+
+function selectCoin(coinId, symbol, price, name) {
+    selectedCoin = { id: coinId, symbol: symbol, price: price, name: name };
+    
+    const coinSelect = document.getElementById('coinSelect');
+    coinSelect.value = coinId;
+    
+    // Highlight selected coin
+    document.querySelectorAll('.trading-coin-item').forEach(item => {
+        item.classList.remove('border-blue-500');
+        item.classList.add('border-slate-700');
+    });
+    
+    event.target.closest('.trading-coin-item').classList.remove('border-slate-700');
+    event.target.closest('.trading-coin-item').classList.add('border-blue-500');
+    
+    updateOrderSummary();
+}
+
+function setAmount(amount) {
+    document.getElementById('amountInput').value = amount;
+    updateOrderSummary();
+}
+
+function updateOrderSummary() {
+    const amountInput = document.getElementById('amountInput');
+    const orderSummary = document.getElementById('orderSummary');
+    const executeBtn = document.getElementById('executeBtn');
+    
+    if (selectedCoin && amountInput.value) {
+        const amount = parseFloat(amountInput.value);
+        const coinAmount = amount / selectedCoin.price;
+        
+        document.getElementById('summarySymbol').textContent = selectedCoin.symbol.toUpperCase();
+        document.getElementById('summaryAmount').textContent = coinAmount.toFixed(6) + ' ' + selectedCoin.symbol.toUpperCase();
+        document.getElementById('summaryPrice').textContent = '$' + selectedCoin.price.toFixed(4);
+        document.getElementById('summaryTotal').textContent = '$' + amount.toFixed(2);
+        
+        orderSummary.classList.remove('hidden');
+        executeBtn.disabled = false;
+    } else {
+        orderSummary.classList.add('hidden');
+        executeBtn.disabled = true;
+    }
+}
+
+function updateExecuteButton() {
+    const executeBtn = document.getElementById('executeBtn');
+    if (currentTradeType === 'buy') {
+        executeBtn.className = 'w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed';
+        executeBtn.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>Alış İşlemi Yap';
+    } else {
+        executeBtn.className = 'w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed';
+        executeBtn.innerHTML = '<i class="fas fa-hand-holding-usd mr-2"></i>Satış İşlemi Yap';
+    }
+}
+
+async function executeManualTrade() {
+    if (!selectedCoin) {
+        alert('Lütfen bir coin seçin');
+        return;
+    }
+    
+    const amount = parseFloat(document.getElementById('amountInput').value);
+    if (!amount || amount <= 0) {
+        alert('Lütfen geçerli bir miktar girin');
+        return;
+    }
+    
+    // Disable button during execution
+    const executeBtn = document.getElementById('executeBtn');
+    executeBtn.disabled = true;
+    executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>İşlem yapılıyor...';
+    
+    try {
+        // Call real trading API
+        const response = await fetch('/api/execute-trade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                coin_id: selectedCoin.id,
+                action: currentTradeType,
+                amount: amount
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Add to local history
+            const trade = {
+                id: Date.now(),
+                coin: selectedCoin,
+                type: currentTradeType,
+                amount: amount,
+                coinAmount: amount / selectedCoin.price,
+                price: selectedCoin.price,
+                timestamp: new Date().toLocaleString('tr-TR'),
+                status: 'Tamamlandı (Gerçek)',
+                real: true
+            };
+            
+            tradeHistory.unshift(trade);
+            updateRecentTrades();
+            
+            // Success notification
+            showNotification(result.message, 'success');
+            
+            // Reset form
+            document.getElementById('amountInput').value = '';
+            updateOrderSummary();
+        } else {
+            showNotification('Hata: ' + result.error, 'error');
+        }
+        
+    } catch (error) {
+        showNotification('İşlem hatası: ' + error.message, 'error');
+    }
+    
+    // Re-enable button
+    executeBtn.disabled = false;
+    updateExecuteButton();
+}
+
+function quickTrade(coinId, type, amount) {
+    const coin = {{ top_coins|tojson|safe }}.find(c => c.id === coinId);
+    if (!coin) return;
+    
+    const trade = {
+        id: Date.now(),
+        coin: coin,
+        type: type,
+        amount: amount,
+        coinAmount: amount / coin.current_price,
+        price: coin.current_price,
+        timestamp: new Date().toLocaleString('tr-TR'),
+        status: 'Tamamlandı'
+    };
+    
+    tradeHistory.unshift(trade);
+    updateRecentTrades();
+    
+    showNotification(
+        `Hızlı ${type === 'buy' ? 'alış' : 'satış'}: $${amount} ${coin.symbol.toUpperCase()}`,
+        'success'
+    );
+}
+
+function updateRecentTrades() {
+    const container = document.getElementById('recentTrades');
+    
+    if (tradeHistory.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-400">
+                <i class="fas fa-clipboard-list text-3xl mb-2"></i>
+                <div>Henüz işlem yapmadınız</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = tradeHistory.slice(0, 5).map(trade => `
+        <div class="flex items-center justify-between p-3 bg-slate-800/30 rounded-lg">
+            <div class="flex items-center space-x-3">
+                <div class="w-2 h-2 rounded-full ${trade.type === 'buy' ? 'bg-green-400' : 'bg-red-400'}"></div>
+                <div>
+                    <div class="text-white font-medium">
+                        ${trade.type === 'buy' ? 'Alış' : 'Satış'}: ${trade.coinAmount.toFixed(6)} ${trade.coin.symbol.toUpperCase()}
+                    </div>
+                    <div class="text-xs text-gray-400">${trade.timestamp}</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-white font-medium">$${trade.amount.toFixed(2)}</div>
+                <div class="text-xs text-gray-400">@$${trade.price.toFixed(4)}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all transform translate-x-full opacity-0 ${
+        type === 'success' ? 'bg-green-600' : 'bg-red-600'
+    } text-white`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-${type === 'success' ? 'check' : 'exclamation'}-circle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full', 'opacity-0');
+    }, 100);
+    
+    setTimeout(() => {
+        notification.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    const coinSelect = document.getElementById('coinSelect');
+    const amountInput = document.getElementById('amountInput');
+    const orderType = document.getElementById('orderType');
+    
+    coinSelect.addEventListener('change', function() {
+        const option = this.options[this.selectedIndex];
+        if (option.value) {
+            selectedCoin = {
+                id: option.value,
+                symbol: option.dataset.symbol,
+                price: parseFloat(option.dataset.price),
+                name: option.text.split('(')[0].trim()
+            };
+            updateOrderSummary();
+        }
+    });
+    
+    amountInput.addEventListener('input', updateOrderSummary);
+    
+    orderType.addEventListener('change', function() {
+        const limitDiv = document.getElementById('limitPriceDiv');
+        if (this.value === 'limit') {
+            limitDiv.classList.remove('hidden');
+        } else {
+            limitDiv.classList.add('hidden');
+        }
+    });
+});
+</script>
+{% endblock %}

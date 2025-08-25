@@ -1,0 +1,605 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-20"> <!-- Add top padding for fixed navbar -->
+    <!-- Page Header -->
+    <div class="px-6 py-6 border-b border-gray-800/50 bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-3xl font-bold text-white flex items-center">
+                    <i class="fas fa-brain mr-3 text-blue-400"></i>
+                    Sofia AI Trading Recommendations
+                    <span class="ml-3 text-sm bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full animate-pulse">
+                        LIVE ANALYSIS
+                    </span>
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <button onclick="refreshAnalysis()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh Analysis
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4 text-center">
+                    <div class="text-2xl font-bold text-white">{{ total_coins }}</div>
+                    <div class="text-sm text-gray-400">Total Cryptos</div>
+                </div>
+                <div class="bg-green-900/30 backdrop-blur-xl rounded-xl border border-green-500/30 p-4 text-center">
+                    <div class="text-2xl font-bold text-green-400">{{ buy_signals }}</div>
+                    <div class="text-sm text-green-300">Buy Signals</div>
+                </div>
+                <div class="bg-red-900/30 backdrop-blur-xl rounded-xl border border-red-500/30 p-4 text-center">
+                    <div class="text-2xl font-bold text-red-400">{{ sell_signals }}</div>
+                    <div class="text-sm text-red-300">Sell Signals</div>
+                </div>
+                <div class="bg-blue-900/30 backdrop-blur-xl rounded-xl border border-blue-500/30 p-4 text-center">
+                    <div class="text-2xl font-bold text-blue-400">{{ high_confidence }}</div>
+                    <div class="text-sm text-blue-300">High Confidence</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <!-- Filters -->
+        <div class="mb-6 flex flex-wrap gap-2">
+            <button onclick="filterBySignal('all')" class="filter-btn active" data-filter="all">
+                <i class="fas fa-th mr-2"></i>All Coins
+            </button>
+            <button onclick="filterBySignal('BUY')" class="filter-btn" data-filter="BUY">
+                <i class="fas fa-arrow-up mr-2 text-green-400"></i>Buy Signals
+            </button>
+            <button onclick="filterBySignal('SELL')" class="filter-btn" data-filter="SELL">
+                <i class="fas fa-arrow-down mr-2 text-red-400"></i>Sell Signals
+            </button>
+            <button onclick="filterBySignal('HOLD')" class="filter-btn" data-filter="HOLD">
+                <i class="fas fa-hand-paper mr-2 text-yellow-400"></i>Hold Signals
+            </button>
+            <button onclick="filterByConfidence(80)" class="filter-btn" data-filter="high-confidence">
+                <i class="fas fa-star mr-2 text-blue-400"></i>High Confidence
+            </button>
+        </div>
+
+        <!-- Recommendations List -->
+        <div class="space-y-4" id="recommendationsList">
+            {% for rec in recommendations %}
+            <div class="recommendation-item bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6 hover:border-gray-700 transition-all"
+                 data-signal="{{ rec.analysis.signal }}" data-confidence="{{ rec.analysis.confidence }}"
+                 onclick="openCoinModal('{{ rec.coin.id }}')">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-7 gap-4 items-center">
+                    <!-- Coin Info -->
+                    <div class="lg:col-span-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="relative">
+                                {% if rec.coin.image %}
+                                    <img src="{{ rec.coin.image }}" alt="{{ rec.coin.name }}" class="w-10 h-10 rounded-full">
+                                {% else %}
+                                    <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                                        <span class="text-white font-bold text-sm">{{ rec.coin.symbol[:2].upper() }}</span>
+                                    </div>
+                                {% endif %}
+                                <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full 
+                                    {% if rec.analysis.signal_color == 'green' %}bg-green-500
+                                    {% elif rec.analysis.signal_color == 'red' %}bg-red-500
+                                    {% else %}bg-yellow-500{% endif %} 
+                                    flex items-center justify-center">
+                                    <i class="fas fa-
+                                        {% if rec.analysis.signal_color == 'green' %}arrow-up
+                                        {% elif rec.analysis.signal_color == 'red' %}arrow-down
+                                        {% else %}minus{% endif %} text-white text-xs"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-base font-bold text-white">{{ rec.coin.name }}</div>
+                                <div class="text-xs text-gray-400">{{ rec.coin.symbol.upper() }} • #{{ rec.coin.market_cap_rank }}</div>
+                                <div class="text-xs 
+                                    {% if rec.coin.price_change_percentage_24h >= 0 %}text-green-400
+                                    {% else %}text-red-400{% endif %}">
+                                    {% if rec.coin.price_change_percentage_24h >= 0 %}+{% endif %}{{ "%.2f"|format(rec.coin.price_change_percentage_24h) }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Price -->
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400 mb-1">Current Price</div>
+                        <div class="text-lg font-bold text-white">
+                            {% if rec.coin.current_price > 1 %}
+                                ${{ "%.2f"|format(rec.coin.current_price) }}
+                            {% elif rec.coin.current_price > 0.01 %}
+                                ${{ "%.4f"|format(rec.coin.current_price) }}
+                            {% else %}
+                                ${{ "%.8f"|format(rec.coin.current_price) }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Sofia AI Signal -->
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400 mb-1">Sofia AI Signal</div>
+                        <div class="text-lg font-bold 
+                            {% if rec.analysis.signal_color == 'green' %}text-green-400
+                            {% elif rec.analysis.signal_color == 'red' %}text-red-400
+                            {% else %}text-yellow-400{% endif %}">
+                            {{ rec.analysis.signal }}
+                        </div>
+                        <div class="text-xs text-gray-500">{{ rec.analysis.confidence }}% confidence</div>
+                        <div class="text-xs 
+                            {% if rec.analysis.data_reliability > 80 %}text-green-400
+                            {% elif rec.analysis.data_reliability > 60 %}text-yellow-400
+                            {% else %}text-red-400{% endif %}">
+                            📊 Data: {{ rec.analysis.data_reliability }}% reliable
+                        </div>
+                    </div>
+
+                    <!-- Profit Potential -->
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400 mb-1">Profit Potential</div>
+                        <div class="text-lg font-bold 
+                            {% if rec.profit_potential > 10 %}text-green-400
+                            {% elif rec.profit_potential > 5 %}text-yellow-400
+                            {% else %}text-gray-400{% endif %}">
+                            {{ "%.1f"|format(rec.profit_potential) }}%
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            Risk/Reward: {{ "%.1f"|format(rec.risk_reward_ratio) }}
+                        </div>
+                    </div>
+
+                    <!-- Data Reliability -->
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400 mb-1">Data Quality</div>
+                        <div class="text-lg font-bold 
+                            {% if rec.analysis.data_reliability > 80 %}text-green-400
+                            {% elif rec.analysis.data_reliability > 60 %}text-yellow-400
+                            {% else %}text-red-400{% endif %}">
+                            {{ rec.analysis.data_reliability }}%
+                        </div>
+                        <div class="text-xs 
+                            {% if rec.analysis.data_reliability > 80 %}text-green-400
+                            {% elif rec.analysis.data_reliability > 60 %}text-yellow-400
+                            {% else %}text-red-400{% endif %}">
+                            {% if rec.analysis.data_reliability > 80 %}Reliable
+                            {% elif rec.analysis.data_reliability > 60 %}Moderate
+                            {% else %}Limited{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-2">
+                        <div class="flex space-x-2">
+                            <button onclick="event.stopPropagation(); executeTrade('{{ rec.coin.id }}', 'buy')" 
+                                    class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all text-sm">
+                                <i class="fas fa-shopping-cart mr-1"></i>Buy
+                            </button>
+                            <button onclick="event.stopPropagation(); executeTrade('{{ rec.coin.id }}', 'sell')" 
+                                    class="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all text-sm">
+                                <i class="fas fa-hand-holding-usd mr-1"></i>Sell
+                            </button>
+                        </div>
+                        <div class="text-xs text-gray-500 text-center">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Real data • {{ rec.analysis.last_updated }} • Paper trading
+                        </div>
+                    </div>
+
+                    <!-- Quick Analysis Preview -->
+                    <div class="lg:col-span-6 mt-4 pt-4 border-t border-gray-700">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">RSI:</span>
+                                <span class="
+                                    {% if rec.analysis.rsi > 70 %}text-red-400
+                                    {% elif rec.analysis.rsi < 30 %}text-green-400
+                                    {% else %}text-yellow-400{% endif %}">
+                                    {{ rec.analysis.rsi }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">MACD:</span>
+                                <span class="
+                                    {% if rec.analysis.macd_signal == 'Bullish' %}text-green-400
+                                    {% else %}text-red-400{% endif %}">
+                                    {{ rec.analysis.macd_signal }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Sentiment:</span>
+                                <span class="
+                                    {% if 'Bullish' in rec.analysis.sentiment %}text-green-400
+                                    {% elif 'Bearish' in rec.analysis.sentiment %}text-red-400
+                                    {% else %}text-gray-400{% endif %}">
+                                    {{ rec.analysis.sentiment }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Whale Activity:</span>
+                                <span class="
+                                    {% if rec.analysis.whale_activity == 'High' %}text-red-400
+                                    {% elif rec.analysis.whale_activity == 'Moderate' %}text-yellow-400
+                                    {% else %}text-green-400{% endif %}">
+                                    {{ rec.analysis.whale_activity }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Data Quality:</span>
+                                <span class="
+                                    {% if rec.analysis.data_reliability > 80 %}text-green-400
+                                    {% elif rec.analysis.data_reliability > 60 %}text-yellow-400
+                                    {% else %}text-red-400{% endif %}">
+                                    {{ rec.analysis.data_reliability }}%
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Data Sources -->
+                        <div class="mt-3 pt-3 border-t border-gray-800">
+                            <div class="text-xs text-gray-500 mb-1">📡 Data Sources:</div>
+                            <div class="flex flex-wrap gap-1">
+                                {% for source in rec.analysis.data_sources %}
+                                <span class="px-2 py-1 bg-gray-800/50 text-gray-400 rounded text-xs">{{ source }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">
+                                {{ rec.analysis.disclaimer }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- No results message -->
+        <div id="noResults" class="text-center py-20 hidden">
+            <i class="fas fa-search text-gray-500 text-4xl mb-4"></i>
+            <div class="text-gray-400 text-xl">No coins match the current filter</div>
+        </div>
+    </div>
+
+    <!-- Coin Detail Modal -->
+    <div id="coinModal" class="modal-overlay" onclick="closeCoinModal()">
+        <div class="modal-content max-w-4xl" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-white" id="modalCoinTitle">
+                    <i class="fas fa-coins mr-3 text-yellow-400"></i>
+                    Detailed Analysis
+                </h2>
+                <button onclick="closeCoinModal()" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalCoinContent">
+                <!-- Content will be loaded here -->
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-blue-400 text-2xl mb-2"></i>
+                    <div class="text-white">Loading analysis...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.filter-btn {
+    @apply px-4 py-2 bg-gray-800 text-gray-400 rounded-lg transition-all hover:bg-gray-700 hover:text-white;
+}
+
+.filter-btn.active {
+    @apply bg-blue-600 text-white;
+}
+
+.recommendation-item {
+    cursor: pointer;
+}
+
+.recommendation-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    z-index: 1000;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 16px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+</style>
+
+<script>
+// Filter functions
+function filterBySignal(signal) {
+    const items = document.querySelectorAll('.recommendation-item');
+    const buttons = document.querySelectorAll('.filter-btn');
+    const noResults = document.getElementById('noResults');
+    
+    // Update active button
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const itemSignal = item.dataset.signal;
+        if (signal === 'all' || itemSignal.includes(signal)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+function filterByConfidence(minConfidence) {
+    const items = document.querySelectorAll('.recommendation-item');
+    const buttons = document.querySelectorAll('.filter-btn');
+    const noResults = document.getElementById('noResults');
+    
+    // Update active button
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const confidence = parseInt(item.dataset.confidence);
+        if (confidence >= minConfidence) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+}
+
+// Trading functions
+function executeTrade(coinId, action) {
+    // Simulate trade execution
+    const coin = coinId.toUpperCase();
+    const actionText = action.toUpperCase();
+    
+    // Show confirmation
+    if (confirm(`Execute ${actionText} order for ${coin}?`)) {
+        // Simulate API call
+        showNotification(`${actionText} order placed for ${coin}`, 'success');
+        
+        // In real implementation, call trading API
+        // fetch('/api/execute-trade', { method: 'POST', body: JSON.stringify({coin: coinId, action: action}) })
+    }
+}
+
+function openCoinModal(coinId) {
+    const modal = document.getElementById('coinModal');
+    const title = document.getElementById('modalCoinTitle');
+    const content = document.getElementById('modalCoinContent');
+    
+    // Show modal
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Find coin data
+    const coinData = window.coinAnalysisData[coinId];
+    if (coinData) {
+        loadCoinAnalysis(coinData);
+    } else {
+        // Fallback: redirect to detail page
+        setTimeout(() => {
+            window.open(`/assets/${coinId}`, '_blank');
+            closeCoinModal();
+        }, 500);
+    }
+}
+
+function loadCoinAnalysis(coinData) {
+    const title = document.getElementById('modalCoinTitle');
+    const content = document.getElementById('modalCoinContent');
+    
+    title.innerHTML = `
+        <div class="flex items-center">
+            <img src="${coinData.coin.image}" alt="${coinData.coin.name}" class="w-8 h-8 rounded-full mr-3">
+            ${coinData.coin.name} (${coinData.coin.symbol.toUpperCase()}) Analysis
+        </div>
+    `;
+    
+    content.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Main Signal -->
+            <div class="text-center p-6 bg-slate-800/50 rounded-lg">
+                <div class="text-5xl font-bold mb-2 ${coinData.analysis.signal_color === 'green' ? 'text-green-400' : coinData.analysis.signal_color === 'red' ? 'text-red-400' : 'text-yellow-400'}">
+                    ${coinData.analysis.confidence}%
+                </div>
+                <div class="text-2xl font-bold ${coinData.analysis.signal_color === 'green' ? 'text-green-400' : coinData.analysis.signal_color === 'red' ? 'text-red-400' : 'text-yellow-400'} mb-2">
+                    ${coinData.analysis.signal}
+                </div>
+                <div class="text-gray-400">AI Confidence</div>
+                <div class="text-sm ${coinData.analysis.data_reliability > 80 ? 'text-green-400' : 'text-yellow-400'} mt-2">
+                    📊 ${coinData.analysis.data_reliability}% Data Quality
+                </div>
+            </div>
+            
+            <!-- Price Targets -->
+            <div class="space-y-4">
+                <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                    <div class="text-green-400 font-bold">Price Target</div>
+                    <div class="text-2xl font-bold text-white">$${coinData.analysis.target_price.toFixed(4)}</div>
+                    <div class="text-green-300 text-sm">+${((coinData.analysis.target_price/coinData.coin.current_price - 1) * 100).toFixed(1)}%</div>
+                </div>
+                
+                <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                    <div class="text-red-400 font-bold">Stop Loss</div>
+                    <div class="text-2xl font-bold text-white">$${coinData.analysis.stop_loss.toFixed(4)}</div>
+                    <div class="text-red-300 text-sm">${((coinData.analysis.stop_loss/coinData.coin.current_price - 1) * 100).toFixed(1)}%</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Technical Analysis -->
+        <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-slate-800/30 p-3 rounded-lg text-center">
+                <div class="text-gray-400 text-sm">RSI</div>
+                <div class="text-white font-bold">${coinData.analysis.rsi}</div>
+                <div class="text-xs ${coinData.analysis.rsi > 70 ? 'text-red-400' : coinData.analysis.rsi < 30 ? 'text-green-400' : 'text-yellow-400'}">
+                    ${coinData.analysis.rsi > 70 ? 'Overbought' : coinData.analysis.rsi < 30 ? 'Oversold' : 'Neutral'}
+                </div>
+            </div>
+            
+            <div class="bg-slate-800/30 p-3 rounded-lg text-center">
+                <div class="text-gray-400 text-sm">MACD</div>
+                <div class="text-white font-bold">${coinData.analysis.macd_signal}</div>
+                <div class="text-xs ${coinData.analysis.macd_signal === 'Bullish' ? 'text-green-400' : 'text-red-400'}">
+                    Trend Signal
+                </div>
+            </div>
+            
+            <div class="bg-slate-800/30 p-3 rounded-lg text-center">
+                <div class="text-gray-400 text-sm">Sentiment</div>
+                <div class="text-white font-bold">${coinData.analysis.sentiment}</div>
+                <div class="text-xs text-blue-400">
+                    Score: ${coinData.analysis.sentiment_score.toFixed(2)}
+                </div>
+            </div>
+            
+            <div class="bg-slate-800/30 p-3 rounded-lg text-center">
+                <div class="text-gray-400 text-sm">Whale Activity</div>
+                <div class="text-white font-bold">${coinData.analysis.whale_activity}</div>
+                <div class="text-xs ${coinData.analysis.whale_activity === 'High' ? 'text-red-400' : 'text-yellow-400'}">
+                    Activity Level
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Sources -->
+        <div class="mt-6 bg-slate-800/30 p-4 rounded-lg">
+            <div class="text-white font-bold mb-2">📡 Data Sources:</div>
+            <div class="flex flex-wrap gap-2 mb-3">
+                ${coinData.analysis.data_sources.map(source => `<span class="px-2 py-1 bg-gray-700/50 text-gray-300 rounded text-xs">${source}</span>`).join('')}
+            </div>
+            <div class="text-xs text-gray-500">${coinData.analysis.disclaimer}</div>
+        </div>
+        
+        <!-- Trading Actions -->
+        <div class="mt-6 flex justify-center space-x-4">
+            <button onclick="executeTrade('${coinData.coin.id}', 'buy')" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all">
+                <i class="fas fa-shopping-cart mr-2"></i>Execute Buy Order
+            </button>
+            <button onclick="executeTrade('${coinData.coin.id}', 'sell')" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all">
+                <i class="fas fa-hand-holding-usd mr-2"></i>Execute Sell Order
+            </button>
+            <button onclick="window.open('/assets/${coinData.coin.id}', '_blank')" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+                <i class="fas fa-external-link-alt mr-2"></i>Detailed View
+            </button>
+        </div>
+    `;
+}
+
+function closeCoinModal() {
+    const modal = document.getElementById('coinModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function refreshAnalysis() {
+    // Animate refresh button
+    const btn = event.target;
+    const icon = btn.querySelector('i');
+    icon.classList.add('fa-spin');
+    
+    // Simulate refresh
+    setTimeout(() => {
+        icon.classList.remove('fa-spin');
+        showNotification('Analysis refreshed with latest market data', 'success');
+        location.reload();
+    }, 2000);
+}
+
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all transform translate-x-full opacity-0 ${
+        type === 'success' ? 'bg-green-600' : 
+        type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+    } text-white`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation' : 'info'}-circle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full', 'opacity-0');
+    }, 100);
+    
+    // Hide notification
+    setTimeout(() => {
+        notification.classList.add('translate-x-full', 'opacity-0');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Store coin analysis data for modals
+window.coinAnalysisData = {};
+{% for rec in recommendations %}
+window.coinAnalysisData['{{ rec.coin.id }}'] = {{ rec|tojson|safe }};
+{% endfor %}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Trading recommendations page loaded with', Object.keys(window.coinAnalysisData).length, 'coins');
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCoinModal();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,452 @@
+/**
+ * Mobile Responsive Styles for Sofia V2
+ * Ensures optimal viewing on all devices
+ */
+
+/* Base responsive utilities */
+.container-responsive {
+    width: 100%;
+    padding-right: 15px;
+    padding-left: 15px;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+/* Mobile First Approach */
+
+/* Extra small devices (phones, less than 576px) */
+@media (max-width: 575.98px) {
+    /* Navigation */
+    .sidebar {
+        position: fixed;
+        left: -100%;
+        width: 80%;
+        height: 100vh;
+        z-index: 9999;
+        transition: left 0.3s ease;
+    }
+    
+    .sidebar.active {
+        left: 0;
+    }
+    
+    .mobile-menu-toggle {
+        display: block !important;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 10000;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+    }
+    
+    /* Main content */
+    .main-content {
+        margin-left: 0 !important;
+        padding: 1rem;
+    }
+    
+    /* Cards and grids */
+    .grid, .crypto-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+    
+    .stat-card, .crypto-card {
+        min-height: auto;
+        padding: 1rem;
+    }
+    
+    /* Charts */
+    .chart-container {
+        height: 200px !important;
+    }
+    
+    /* Tables */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 600px;
+    }
+    
+    /* Text sizes */
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.1rem; }
+    
+    .stat-value {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Alerts */
+    .alert-container {
+        max-height: 300px;
+    }
+    
+    .alert-item {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Portfolio */
+    .portfolio-card {
+        flex-direction: column;
+    }
+    
+    .position-item {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Hide non-essential elements */
+    .hide-mobile {
+        display: none !important;
+    }
+}
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .container-responsive {
+        max-width: 540px;
+    }
+    
+    .sidebar {
+        width: 200px;
+        position: fixed;
+        transform: translateX(-100%);
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 1.5rem;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .crypto-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .container-responsive {
+        max-width: 720px;
+    }
+    
+    .sidebar {
+        width: 220px;
+        position: fixed;
+    }
+    
+    .main-content {
+        margin-left: 220px;
+        padding: 2rem;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .crypto-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .mobile-menu-toggle {
+        display: none !important;
+    }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .container-responsive {
+        max-width: 960px;
+    }
+    
+    .sidebar {
+        width: 250px;
+    }
+    
+    .main-content {
+        margin-left: 250px;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .crypto-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+    .container-responsive {
+        max-width: 1140px;
+    }
+    
+    .sidebar {
+        width: 260px;
+    }
+    
+    .main-content {
+        margin-left: 260px;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .crypto-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* Touch-friendly elements */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    button, .btn {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 12px 16px;
+    }
+    
+    a, .clickable {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .hover-effect:hover {
+        transform: none !important;
+    }
+    
+    /* Improve scrolling */
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .scrollable {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+}
+
+/* Orientation specific styles */
+@media (orientation: landscape) and (max-height: 500px) {
+    .sidebar {
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .main-content {
+        padding-top: 1rem;
+    }
+    
+    .header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(15, 23, 42, 0.95);
+    }
+}
+
+/* Dark mode adjustments for mobile */
+@media (max-width: 767.98px) {
+    .dark {
+        /* Higher contrast for mobile screens */
+        --bg-primary: #0a0e1a;
+        --bg-secondary: #111827;
+        --text-primary: #ffffff;
+        --text-secondary: #e5e7eb;
+    }
+    
+    .glass {
+        background: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(8px);
+    }
+}
+
+/* Print styles */
+@media print {
+    .sidebar, .mobile-menu-toggle, .no-print {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin: 0;
+        padding: 0;
+    }
+    
+    body {
+        background: white;
+        color: black;
+    }
+    
+    .chart-container {
+        page-break-inside: avoid;
+    }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media (prefers-contrast: high) {
+    body {
+        --border-width: 2px;
+        --text-weight: 500;
+    }
+    
+    .btn {
+        border-width: var(--border-width);
+        font-weight: var(--text-weight);
+    }
+}
+
+/* Responsive typography */
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 15px;
+    }
+}
+
+@media (min-width: 1200px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+/* Responsive spacing */
+.p-responsive {
+    padding: 1rem;
+}
+
+@media (min-width: 768px) {
+    .p-responsive {
+        padding: 1.5rem;
+    }
+}
+
+@media (min-width: 1200px) {
+    .p-responsive {
+        padding: 2rem;
+    }
+}
+
+/* Responsive utilities */
+.show-sm { display: none; }
+.show-md { display: none; }
+.show-lg { display: none; }
+.show-xl { display: none; }
+
+@media (min-width: 576px) {
+    .show-sm { display: block; }
+}
+
+@media (min-width: 768px) {
+    .show-md { display: block; }
+}
+
+@media (min-width: 992px) {
+    .show-lg { display: block; }
+}
+
+@media (min-width: 1200px) {
+    .show-xl { display: block; }
+}
+
+/* Flexbox responsive */
+.flex-responsive {
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 768px) {
+    .flex-responsive {
+        flex-direction: row;
+    }
+}
+
+/* Grid responsive */
+.grid-responsive {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 576px) {
+    .grid-responsive {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .grid-responsive {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 992px) {
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Animation adjustments for mobile */
+@media (max-width: 767.98px) {
+    /* Disable complex animations on mobile for better performance */
+    .animate-float,
+    .animate-pulse,
+    .animate-bounce {
+        animation: none !important;
+    }
+    
+    /* Simpler transitions */
+    * {
+        transition-duration: 0.2s !important;
+    }
+}
+
+/* PWA specific styles */
+@media (display-mode: standalone) {
+    /* Styles for when app is installed as PWA */
+    .pwa-header {
+        padding-top: env(safe-area-inset-top);
+    }
+    
+    .pwa-footer {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* Notch and safe area support (iPhone X and later) */
+@supports (padding: max(0px)) {
+    .safe-area-padding {
+        padding-left: max(15px, env(safe-area-inset-left));
+        padding-right: max(15px, env(safe-area-inset-right));
+    }
+}
