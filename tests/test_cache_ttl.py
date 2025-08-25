@@ -1,3 +1,4 @@
+from datetime import timezone
 """Tests for cache TTL functionality."""
 
 import asyncio
@@ -37,7 +38,7 @@ async def test_cache_ttl_expiry():
             # Simulate fetching data
             sample_data = [
                 OHLCVData(
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(timezone.utc),
                     open=100.0,
                     high=105.0,
                     low=99.0,
@@ -118,20 +119,20 @@ async def test_is_expired():
     manager.ttl_seconds = 600  # 10 minutes
 
     # Recent timestamp - not expired
-    recent = datetime.utcnow() - timedelta(seconds=300)
+    recent = datetime.now(timezone.utc) - timedelta(seconds=300)
     assert not manager._is_expired(recent)
 
     # Old timestamp - expired
-    old = datetime.utcnow() - timedelta(seconds=700)
+    old = datetime.now(timezone.utc) - timedelta(seconds=700)
     assert manager._is_expired(old)
 
     # Exact TTL boundary - should not be expired (exactly at limit)
     # Create timestamp exactly at the boundary with buffer for timing precision
-    boundary = datetime.utcnow() - timedelta(seconds=599.999)  # Just under 600 seconds
+    boundary = datetime.now(timezone.utc) - timedelta(seconds=599.999)  # Just under 600 seconds
     assert not manager._is_expired(boundary)
 
     # Just over TTL
-    just_over = datetime.utcnow() - timedelta(seconds=601)
+    just_over = datetime.now(timezone.utc) - timedelta(seconds=601)
     assert manager._is_expired(just_over)
 
 
@@ -231,7 +232,7 @@ async def test_cache_hit_miss_scenario():
     # Create sample data
     sample_data = [
         OHLCVData(
-            timestamp=datetime.utcnow() - timedelta(hours=i),
+            timestamp=datetime.now(timezone.utc) - timedelta(hours=i),
             open=100.0 + i,
             high=105.0 + i,
             low=99.0 + i,

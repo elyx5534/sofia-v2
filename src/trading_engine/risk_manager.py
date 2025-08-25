@@ -2,7 +2,7 @@
 
 from typing import Optional, Dict
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class RiskParameters(BaseModel):
@@ -29,7 +29,7 @@ class RiskMetrics(BaseModel):
     avg_loss: float = 0
     risk_reward_ratio: float = 0
     var_95: float = 0  # Value at Risk 95%
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class RiskManager:
@@ -146,7 +146,7 @@ class RiskManager:
         if self.metrics.avg_loss > 0:
             self.metrics.risk_reward_ratio = self.metrics.avg_win / self.metrics.avg_loss
         
-        self.metrics.updated_at = datetime.utcnow()
+        self.metrics.updated_at = datetime.now(timezone.utc)
     
     def update_portfolio_value(self, value: float) -> None:
         """Update current portfolio value."""

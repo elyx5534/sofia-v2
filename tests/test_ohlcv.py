@@ -1,3 +1,4 @@
+from datetime import timezone
 """Tests for the OHLCV endpoint."""
 
 from datetime import datetime, timedelta
@@ -19,7 +20,7 @@ def client():
 @pytest.fixture
 def sample_ohlcv_data():
     """Create sample OHLCV data."""
-    base_time = datetime.utcnow()
+    base_time = datetime.now(timezone.utc)
     return [
         OHLCVData(
             timestamp=base_time - timedelta(hours=2),
@@ -192,13 +193,17 @@ def test_ohlcv_with_dates(client):
             mock_cache.return_value = None
             mock_fetch.return_value = []
 
-            start = datetime.utcnow() - timedelta(days=7)
-            end = datetime.utcnow()
+            start = datetime.now(timezone.utc) - timedelta(days=7)
+            end = datetime.now(timezone.utc)
+
+            # Use URL-safe datetime format
+            start_str = start.isoformat().replace('+', '%2B')
+            end_str = end.isoformat().replace('+', '%2B')
 
             response = client.get(
                 f"/ohlcv?symbol=AAPL&asset_type=equity"
-                f"&start_date={start.isoformat()}"
-                f"&end_date={end.isoformat()}"
+                f"&start_date={start_str}"
+                f"&end_date={end_str}"
             )
             assert response.status_code == 200
 
@@ -211,7 +216,7 @@ def test_ohlcv_with_limit(client):
                 # Create 100 data points
                 data = [
                     OHLCVData(
-                        timestamp=datetime.utcnow() - timedelta(hours=i),
+                        timestamp=datetime.now(timezone.utc) - timedelta(hours=i),
                         open=100.0 + i,
                         high=105.0 + i,
                         low=99.0 + i,

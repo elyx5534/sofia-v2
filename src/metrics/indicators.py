@@ -23,7 +23,8 @@ def rsi(df: pd.DataFrame, period: int = 14, column: str = 'close') -> pd.Series:
         rs = avg_gain / avg_loss
         rsi_values = 100 - (100 / (1 + rs))
         
-        return rsi_values.fillna(50)
+        # Return RSI values with NaN for initial period (correct behavior)
+        return rsi_values
         
     except Exception as e:
         logger.error(f"Error calculating RSI: {e}")

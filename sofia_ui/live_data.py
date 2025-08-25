@@ -354,7 +354,7 @@ class LiveDataService:
         
         return {
             "symbol": symbol,
-            "name": symbol.replace('-USD', '').replace('-', ' '),
+            "name": self._get_coin_name(symbol),
             "price": base_price,
             "change": base_price * 0.025,  # %2.5 artış
             "change_percent": 2.5,

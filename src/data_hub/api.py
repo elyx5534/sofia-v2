@@ -1,7 +1,7 @@
 """FastAPI application for the data-hub module."""
 
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -82,7 +82,7 @@ async def health_check():
     """Health check endpoint."""
     return HealthResponse(
         status="healthy",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         version=settings.api_version,
     )
 
@@ -209,7 +209,7 @@ async def get_ohlcv(
             timeframe=timeframe,
             data=ohlcv_data,
             cached=cached,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
         )
 
     except ValueError as e:
@@ -227,7 +227,7 @@ async def clear_expired_cache():
         deleted_count = await cache_manager.clear_expired_cache()
         return {
             "message": f"Cleared {deleted_count} expired cache entries",
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(timezone.utc),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

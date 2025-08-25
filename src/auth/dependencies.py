@@ -12,7 +12,7 @@ from datetime import datetime
 
 from .models import User, APIKey, SubscriptionTier
 from .jwt_handler import jwt_handler
-from ..data_hub.models import get_db
+from ..data_hub.database import get_db
 
 
 security = HTTPBearer()

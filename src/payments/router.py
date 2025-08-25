@@ -12,7 +12,7 @@ import logging
 from .stripe_client import stripe_client, map_price_id_to_tier, get_price_id_for_tier
 from ..auth.models import User, SubscriptionTier
 from ..auth.dependencies import get_current_active_user
-from ..data_hub.models import get_db
+from ..data_hub.database import get_db
 from pydantic import BaseModel
 
 

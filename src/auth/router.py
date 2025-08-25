@@ -14,7 +14,7 @@ import hashlib
 from .models import User, APIKey, SubscriptionTier, UsageLog
 from .jwt_handler import jwt_handler
 from .dependencies import get_current_user, get_current_active_user, admin_required
-from ..data_hub.models import get_db
+from ..data_hub.database import get_db
 from pydantic import BaseModel, EmailStr
 
 

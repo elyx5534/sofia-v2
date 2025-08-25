@@ -1,0 +1,232 @@
+# Sofia V2 Realtime DataHub - Configuration
+
+exchanges:
+  binance:
+    enabled: true
+    spot: true
+    futures: true
+    endpoints:
+      spot_ws: "wss://stream.binance.com:9443/ws"
+      futures_ws: "wss://fstream.binance.com/ws"
+      rest_base: "https://api.binance.com"
+    streams:
+      - trade
+      - depth@100ms
+      - kline_1s
+      - kline_1m
+      - forceOrder  # liquidations
+    rate_limits:
+      ws_connections: 5
+      requests_per_minute: 1200
+  
+  okx:
+    enabled: true
+    endpoints:
+      ws: "wss://ws.okx.com:8443/ws/v5/public"
+      rest_base: "https://www.okx.com"
+    streams:
+      - trades
+      - books5
+      - liquidation-orders
+    rate_limits:
+      ws_connections: 5
+      requests_per_minute: 600
+  
+  bybit:
+    enabled: true
+    endpoints:
+      ws: "wss://stream.bybit.com/v5/public/spot"
+      ws_futures: "wss://stream.bybit.com/v5/public/linear"
+      rest_base: "https://api.bybit.com"
+    streams:
+      - publicTrade
+      - orderbook.25
+      - allLiquidation
+    rate_limits:
+      ws_connections: 5
+      requests_per_minute: 600
+  
+  coinbase:
+    enabled: true
+    endpoints:
+      ws: "wss://advanced-trade-ws.coinbase.com"
+      rest_base: "https://api.exchange.coinbase.com"
+    streams:
+      - ticker
+      - level2
+    rate_limits:
+      ws_connections: 5
+      requests_per_minute: 1000
+
+news:
+  provider: "cryptopanic_rss"
+  poll_seconds_day: 30
+  poll_seconds_night: 90
+  night_hours: [22, 23, 0, 1, 2, 3, 4, 5, 6, 7]  # UTC
+  endpoints:
+    rss_base: "https://cryptopanic.com/news/rss/"
+  params:
+    filter: "important,trending"
+    currencies: ["BTC", "ETH", "BCH", "ADA", "SOL", "XRP", "DOGE", "MATIC", "LINK", "UNI"]
+    region: "en"
+  deduplication:
+    window_minutes: 60
+    methods: ["guid", "url", "title_similarity"]
+
+features:
+  big_trade:
+    enabled: true
+    window_seconds: 5
+    min_usd_notional: 250000
+    z_score_threshold: 3.0
+  
+  liq_spike:
+    enabled: true
+    window_seconds: 60
+    z_score_threshold: 3.0
+    min_liquidation_usd: 100000
+  
+  spread_monitor:
+    enabled: true
+    window_seconds: 1
+    max_spread_bps: 50
+  
+  volume_surge:
+    enabled: true
+    window_seconds: 30
+    surge_threshold: 2.0
+
+thresholds:
+  big_trade_usd_min: 250000
+  liq_spike_sigma: 3.0
+  connection_timeout: 10
+  reconnect_max_delay: 15
+  ping_interval: 30
+  
+fallback:
+  coingecko: true
+  cmc: false
+  update_interval: 300  # 5 minutes
+  endpoints:
+    coingecko_simple: "https://api.coingecko.com/api/v3/simple/price"
+    cmc_quotes: "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+
+storage:
+  parquet:
+    enabled: true
+    rotation_hours: 24
+    max_retention_days: 30
+    compression: "snappy"
+    partition_cols: ["date", "exchange"]
+  
+  timescale:
+    enabled: false  # Set to true if TimescaleDB available
+    hypertable_chunk_time: "1 day"
+    retention_days: 90
+    compression_after: "7 days"
+
+serve:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 1
+  ws_max_connections: 1000
+  ws_buffer_size: 1048576  # 1MB
+  cors_origins: ["*"]
+  
+monitoring:
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+  
+  health_check:
+    enabled: true
+    path: "/health"
+    detailed_path: "/health/detailed"
+  
+  logging:
+    level: "INFO"
+    format: "json"
+    structured: true
+    
+performance:
+  backpressure_limit: 10000
+  max_concurrent_operations: 100
+  memory_limit_mb: 1000
+  cpu_usage_alert: 80
+
+trading:
+  enabled: true  # Enable autonomous trading
+  mode: "paper"  # paper/live/backtest
+  initial_balance: 100000.0  # 100,000 TL for overnight trading
+  currency: "TRY"  # Turkish Lira
+  max_risk_per_trade: 0.02  # 2% risk per trade
+  
+  strategies:
+    mean_reversion:
+      enabled: true
+      weight: 0.20  # 20% allocation
+      settings:
+        lookback_period: 20
+        z_score_threshold: 2.0
+        exit_threshold: 0.5
+    
+    momentum_breakout:
+      enabled: true
+      weight: 0.25  # 25% allocation
+      settings:
+        breakout_period: 10
+        volume_threshold: 1.5
+        atr_multiplier: 2.0
+    
+    scalping:
+      enabled: true
+      weight: 0.15  # 15% allocation
+      settings:
+        spread_threshold: 0.001
+        hold_time_seconds: 30
+        profit_target: 0.002
+    
+    grid_trading:
+      enabled: true
+      weight: 0.15  # 15% allocation
+      settings:
+        grid_size: 0.005
+        num_levels: 10
+        position_size_pct: 0.1
+    
+    arbitrage:
+      enabled: true
+      weight: 0.10  # 10% allocation
+      settings:
+        min_spread_bps: 5
+        max_exposure: 0.2
+        exchanges: ["binance", "okx", "bybit"]
+    
+    ml_momentum:
+      enabled: true
+      weight: 0.15  # 15% allocation
+      settings:
+        prediction_horizon: 60  # seconds
+        confidence_threshold: 0.7
+        feature_window: 100
+  
+  risk_settings:
+    max_portfolio_risk: 0.20  # 20% max portfolio risk
+    max_position_risk: 0.05   # 5% max position risk
+    max_correlation_risk: 0.80  # 80% max correlation
+    var_confidence: 0.95      # 95% VaR confidence
+    max_drawdown: 0.15        # 15% max drawdown
+    stop_loss_pct: 0.05       # 5% stop loss
+    take_profit_pct: 0.10     # 10% take profit
+    
+  execution:
+    order_type: "market"  # market/limit
+    slippage_tolerance: 0.001  # 0.1%
+    fill_timeout_seconds: 30
+    retry_attempts: 3
+    
+  monitoring:
+    performance_report_interval: 3600  # 1 hour
+    risk_check_interval: 300          # 5 minutes
+    portfolio_rebalance_interval: 7200 # 2 hours

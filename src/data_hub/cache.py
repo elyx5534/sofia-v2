@@ -1,3 +1,4 @@
+from datetime import timezone
 """Cache management for the data-hub module."""
 
 import hashlib
@@ -41,7 +42,7 @@ class CacheManager:
 
     def _is_expired(self, created_at: datetime) -> bool:
         """Check if cached data has expired."""
-        age = datetime.utcnow() - created_at
+        age = datetime.now(timezone.utc) - created_at
         return age > timedelta(seconds=self.ttl_seconds)
 
     async def get_ohlcv_cache(
@@ -186,7 +187,7 @@ class CacheManager:
                 existing.exchange = symbol_info.exchange
                 existing.currency = symbol_info.currency
                 existing.active = symbol_info.active
-                existing.updated_at = datetime.utcnow()
+                existing.updated_at = datetime.now(timezone.utc)
             else:
                 # Create new
                 new_symbol = SymbolCache(
@@ -203,7 +204,7 @@ class CacheManager:
 
     async def clear_expired_cache(self) -> int:
         """Clear all expired cache entries. Returns number of deleted entries."""
-        cutoff_time = datetime.utcnow() - timedelta(seconds=self.ttl_seconds)
+        cutoff_time = datetime.now(timezone.utc) - timedelta(seconds=self.ttl_seconds)
         deleted_count = 0
 
         async with self.async_session() as session:
