@@ -1,5 +1,7 @@
 # Web UI
 websockets>=12.0
+python-dotenv>=1.0.0
+numpy>=1.24.0
 
 # Testing
 pytest>=7.4.0
@@ -30,6 +32,8 @@ sqlalchemy>=2.0.0
 # Data Providers
 yfinance>=0.2.33
 ccxt>=4.2.0
+pandas>=2.0.0
+ta>=0.10.0  # Technical indicators
 
 # AI/ML packages
 anthropic>=0.34.0
