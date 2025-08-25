@@ -58,7 +58,9 @@
       "Bash(coverage report:*)",
       "Bash(find:*)",
       "Bash(sed:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(git log:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": [],

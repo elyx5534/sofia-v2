@@ -69,13 +69,13 @@ def mock_claude_service():
     """Mock Claude service"""
     with patch('src.data_hub.api.claude_service') as mock:
         mock.analyze_market_data = AsyncMock(return_value=MarketAnalysisResponse(
-            analysis="Test technical analysis showing bullish momentum",
+            symbol="BTC/USDT",
+            analysis_type="technical",
+            summary="Test technical analysis showing bullish momentum",
+            key_insights=["BUY signal detected", "Strong momentum"],
+            risk_level="medium",
+            recommendation="buy",
             confidence=0.8,
-            signals=["BUY", "STRONG_MOMENTUM"],
-            risk_level="MEDIUM",
-            price_target=50000.0,
-            support_levels=[44000.0, 43000.0],
-            resistance_levels=[47000.0, 48000.0],
             timestamp=datetime.now(timezone.utc)
         ))
         yield mock
@@ -335,11 +335,11 @@ class TestDataHubAPI:
             assert response.status_code == 200
             data = response.json()
             
-            assert data["analysis"] == "Test technical analysis showing bullish momentum"
+            assert data["summary"] == "Test technical analysis showing bullish momentum"
             assert data["confidence"] == 0.8
-            assert data["signals"] == ["BUY", "STRONG_MOMENTUM"]
-            assert data["risk_level"] == "MEDIUM"
-            assert data["price_target"] == 50000.0
+            assert data["key_insights"] == ["BUY signal detected", "Strong momentum"]
+            assert data["risk_level"] == "medium"
+            assert data["recommendation"] == "buy"
 
     def test_analyze_market_data_claude_not_configured(self, client):
         """Test market analysis endpoint when Claude is not configured"""
