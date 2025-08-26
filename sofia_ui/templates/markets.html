@@ -116,23 +116,23 @@
                                 </template>
                             </div>
                             <div>
-                                <div class="text-white font-semibold" x-text="coin.symbol"></div>
+                                <div class="text-white font-semibold" x-text="coin.symbol ? coin.symbol.toUpperCase() : ''"></div>
                                 <div class="text-xs text-gray-500" x-text="coin.name"></div>
                             </div>
                         </div>
                         <div class="text-xs px-2 py-1 bg-gray-800 rounded-full text-gray-400">
-                            #<span x-text="coin.rank"></span>
+                            #<span x-text="coin.market_cap_rank || coin.rank"></span>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <div class="text-xl font-bold text-white">
-                            $<span x-text="formatPrice(coin.price)"></span>
+                            $<span x-text="formatPrice(coin.current_price || coin.price)"></span>
                         </div>
                         <div class="text-sm mt-1"
-                             :class="coin.change_percent >= 0 ? 'text-emerald-400' : 'text-red-400'">
-                            <i :class="coin.change_percent >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" class="mr-1"></i>
-                            <span x-text="Math.abs(coin.change_percent).toFixed(2)"></span>%
+                             :class="(coin.price_change_percentage_24h || coin.change_percent) >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                            <i :class="(coin.price_change_percentage_24h || coin.change_percent) >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" class="mr-1"></i>
+                            <span x-text="Math.abs(coin.price_change_percentage_24h || coin.change_percent || 0).toFixed(2)"></span>%
                         </div>
                     </div>
 
@@ -326,13 +326,16 @@ function marketsApp() {
         },
 
         async init() {
-            await this.fetchCoins();
-            this.filterCoins();
-
+            // Load server data immediately
+            this.loadServerData();
+            
             // Create mini charts after data loads
             this.$nextTick(() => {
                 this.createMiniCharts();
             });
+
+            // Try to fetch fresh data
+            await this.fetchCoins();
 
             // Setup WebSocket connection for real-time updates
             this.setupWebSocket();
@@ -391,42 +394,35 @@ function marketsApp() {
 
         async fetchCoins() {
             try {
-                // Try to fetch from backend trading API
-                const response = await fetch('http://localhost:8080/trading/market-data');
-                const data = await response.json();
-
-                if (data.prices) {
-                    // Sofia V2's supported symbols
-                    const supportedSymbols = [
-                        'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'ADAUSDT', 'LINKUSDT',
-                        'UNIUSDT', 'MATICUSDT', 'XRPUSDT', 'DOGEUSDT', 'BCHUSDT'
-                    ];
-
-                    this.coins = supportedSymbols.map(symbol => {
-                        const coinData = data.prices[symbol] || {};
-                        const baseSymbol = symbol.replace('USDT', '');
-                        
-                        return {
-                            name: this.getCoinName(baseSymbol),
-                            symbol: symbol,
-                            price: coinData.price || 0,
-                            change_percent: coinData.change_24h || 0,
-                            change_7d: coinData.change_7d || (Math.random() * 30 - 15),
-                            volume: coinData.volume_24h || Math.random() * 1000000000,
-                            market_cap: coinData.market_cap || Math.random() * 100000000000,
-                            categories: this.getCoinCategories(baseSymbol)
-                        };
-                    });
+                // Fetch from our backend with 100+ coins
+                const response = await fetch('/api/market-data-extended');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    this.coins = data.cryptos || [];
                 } else {
-                    throw new Error('No price data received');
+                    throw new Error('Backend API unavailable');
                 }
 
                 this.loading = false;
                 this.filterCoins();
             } catch (error) {
-                console.log('Backend API unavailable, using fallback data:', error);
+                console.log('Using server-provided crypto data');
+                this.loadServerData();
+            }
+        },
+
+        loadServerData() {
+            // Use data provided by server
+            try {
+                this.coins = {{ cryptos|tojson|safe }};
+                console.log('Loaded', this.coins.length, 'cryptocurrencies');
+            } catch (e) {
+                console.error('Error loading server data:', e);
                 this.loadFallbackData();
             }
+            this.loading = false;
+            this.filterCoins();
         },
 
         getCoinName(symbol) {

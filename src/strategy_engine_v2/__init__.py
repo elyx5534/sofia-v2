@@ -11,15 +11,9 @@ This module provides advanced portfolio management capabilities:
 
 from .portfolio_manager import PortfolioManager
 from .asset_allocator import AssetAllocator
-from .correlation_engine import CorrelationEngine
-from .portfolio_optimizer import PortfolioOptimizer
-from .rebalancing_engine import RebalancingEngine
 
 __version__ = "2.0.0"
 __all__ = [
     "PortfolioManager",
-    "AssetAllocator", 
-    "CorrelationEngine",
-    "PortfolioOptimizer",
-    "RebalancingEngine"
+    "AssetAllocator"
 ]

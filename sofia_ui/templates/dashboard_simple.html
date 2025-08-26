@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-20">
+    <!-- Page Header -->
+    <div class="px-6 py-6 border-b border-gray-800/50 bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-3xl font-bold text-white flex items-center">
+                <i class="fas fa-chart-line mr-3 text-blue-400"></i>
+                Trading Dashboard
+                <span class="ml-3 text-sm bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full animate-pulse">LIVE</span>
+            </h1>
+        </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <!-- Main Area -->
+            <div class="xl:col-span-3 space-y-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Total Balance</h3>
+                        <div class="text-3xl font-bold text-white">${{ "%.2f"|format(total_balance) }}</div>
+                        <div class="{% if daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} text-sm">
+                            {% if daily_pnl >= 0 %}+{% endif %}{{ "%.2f"|format(pnl_percentage) }}% today
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">BTC Price</h3>
+                        <div class="text-3xl font-bold text-white">${{ "%.0f"|format(btc_data.price) }}</div>
+                        <div class="text-green-400 text-sm">+2.4% (24h)</div>
+                    </div>
+
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <h3 class="text-lg font-semibold text-white mb-2">Active Alerts</h3>
+                        <div class="text-3xl font-bold text-white">{{ alerts|length }}</div>
+                        <div class="text-red-400 text-sm">Live signals</div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Portfolio Performance</h3>
+                    <div class="h-64 flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line text-4xl text-blue-400 mb-2"></i>
+                            <div class="text-white">Live Portfolio Chart</div>
+                            <div class="text-gray-400 text-sm">Real-time performance tracking</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="space-y-6">
+                <!-- Alert Signals -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5 cursor-pointer hover:bg-slate-800/30 transition-all" onclick="openModal('alertModal')">
+                    <h3 class="text-base font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-bell text-yellow-400 mr-2"></i>
+                        Alert Signals
+                        <span class="ml-auto text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded animate-pulse">LIVE</span>
+                    </h3>
+                    <div class="space-y-2">
+                        {% if alerts %}
+                            {% for alert in alerts[:3] %}
+                            <div class="p-2 rounded-lg bg-slate-800/50 border border-slate-700">
+                                <div class="text-xs text-white">{{ alert.message[:50] }}...</div>
+                                <div class="text-xs text-gray-500 mt-1">{{ alert.source }}</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-green-400"></i>
+                                <p class="text-xs text-slate-400">No alerts</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5">
+                    <h3 class="text-base font-semibold text-white mb-4">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <a href="/manual-trading" class="w-full block py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-center transition-all text-sm">
+                            <i class="fas fa-hand-paper mr-2"></i>Manuel Trading
+                        </a>
+                        <a href="/trading" class="w-full block py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center transition-all text-sm">
+                            <i class="fas fa-brain mr-2"></i>AI Trading
+                        </a>
+                        <a href="/markets" class="w-full block py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-center transition-all text-sm">
+                            <i class="fas fa-coins mr-2"></i>Markets
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Modal -->
+    <div id="alertModal" class="modal-overlay" onclick="closeModal('alertModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-white">Alert Analysis</h2>
+                <button onclick="closeModal('alertModal')" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-green-400 mb-2">87%</div>
+                    <div class="text-lg text-white">AI Confidence</div>
+                    <div class="text-gray-400 mt-2">Market sentiment: Bullish</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    z-index: 1000;
+    padding: 2rem;
+}
+
+.modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+</style>
+
+<script>
+function openModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+async function fetchAlerts() {
+    console.log('Fetching alerts...');
+}
+</script>
+{% endblock %}

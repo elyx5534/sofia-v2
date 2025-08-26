@@ -254,20 +254,27 @@
 
                     <!-- Main Navigation -->
                     <div class="hidden lg:flex items-center space-x-1">
-                        <a href="/" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-gray-800/50' if current_page == 'dashboard' else '' }}">
+                        <a href="/dashboard" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'dashboard' else '' }}">
                             <i class="fas fa-chart-line mr-2"></i>Dashboard
                         </a>
-                        <a href="/portfolio" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-gray-800/50' if current_page == 'portfolio' else '' }}">
+                        <a href="/portfolio" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'portfolio' else '' }}">
                             <i class="fas fa-wallet mr-2"></i>Portfolio
                         </a>
-                        <a href="/markets" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <a href="/markets" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'markets' else '' }}">
                             <i class="fas fa-coins mr-2"></i>Markets
+                            <span class="ml-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Live</span>
                         </a>
-                        <a href="/backtest" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
-                            <i class="fas fa-flask mr-2"></i>Backtest
+                        <a href="/trading" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'trading' else '' }}">
+                            <i class="fas fa-brain mr-2"></i>AI Trading
+                            <span class="ml-1 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">AI</span>
                         </a>
-                        <a href="/strategies" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
-                            <i class="fas fa-robot mr-2"></i>Strategies
+                        <a href="/manual-trading" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'manual-trading' else '' }}">
+                            <i class="fas fa-hand-paper mr-2"></i>Manuel Al/Sat
+                            <span class="ml-1 text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Manual</span>
+                        </a>
+                        <a href="/reliability" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'reliability' else '' }}">
+                            <i class="fas fa-shield-alt mr-2"></i>Güvenilirlik
+                            <span class="ml-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">%95</span>
                         </a>
                     </div>
                 </div>

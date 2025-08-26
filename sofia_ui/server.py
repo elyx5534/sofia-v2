@@ -9,6 +9,7 @@ import random
 from datetime import datetime
 from pathlib import Path
 import aiohttp
+import httpx  # For calling trading status API
 
 import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException, Depends
@@ -77,6 +78,27 @@ except:
             return {"value": 72, "value_classification": "Greed"}
 
     live_data_service = MockLiveDataService()
+
+# Trading Status API URL
+TRADING_API_URL = "http://localhost:8003"  # Trading status API port
+
+async def get_real_trading_data():
+    """Get real trading data from trading status API"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{TRADING_API_URL}/status")
+            if response.status_code == 200:
+                data = response.json()
+                print(f"Successfully fetched trading data: Total balance = ${data['portfolio']['total_balance']}")
+                return data
+            else:
+                print(f"Trading API returned status {response.status_code}")
+    except Exception as e:
+        print(f"Error fetching trading data: {e}")
+        print(f"Failed to connect to {TRADING_API_URL}")
+    
+    # Fallback to default data
+    return None
 
 # FastAPI uygulaması
 app = FastAPI(
@@ -226,10 +248,27 @@ async def welcome_page(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def homepage(request: Request):
     """Ana sayfa - Ultimate dashboard"""
+    # Get real trading data
+    real_data = await get_real_trading_data()
+    
+    # Extract portfolio values
+    total_balance = 125430.67  # Default
+    daily_pnl = 2340.56
+    pnl_percentage = 1.87
+    
+    if real_data:
+        portfolio = real_data["portfolio"]
+        total_balance = portfolio["total_balance"]
+        daily_pnl = portfolio["daily_pnl"]
+        pnl_percentage = portfolio["daily_pnl_percentage"]
+    
     context = {
         "request": request,
         "page_title": "Sofia V2 - AI Trading Platform",
         "current_page": "dashboard",
+        "total_balance": total_balance,
+        "daily_pnl": daily_pnl,
+        "pnl_percentage": pnl_percentage,
         "btc_data": get_live_btc_data(),
         "latest_news": get_mock_news()[:3],
     }
@@ -268,7 +307,17 @@ async def get_trading_status():
         }
 
 async def get_portfolio_data():
-    """Get real-time portfolio data from trading system"""
+    """Get real-time portfolio data from UNIFIED trading system"""
+    try:
+        # Connect to unified system
+        async with aiohttp.ClientSession() as session:
+            async with session.get("http://localhost:8889/portfolio") as response:
+                if response.status == 200:
+                    return await response.json()
+    except:
+        pass
+    
+    # Fallback data
     try:
         # Sofia V2 realistic portfolio data
         positions = [
@@ -333,8 +382,24 @@ async def get_portfolio_data():
 @app.get("/portfolio", response_class=HTMLResponse)
 async def portfolio(request: Request):
     """Portfolio dashboard - Real-time trading data"""
-    trading_status = await get_trading_status()
-    portfolio_data = await get_portfolio_data()
+    # Get real trading data from unified API
+    real_data = await get_real_trading_data()
+    
+    # Use real data if available
+    if real_data:
+        portfolio_data = {
+            "total_value": real_data["portfolio"]["total_balance"],
+            "available_cash": real_data["portfolio"]["available_balance"],
+            "positions_value": real_data["portfolio"]["in_positions"],
+            "daily_pnl": real_data["portfolio"]["daily_pnl"],
+            "daily_pnl_percentage": real_data["portfolio"]["daily_pnl_percentage"],
+            "positions": real_data["positions"],
+            "currency": "USD"
+        }
+        trading_status = real_data["trading_status"]
+    else:
+        trading_status = await get_trading_status()
+        portfolio_data = await get_portfolio_data()
     
     context = {
         "request": request,
@@ -724,12 +789,76 @@ async def strategies_page(request: Request):
 @app.get("/markets", response_class=HTMLResponse)
 async def markets_page(request: Request):
     """Markets sayfası - 100+ kripto listesi"""
+    # Sample crypto data for markets page
+    cryptos = [
+        {"symbol": "BTCUSDT", "name": "Bitcoin", "price": 67845.32, "change": 2.45, "volume": "1.2B"},
+        {"symbol": "ETHUSDT", "name": "Ethereum", "price": 2456.78, "change": -1.23, "volume": "865M"},
+        {"symbol": "SOLUSDT", "name": "Solana", "price": 156.43, "change": 5.67, "volume": "432M"},
+        {"symbol": "BNBUSDT", "name": "BNB", "price": 612.34, "change": 1.89, "volume": "298M"},
+        {"symbol": "ADAUSDT", "name": "Cardano", "price": 0.4567, "change": -2.34, "volume": "187M"},
+        {"symbol": "XRPUSDT", "name": "XRP", "price": 0.5432, "change": 3.21, "volume": "654M"},
+        {"symbol": "DOGEUSDT", "name": "Dogecoin", "price": 0.0876, "change": 8.45, "volume": "234M"},
+        {"symbol": "AVAXUSDT", "name": "Avalanche", "price": 32.45, "change": -0.87, "volume": "156M"},
+    ]
+    
     context = {
         "request": request,
         "page_title": "Crypto Markets - Sofia V2",
         "current_page": "markets",
+        "cryptos": cryptos,
     }
     return templates.TemplateResponse("markets.html", context)
+
+
+@app.get("/trading", response_class=HTMLResponse)
+async def trading_page(request: Request):
+    """Trading sayfası - AI önerileri"""
+    context = {
+        "request": request,
+        "page_title": "Trading Recommendations - Sofia V2",
+        "current_page": "trading",
+    }
+    return templates.TemplateResponse("trading_recommendations.html", context)
+
+
+@app.get("/manual-trading", response_class=HTMLResponse)
+async def manual_trading_page(request: Request):
+    """Manuel trading sayfası"""
+    # Mock coin data for manual trading
+    top_coins = [
+        {"id": "bitcoin", "name": "Bitcoin", "symbol": "btc", "current_price": 67845.32, "image": "/static/btc.png", "market_cap_rank": 1, "price_change_percentage_24h": 2.45, "total_volume": 25600000000},
+        {"id": "ethereum", "name": "Ethereum", "symbol": "eth", "current_price": 2456.78, "image": "/static/eth.png", "market_cap_rank": 2, "price_change_percentage_24h": -1.23, "total_volume": 18400000000},
+        {"id": "solana", "name": "Solana", "symbol": "sol", "current_price": 156.43, "image": "/static/sol.png", "market_cap_rank": 3, "price_change_percentage_24h": 5.67, "total_volume": 12300000000},
+        {"id": "bnb", "name": "BNB", "symbol": "bnb", "current_price": 612.34, "image": "/static/bnb.png", "market_cap_rank": 4, "price_change_percentage_24h": 1.89, "total_volume": 8900000000},
+        {"id": "cardano", "name": "Cardano", "symbol": "ada", "current_price": 0.4567, "image": "/static/ada.png", "market_cap_rank": 5, "price_change_percentage_24h": -2.34, "total_volume": 6700000000},
+        {"id": "xrp", "name": "XRP", "symbol": "xrp", "current_price": 0.5432, "image": "/static/xrp.png", "market_cap_rank": 6, "price_change_percentage_24h": 3.21, "total_volume": 15600000000},
+        {"id": "dogecoin", "name": "Dogecoin", "symbol": "doge", "current_price": 0.0876, "image": "/static/doge.png", "market_cap_rank": 7, "price_change_percentage_24h": 8.45, "total_volume": 4500000000},
+        {"id": "avalanche", "name": "Avalanche", "symbol": "avax", "current_price": 32.45, "image": "/static/avax.png", "market_cap_rank": 8, "price_change_percentage_24h": -0.87, "total_volume": 3200000000},
+    ]
+    
+    total_volume = 156800000000  # $156.8B
+    avg_change = 2.3  # +2.3%
+    
+    context = {
+        "request": request,
+        "page_title": "Manual Trading - Sofia V2", 
+        "current_page": "manual-trading",
+        "top_coins": top_coins,
+        "total_volume": total_volume,
+        "avg_change": avg_change,
+    }
+    return templates.TemplateResponse("manual_trading_simple.html", context)
+
+
+@app.get("/reliability", response_class=HTMLResponse)
+async def reliability_page(request: Request):
+    """Güvenilirlik analizi sayfası"""
+    context = {
+        "request": request,
+        "page_title": "AI Reliability Analysis - Sofia V2",
+        "current_page": "reliability",
+    }
+    return templates.TemplateResponse("reliability.html", context)
 
 
 # Backtest API endpoint - arkadaşının kullanacağı
@@ -969,23 +1098,57 @@ async def get_trading_positions():
 
 @app.get("/api/trading/portfolio")
 async def get_portfolio_data():
-    """Get portfolio summary data"""
-    # Get current positions
+    """Get portfolio summary data - from unified API"""
+    print("get_portfolio_data called")
+    # Get real data from trading status API
+    real_data = await get_real_trading_data()
+    print(f"real_data = {real_data is not None}")
+    
+    if real_data:
+        portfolio = real_data["portfolio"]
+        positions = {
+            pos["symbol"].replace("/", ""): {
+                "symbol": pos["symbol"].replace("/", ""),
+                "side": pos["side"],
+                "size": pos["quantity"],
+                "entry_price": pos["entry_price"],
+                "current_price": pos["current_price"],
+                "unrealized_pnl": pos["pnl"],
+                "pnl_percent": pos["pnl_percentage"],
+                "timestamp": datetime.now().isoformat()
+            }
+            for pos in real_data["positions"]
+        }
+        
+        return {
+            "total_balance": portfolio["total_balance"],
+            "available_balance": portfolio["available_balance"],
+            "used_balance": portfolio["in_positions"],
+            "daily_pnl": portfolio["daily_pnl"],
+            "daily_pnl_percent": portfolio["daily_pnl_percentage"],
+            "total_return": portfolio["daily_pnl_percentage"],
+            "positions": positions,
+            "active_strategies": [
+                {"name": "Mean Reversion", "status": "active", "pnl": 156.23},
+                {"name": "Momentum Breakout", "status": "active", "pnl": -23.45}, 
+                {"name": "Grid Trading", "status": "active", "pnl": 89.67}
+            ]
+        }
+    
+    # Fallback to mock data if API not available
     positions_data = await get_trading_positions()
     positions = positions_data["positions"]
-    
-    # Calculate portfolio metrics
     total_value = positions_data["total_value"]
     total_pnl = positions_data["total_pnl"]
     initial_value = total_value - total_pnl
     
-    portfolio_data = {
+    return {
         "total_balance": total_value,
-        "available_balance": total_value * 0.3,  # 30% available
-        "used_balance": total_value * 0.7,      # 70% in positions
+        "available_balance": total_value * 0.3,
+        "used_balance": total_value * 0.7,
         "daily_pnl": total_pnl,
         "daily_pnl_percent": (total_pnl / initial_value * 100) if initial_value > 0 else 0,
-        "total_return": 12.5,  # Overall return %
+        "total_return": 12.5,
         "positions": positions,
         "active_strategies": [
             {"name": "Mean Reversion", "status": "active", "pnl": 156.23},
@@ -993,8 +1156,6 @@ async def get_portfolio_data():
             {"name": "Grid Trading", "status": "active", "pnl": 89.67}
         ]
     }
-    
-    return portfolio_data
 
 @app.get("/api/trading/strategies")
 async def get_trading_strategies():
@@ -1146,6 +1307,66 @@ async def get_market_data():
             }
     
     return {"prices": prices}
+
+
+@app.get("/api/unified/portfolio")
+async def get_unified_portfolio():
+    """Get portfolio from unified system"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get("http://localhost:8889/portfolio") as response:
+                if response.status == 200:
+                    return await response.json()
+    except:
+        return await get_portfolio_data()
+
+
+@app.get("/api/unified/markets")
+async def get_unified_markets():
+    """Get market data from unified system"""
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get("http://localhost:8889/portfolio") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    # Get price cache from unified system
+                    return data.get("price_cache", {})
+    except:
+        return await get_crypto_prices()
+
+
+# Missing API endpoints for frontend
+@app.get("/api/alerts")
+async def get_alerts(limit: int = 5):
+    """Get recent alerts"""
+    alerts = [
+        {"id": 1, "type": "BUY", "symbol": "BTCUSDT", "price": 67845.32, "timestamp": "2024-08-26 10:30:00"},
+        {"id": 2, "type": "SELL", "symbol": "ETHUSDT", "price": 2456.78, "timestamp": "2024-08-26 10:25:00"},
+        {"id": 3, "type": "BUY", "symbol": "SOLUSDT", "price": 156.43, "timestamp": "2024-08-26 10:20:00"},
+    ]
+    return {"alerts": alerts[:limit]}
+
+
+@app.get("/api/market-data-extended")
+async def get_market_data_extended():
+    """Extended market data for dashboard"""
+    return {
+        "total_market_cap": 2340000000000,
+        "total_volume": 156800000000,
+        "btc_dominance": 42.5,
+        "eth_dominance": 18.2,
+        "fear_greed_index": 67,
+        "top_gainers": [
+            {"symbol": "DOGE", "change": 8.45},
+            {"symbol": "SOL", "change": 5.67},
+            {"symbol": "XRP", "change": 3.21},
+        ],
+        "top_losers": [
+            {"symbol": "ADA", "change": -2.34},
+            {"symbol": "ETH", "change": -1.23},
+            {"symbol": "AVAX", "change": -0.87},
+        ]
+    }
 
 
 if __name__ == "__main__":

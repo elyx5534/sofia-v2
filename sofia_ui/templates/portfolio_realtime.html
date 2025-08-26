@@ -18,19 +18,19 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
                 <h3 class="text-lg font-semibold text-white mb-2">Total Value</h3>
-                <div class="text-3xl font-bold text-white">${{ "%.2f"|format(portfolio_data.total_value) }}</div>
+                <div class="text-3xl font-bold text-white">${{ "%.2f"|format(portfolio_data.total_balance) }}</div>
                 <div class="{% if portfolio_data.daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} text-sm">
-                    {% if portfolio_data.daily_pnl >= 0 %}+{% endif %}{{ "%.2f"|format(portfolio_data.daily_pnl_percentage) }}% today
+                    {% if portfolio_data.daily_pnl >= 0 %}+{% endif %}{{ "%.2f"|format(portfolio_data.daily_pnl_percent) }}% today
                 </div>
             </div>
             <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
                 <h3 class="text-lg font-semibold text-white mb-2">Available Cash</h3>
-                <div class="text-3xl font-bold text-white">${{ "%.2f"|format(portfolio_data.available_cash) }}</div>
+                <div class="text-3xl font-bold text-white">${{ "%.2f"|format(portfolio_data.available_balance) }}</div>
                 <div class="text-gray-400 text-sm">Ready to trade</div>
             </div>
             <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
                 <h3 class="text-lg font-semibold text-white mb-2">In Positions</h3>
-                <div class="text-3xl font-bold text-white">${{ "%.2f"|format(portfolio_data.positions_value) }}</div>
+                <div class="text-3xl font-bold text-white">${{ "%.2f"|format(portfolio_data.used_balance) }}</div>
                 <div class="text-purple-400 text-sm">Active trades</div>
             </div>
         </div>

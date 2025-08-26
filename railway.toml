@@ -1,0 +1,29 @@
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python start_trading.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "always"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "backend"
+port = 8000
+startCommand = "uvicorn src.data_hub.api:app --host 0.0.0.0 --port 8000"
+
+[[services]]
+name = "frontend"
+port = 3000
+startCommand = "cd sofia_ui && uvicorn server:app --host 0.0.0.0 --port 3000"
+
+[[services]]
+name = "dashboard"
+port = 8001
+startCommand = "python src/web/realtime_dashboard.py"
+
+[env]
+PYTHON_VERSION = "3.11"
+PORT = "8000"

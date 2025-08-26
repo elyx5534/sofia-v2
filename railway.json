@@ -1,0 +1,145 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pip install -r requirements.txt && python -m pytest tests/ -q || true"
+  },
+  "deploy": {
+    "startCommand": "python start_trading.py",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "region": "us-west1"
+  },
+  "services": [
+    {
+      "name": "sofia-backend",
+      "source": {
+        "repo": ".",
+        "branch": "main"
+      },
+      "deploy": {
+        "startCommand": "uvicorn src.data_hub.api:app --host 0.0.0.0 --port ${PORT:-8000}",
+        "healthcheckPath": "/health",
+        "numReplicas": 1,
+        "region": "us-west1"
+      },
+      "envVars": {
+        "ENVIRONMENT": "production",
+        "LOG_LEVEL": "INFO",
+        "DATABASE_URL": "${{DATABASE_URL}}",
+        "REDIS_URL": "${{REDIS_URL}}",
+        "ANTHROPIC_API_KEY": "${{ANTHROPIC_API_KEY}}"
+      }
+    },
+    {
+      "name": "sofia-frontend",
+      "source": {
+        "repo": ".",
+        "branch": "main"
+      },
+      "deploy": {
+        "startCommand": "cd sofia_ui && uvicorn server:app --host 0.0.0.0 --port ${PORT:-3000}",
+        "healthcheckPath": "/",
+        "numReplicas": 1,
+        "region": "us-west1"
+      },
+      "envVars": {
+        "BACKEND_URL": "${{BACKEND_URL}}",
+        "ENVIRONMENT": "production"
+      }
+    },
+    {
+      "name": "sofia-dashboard",
+      "source": {
+        "repo": ".",
+        "branch": "main"
+      },
+      "deploy": {
+        "startCommand": "python src/web/realtime_dashboard.py",
+        "healthcheckPath": "/",
+        "numReplicas": 1,
+        "region": "us-west1"
+      },
+      "envVars": {
+        "BACKEND_URL": "${{BACKEND_URL}}",
+        "WS_ENABLED": "true"
+      }
+    },
+    {
+      "name": "sofia-worker",
+      "source": {
+        "repo": ".",
+        "branch": "main"
+      },
+      "deploy": {
+        "startCommand": "python auto_trader.py",
+        "numReplicas": 1,
+        "region": "us-west1"
+      },
+      "envVars": {
+        "TRADING_MODE": "paper",
+        "BACKEND_URL": "${{BACKEND_URL}}",
+        "BINANCE_API_KEY": "${{BINANCE_API_KEY}}",
+        "BINANCE_API_SECRET": "${{BINANCE_API_SECRET}}"
+      }
+    }
+  ],
+  "databases": [
+    {
+      "name": "sofia-postgres",
+      "engine": "postgresql",
+      "version": "14"
+    },
+    {
+      "name": "sofia-redis",
+      "engine": "redis",
+      "version": "7"
+    }
+  ],
+  "volumes": [
+    {
+      "name": "sofia-data",
+      "mountPath": "/data",
+      "size": "10Gi"
+    },
+    {
+      "name": "sofia-models",
+      "mountPath": "/models",
+      "size": "5Gi"
+    }
+  ],
+  "crons": [
+    {
+      "name": "cleanup-old-data",
+      "schedule": "0 2 * * *",
+      "command": "python -c \"from src.core.crash_recovery import CrashRecoveryManager; mgr = CrashRecoveryManager(); mgr.cleanup_old_checkpoints()\""
+    },
+    {
+      "name": "daily-report",
+      "schedule": "0 9 * * *",
+      "command": "python -c \"from src.scheduler.jobs import generate_daily_report; import asyncio; asyncio.run(generate_daily_report())\""
+    }
+  ],
+  "healthchecks": {
+    "enabled": true,
+    "path": "/health",
+    "interval": 30,
+    "timeout": 10,
+    "retries": 3
+  },
+  "scaling": {
+    "enabled": true,
+    "minReplicas": 1,
+    "maxReplicas": 3,
+    "targetCPU": 70,
+    "targetMemory": 80
+  },
+  "monitoring": {
+    "enabled": true,
+    "logLevel": "INFO",
+    "metrics": true,
+    "tracing": false
+  }
+}

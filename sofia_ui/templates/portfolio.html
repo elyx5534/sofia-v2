@@ -106,9 +106,9 @@
     activeTab: 'positions',
     selectedAsset: null,
     portfolio: {
-        total: 125430.67,
-        change: 12.4,
-        profit: 8432.12,
+        total: {{ portfolio_data.total_value | default(100000) }},
+        change: {{ portfolio_data.daily_pnl_percentage | default(0) }},
+        profit: {{ portfolio_data.daily_pnl | default(0) }},
         assets: [
             { symbol: 'BTC', name: 'Bitcoin', amount: 1.85, value: 124234.50, change: 5.2, price: 67153.24, icon: 'fa-bitcoin' },
             { symbol: 'ETH', name: 'Ethereum', amount: 12.4, value: 43088.40, change: -2.1, price: 3474.87, icon: 'fa-ethereum' },

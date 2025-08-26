@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-20"> <!-- Add top padding for fixed navbar -->
+    <!-- Page Header -->
+    <div class="px-6 py-6 border-b border-gray-800/50 bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <h1 class="text-3xl font-bold text-white flex items-center">
+                    <i class="fas fa-chart-line mr-3 text-blue-400"></i>
+                    Trading Dashboard
+                    <span class="ml-3 text-sm bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full animate-pulse">
+                        LIVE DATA
+                    </span>
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm">
+                        <span class="text-gray-400">Portfolio:</span>
+                        <span class="text-white font-semibold ml-2">${{ "%.2f"|format(total_balance) }}</span>
+                        <span class="{% if daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} ml-2">
+                            {% if daily_pnl >= 0 %}+{% endif %}{{ "%.2f"|format(pnl_percentage) }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <!-- Main Dashboard Area -->
+            <div class="xl:col-span-3 space-y-6">
+                <!-- Portfolio Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">Total Balance</h3>
+                            <i class="fas fa-wallet text-blue-400"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-2">${{ "%.2f"|format(total_balance) }}</div>
+                        <div class="{% if daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} text-sm">
+                            {% if daily_pnl >= 0 %}+{% endif %}{{ "%.2f"|format(pnl_percentage) }}% (24h)
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">BTC Price</h3>
+                            <i class="fab fa-bitcoin text-yellow-400"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-2">${{ "%.0f"|format(btc_data.price) }}</div>
+                        <div class="text-green-400 text-sm">+2.4% (24h)</div>
+                    </div>
+
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">Active Alerts</h3>
+                            <i class="fas fa-bell text-red-400"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-2">{{ alerts|length }}</div>
+                        <div class="text-red-400 text-sm">{{ alerts|length }} new signals</div>
+                    </div>
+                </div>
+
+                <!-- Portfolio Chart -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-white">Portfolio Performance</h3>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm">1D</button>
+                            <button class="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm hover:bg-gray-600">7D</button>
+                            <button class="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm hover:bg-gray-600">1M</button>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Recent Activities</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                                <div>
+                                    <div class="text-white font-medium">Alert Signal: BTC Buy</div>
+                                    <div class="text-xs text-gray-400">AI Confidence: 87%</div>
+                                </div>
+                            </div>
+                            <span class="text-xs text-gray-400">2m ago</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+                                <div>
+                                    <div class="text-white font-medium">Price Update: ETH</div>
+                                    <div class="text-xs text-gray-400">New price: $4,365</div>
+                                </div>
+                            </div>
+                            <span class="text-xs text-gray-400">5m ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="space-y-6">
+                <!-- Alert Signals -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5 cursor-pointer hover:bg-slate-800/30 transition-all" onclick="openModal('alertModal')">
+                    <h3 class="text-base font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-bell text-yellow-400 mr-2"></i>
+                        Alert Signals
+                        <span class="ml-auto text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded animate-pulse">LIVE</span>
+                    </h3>
+                    <div class="space-y-2 max-h-48 overflow-y-auto">
+                        {% if alerts %}
+                            {% for alert in alerts[:3] %}
+                            <div class="p-2 rounded-lg bg-slate-800/50 border border-slate-700">
+                                <div class="flex items-start space-x-2">
+                                    <span class="text-sm">{{ alert.action_icon }}</span>
+                                    <div class="flex-1">
+                                        <div class="text-xs text-white">{{ alert.message[:50] }}...</div>
+                                        <div class="text-xs text-gray-500 mt-1">{{ alert.source }} • {{ alert.time|default("now") }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-green-400 text-xl mb-1"></i>
+                                <p class="text-xs text-slate-400">No active alerts</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button onclick="event.stopPropagation(); fetchAlerts()" class="w-full mt-3 px-3 py-1.5 text-xs rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-700 transition-all">
+                        <i class="fas fa-sync-alt mr-1"></i> Refresh
+                    </button>
+                </div>
+
+                <!-- Market Overview -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5">
+                    <h3 class="text-base font-semibold text-white mb-4">Market Overview</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Fear & Greed</span>
+                            <span class="text-green-400">72 - Greed</span>
+                        </div>
+                        <div class="w-full bg-slate-700 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 72%"></div>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-400">Total Market Cap</span>
+                            <span class="text-white">$2.43T</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5">
+                    <h3 class="text-base font-semibold text-white mb-4">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <a href="/manual-trading" class="w-full block py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-center transition-all text-sm">
+                            <i class="fas fa-hand-paper mr-2"></i>Manuel Trading
+                        </a>
+                        <a href="/trading" class="w-full block py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center transition-all text-sm">
+                            <i class="fas fa-brain mr-2"></i>AI Trading
+                        </a>
+                        <a href="/markets" class="w-full block py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-center transition-all text-sm">
+                            <i class="fas fa-coins mr-2"></i>Markets
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals (same as before) -->
+    <div id="alertModal" class="modal-overlay" onclick="closeModal('alertModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-white">Alert Analysis</h2>
+                <button onclick="closeModal('alertModal')" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-green-400 mb-2">87%</div>
+                    <div class="text-lg text-white">AI Confidence</div>
+                    <div class="text-gray-400 mt-2">Bullish market sentiment detected</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    z-index: 1000;
+    padding: 2rem;
+}
+
+.modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+</style>
+
+<script>
+// Modal functions
+function openModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Fetch alerts
+async function fetchAlerts() {
+    try {
+        const response = await fetch('/api/alerts?limit=3');
+        const data = await response.json();
+        console.log('Alerts refreshed:', data.count);
+    } catch (error) {
+        console.error('Error fetching alerts:', error);
+    }
+}
+
+// Initialize portfolio chart
+function initPortfolioChart() {
+    const ctx = document.getElementById('portfolioChart')?.getContext('2d');
+    if (!ctx) return;
+    
+    const labels = [];
+    const data = [];
+    const baseValue = {{ total_balance }};
+    
+    for (let i = 23; i >= 0; i--) {
+        const hour = (new Date().getHours() - i + 24) % 24;
+        labels.push(hour + ':00');
+        
+        const volatility = 0.02;
+        const change = (Math.random() - 0.5) * volatility;
+        const value = baseValue * (1 + change * (i / 24));
+        data.push(value);
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Portfolio Value',
+                data: data,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: 'rgba(148, 163, 184, 0.1)' }, ticks: { color: '#64748b' } },
+                y: { 
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
+                    ticks: { 
+                        color: '#64748b',
+                        callback: value => '$' + value.toLocaleString()
+                    } 
+                }
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initPortfolioChart();
+});
+</script>
+{% endblock %}
