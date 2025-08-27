@@ -6,7 +6,7 @@ Canlı fiyat ve piyasa verilerini çeken servis
 import yfinance as yf
 import requests
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 import asyncio
 import logging
@@ -70,7 +70,7 @@ class LiveDataService:
                 "change_percent": round(float(change_percent), 2),
                 "volume": self._format_volume(float(volume)),
                 "market_cap": info.get('marketCap', 'N/A'),
-                "last_updated": datetime.now().strftime("%H:%M:%S"),
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                 "currency": info.get('currency', 'USD'),
                 "sector": info.get('sector', 'Unknown')
             }
@@ -117,7 +117,7 @@ class LiveDataService:
                             "change": float(change),
                             "change_percent": round(float(change_percent), 2),
                             "volume": self._format_volume(float(hist['Volume'].iloc[-1]) if 'Volume' in hist.columns else 0),
-                            "last_updated": datetime.now().strftime("%H:%M:%S"),
+                            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                             "icon": self._get_coin_icon(symbol)
                         }
                     else:
@@ -226,7 +226,7 @@ class LiveDataService:
                             "price": float(current_price),
                             "change": float(change),
                             "change_percent": round(float(change_percent), 2),
-                            "last_updated": datetime.now().strftime("%H:%M:%S")
+                            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
                         }
                     else:
                         results[symbol] = self._get_fallback_data(symbol)
@@ -258,7 +258,7 @@ class LiveDataService:
                     "value": int(fng_data['value']),
                     "value_classification": fng_data['value_classification'],
                     "timestamp": fng_data['timestamp'],
-                    "last_updated": datetime.now().strftime("%H:%M:%S")
+                    "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
                 }
             else:
                 return self._get_fallback_fear_greed()
@@ -282,7 +282,7 @@ class LiveDataService:
             return {
                 "indices": summary_data,
                 "crypto": crypto_data,
-                "last_updated": datetime.now().strftime("%H:%M:%S")
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
             }
             
         except Exception as e:
@@ -317,13 +317,13 @@ class LiveDataService:
             return False
             
         cache_time = self.cache[key]['timestamp']
-        return (datetime.now() - cache_time).seconds < self.cache_duration
+        return (datetime.now(timezone.utc) - cache_time).seconds < self.cache_duration
     
     def _cache_data(self, key: str, data: Dict):
         """Veriyi cache'le"""
         self.cache[key] = {
             'data': data,
-            'timestamp': datetime.now()
+            'timestamp': datetime.now(timezone.utc)
         }
     
     def _format_volume(self, volume: float) -> str:
@@ -360,7 +360,7 @@ class LiveDataService:
             "change_percent": 2.5,
             "volume": "1.2B",
             "market_cap": "N/A",
-            "last_updated": datetime.now().strftime("%H:%M:%S"),
+            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
             "currency": "USD",
             "sector": "Technology"
         }
@@ -370,8 +370,8 @@ class LiveDataService:
         return {
             "value": 72,
             "value_classification": "Greed",
-            "timestamp": datetime.now().timestamp(),
-            "last_updated": datetime.now().strftime("%H:%M:%S")
+            "timestamp": datetime.now(timezone.utc).timestamp(),
+            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
         }
     
     def _get_fallback_crypto_data(self) -> Dict:
