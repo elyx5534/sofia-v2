@@ -258,52 +258,65 @@ def get_mock_strategies():
 
 
 # Routes
+async def get_consistent_portfolio_data():
+    """Get consistent portfolio data for all dashboard pages"""
+    # Get real trading data from AI engines
+    real_data = await get_real_trading_data()
+    
+    if real_data:
+        portfolio = real_data["portfolio"]
+        total_balance = portfolio["total_balance"]
+        daily_pnl = portfolio["daily_pnl"] 
+        pnl_percentage = portfolio["daily_pnl_percentage"]
+        print(f"Using AI portfolio data: ${total_balance}, P&L: ${daily_pnl}")
+    else:
+        # Use consistent simulation across all pages
+        import random
+        # Use time-based seed for consistency within same minute
+        minute_seed = int(datetime.now().timestamp() / 60)
+        random.seed(minute_seed)
+        
+        total_balance = 125430.67 + (random.randint(-1000, 2000))
+        daily_pnl = 3847.32 + (random.randint(-500, 1000))
+        pnl_percentage = (daily_pnl / total_balance) * 100
+    
+    return {
+        "total_balance": total_balance,
+        "daily_pnl": daily_pnl,
+        "pnl_percentage": pnl_percentage
+    }
+
 @app.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
     """Ana dashboard - Enhanced with AI features"""
+    portfolio_data = await get_consistent_portfolio_data()
+    
     context = {
         "request": request,
         "page_title": "Sofia V2 - AI Trading Platform",
         "current_page": "dashboard",
+        "total_balance": portfolio_data["total_balance"],
+        "daily_pnl": portfolio_data["daily_pnl"],
+        "pnl_percentage": portfolio_data["pnl_percentage"]
     }
     return templates.TemplateResponse("dashboard_ultimate.html", context)
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def homepage(request: Request):
-    """Ana sayfa - Ultimate dashboard"""
-    # Get real trading data
-    real_data = await get_real_trading_data()
-    
-    # Extract portfolio values from AI engines or use realistic simulation
-    total_balance = 125430.67  # Default
-    daily_pnl = 2340.56
-    pnl_percentage = 1.87
-    
-    if real_data:
-        portfolio = real_data["portfolio"] 
-        total_balance = portfolio["total_balance"]
-        daily_pnl = portfolio["daily_pnl"]
-        pnl_percentage = portfolio["daily_pnl_percentage"]
-        print(f"Dashboard using AI data: ${total_balance}, P&L: ${daily_pnl}")
-    else:
-        # Use dynamic simulation for demo
-        import random
-        base_time = datetime.now().timestamp() / 10000  # Time-based variation
-        total_balance = 125430.67 + (random.randint(-1000, 2000))  # Some variation
-        daily_pnl = 2340.56 + (random.randint(-500, 1000))
-        pnl_percentage = (daily_pnl / total_balance) * 100
+async def dashboard_page(request: Request):
+    """Dashboard sayfa - Consistent data with other pages"""
+    portfolio_data = await get_consistent_portfolio_data()
     
     context = {
         "request": request,
         "page_title": "Sofia V2 - AI Trading Platform",
         "current_page": "dashboard",
-        "total_balance": total_balance,
-        "daily_pnl": daily_pnl,
-        "pnl_percentage": pnl_percentage,
+        "total_balance": portfolio_data["total_balance"],
+        "daily_pnl": portfolio_data["daily_pnl"],
+        "pnl_percentage": portfolio_data["pnl_percentage"],
         "btc_data": get_live_btc_data(),
         "latest_news": get_mock_news()[:3],
     }
-    return templates.TemplateResponse("homepage.html", context)
+    return templates.TemplateResponse("dashboard_ultimate.html", context)
 
 
 @app.get("/new", response_class=HTMLResponse)
@@ -412,15 +425,17 @@ async def get_portfolio_data():
 
 @app.get("/portfolio", response_class=HTMLResponse)
 async def portfolio(request: Request):
-    """Portfolio dashboard - Enhanced AI Dashboard"""
+    """Portfolio dashboard - Enhanced AI Dashboard with consistent data"""
+    portfolio_data = await get_consistent_portfolio_data()
+    
     context = {
         "request": request,
         "page_title": "Portfolio - Sofia V2 Enhanced",
         "current_page": "portfolio",
-        "portfolio_value": 125430.67,
-        "daily_pnl": 3847.32,
-        "pnl_percentage": 3.16,
-        "total_balance": 125430.67,
+        "total_balance": portfolio_data["total_balance"],
+        "daily_pnl": portfolio_data["daily_pnl"],
+        "pnl_percentage": portfolio_data["pnl_percentage"],
+        "portfolio_value": portfolio_data["total_balance"],
         "btc_price": 67845.32,
         "eth_price": 3456.78
     }
