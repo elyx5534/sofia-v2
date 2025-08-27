@@ -263,8 +263,26 @@ def get_mock_strategies():
 
 # Routes
 async def get_consistent_portfolio_data():
-    """Get consistent portfolio data from unified system"""
-    # Use unified portfolio system for all pages
+    """Get consistent portfolio data from paper trading system"""
+    try:
+        # Get real paper trading data first
+        trading_data = await get_trading_positions()
+        
+        if trading_data.get("total_value"):
+            # Use real paper trading values for consistency
+            return {
+                "total_balance": trading_data["total_value"],
+                "available_cash": trading_data["total_value"] * 0.3,  # 30% cash
+                "daily_pnl": trading_data["total_pnl"],
+                "daily_pnl_percentage": (trading_data["total_pnl"] / trading_data["total_value"]) * 100,
+                "active_positions": trading_data["active_trades"],
+                "positions": trading_data.get("positions", {}),
+                "last_updated": datetime.utcnow().isoformat()
+            }
+    except Exception as e:
+        print(f"Paper trading not available: {e}")
+    
+    # Fallback to unified portfolio system
     portfolio_data = await unified_portfolio.get_portfolio_data("demo")
     return portfolio_data
 
@@ -405,15 +423,28 @@ async def get_portfolio_data():
             "recent_trades": []
         }
 
-@app.get("/portfolio", response_class=HTMLResponse)
+@app.get("/portfolio", response_class=HTMLResponse) 
 async def portfolio(request: Request):
-    """Portfolio dashboard - Unique portfolio page"""
+    """Portfolio dashboard - Real Paper Trading Data"""
+    # Get unified portfolio data
     portfolio_data = await get_consistent_portfolio_data()
+    
+    # Also get real paper trading positions
+    try:
+        trading_positions = await get_trading_positions()
+        # Use real paper trading data if available
+        portfolio_data.update({
+            "paper_trading_value": trading_positions["total_value"],
+            "paper_trading_pnl": trading_positions["total_pnl"],
+            "active_positions": trading_positions["active_trades"]
+        })
+    except:
+        pass
     
     context = {
         "request": request,
         "page_title": "Portfolio - Sofia V2 Enhanced",
-        "current_page": "portfolio", 
+        "current_page": "portfolio",
         "portfolio_data": portfolio_data
     }
     return templates.TemplateResponse("portfolio_ultra.html", context)

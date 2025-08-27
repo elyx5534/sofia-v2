@@ -99,10 +99,10 @@
                 <span class="text-xs text-gray-400">Updated 2s ago</span>
             </div>
             <p class="text-gray-400 text-sm mb-1">Portfolio Value</p>
-            <h3 class="text-3xl font-bold text-white mb-2">$487,234.89</h3>
+            <h3 class="text-3xl font-bold text-white mb-2">${{ "%.2f"|format(portfolio_data.total_balance) if portfolio_data else "100,000.00" }}</h3>
             <div class="flex items-center">
                 <i class="fas fa-arrow-up text-green-400 text-xs mr-1"></i>
-                <span class="text-green-400 text-sm font-semibold">+24.8%</span>
+                <span class="text-green-400 text-sm font-semibold">{{ "+%.1f"|format(portfolio_data.daily_pnl_percentage) if portfolio_data else "+0.0" }}%</span>
                 <span class="text-gray-500 text-xs ml-2">All time</span>
             </div>
         </div>
@@ -116,7 +116,7 @@
                 <div class="pulse-dot"></div>
             </div>
             <p class="text-gray-400 text-sm mb-1">Available</p>
-            <h3 class="text-3xl font-bold text-white mb-2">$45,678.32</h3>
+            <h3 class="text-3xl font-bold text-white mb-2">${{ "%.2f"|format(portfolio_data.available_cash) if portfolio_data else "50,000.00" }}</h3>
             <button class="text-blue-400 text-sm hover:text-blue-300 transition-colors">
                 <i class="fas fa-plus mr-1"></i> Deposit
             </button>
@@ -130,7 +130,7 @@
                 </div>
             </div>
             <p class="text-gray-400 text-sm mb-1">Today's Profit</p>
-            <h3 class="text-3xl font-bold text-green-400 profit-text">+$8,234.56</h3>
+            <h3 class="text-3xl font-bold text-green-400 profit-text">${{ "+%.2f"|format(portfolio_data.daily_pnl) if portfolio_data and portfolio_data.daily_pnl > 0 else "%.2f"|format(portfolio_data.daily_pnl) if portfolio_data else "+0.00" }}</h3>
             <div class="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
                 <div class="h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full" style="width: 78%; animation: width 1s ease;"></div>
             </div>
@@ -189,7 +189,7 @@
                         </div>
                         <div class="text-center">
                             <p class="text-sm text-gray-400">Value</p>
-                            <p class="font-mono text-white">$166,321.54</p>
+                            <p class="font-mono text-white">$66,321.54</p>
                         </div>
                         <div class="text-center">
                             <p class="text-sm text-gray-400">24h</p>
