@@ -464,8 +464,8 @@ async def reliability_info(request: Request):
         "request": request,
         "page_title": "Veri Güvenilirliği - Sofia V2",
         "current_page": "reliability",
-        "current_time": datetime.now().strftime("%H:%M:%S"),
-        "current_date": datetime.now().strftime("%d/%m/%Y")
+        "current_time": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+        "current_date": datetime.now(timezone.utc).strftime("%d/%m/%Y")
     }
     return templates.TemplateResponse("reliability.html", context)
 
@@ -631,7 +631,7 @@ def generate_ai_analysis_for_coin(coin):
         "data_reliability": int(reliability_score),
         "data_sources": data_sources,
         "is_real_data": True,
-        "last_updated": datetime.now().strftime("%H:%M:%S"),
+        "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
         "disclaimer": "⚠️ Analysis based on technical indicators and market data. Not financial advice."
     }
 
@@ -714,7 +714,7 @@ async def api_positions():
                 "current_price": pos["current_price"],
                 "unrealized_pnl": pos["pnl"],
                 "pnl_percent": pos["pnl_percentage"],
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
         
         return {
@@ -747,7 +747,7 @@ async def api_market_data_extended():
     return {
         "cryptos": crypto_data,
         "total_count": len(crypto_data),
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/api/trading-signals")
@@ -768,7 +768,7 @@ async def api_alerts(limit: int = 10):
     return {
         "alerts": formatted_alerts,
         "count": len(formatted_alerts),
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/api/alerts/stats")
@@ -785,7 +785,7 @@ async def api_alerts_stats():
         "last_24h": 0
     }
     
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     for alert in alerts:
         # Count by severity
         severity = alert.get("severity", "unknown")
@@ -911,7 +911,7 @@ async def websocket_portfolio(websocket: WebSocket):
                         "balance": data["portfolio"]["total_balance"],
                         "daily_pnl": data["portfolio"]["daily_pnl"],
                         "positions": data["positions"],
-                        "timestamp": datetime.now().isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat()
                     }
                 }
                 await websocket.send_json(portfolio_update)
@@ -937,7 +937,7 @@ async def websocket_market(websocket: WebSocket):
                 market_update = {
                     "type": "market_update",
                     "data": data["market_data"],
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 await websocket.send_json(market_update)
             
@@ -962,7 +962,7 @@ async def websocket_alerts(websocket: WebSocket):
                 alert_update = {
                     "type": "alert",
                     "data": format_alert_for_display(alerts[0]),
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 await websocket.send_json(alert_update)
             
@@ -997,7 +997,7 @@ async def health_check():
     return {
         "status": "healthy",
         "trading_api": "connected" if data else "disconnected",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 if __name__ == "__main__":

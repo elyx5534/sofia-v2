@@ -122,7 +122,7 @@ async def api_portfolio():
                 "current_price": pos["current_price"],
                 "unrealized_pnl": pos["pnl"],
                 "pnl_percent": pos["pnl_percentage"],
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
         
         return {
