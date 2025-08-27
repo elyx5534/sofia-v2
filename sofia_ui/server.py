@@ -397,44 +397,19 @@ async def get_portfolio_data():
 
 @app.get("/portfolio", response_class=HTMLResponse)
 async def portfolio(request: Request):
-    """Portfolio dashboard - Real-time trading data"""
-    # Get real trading data from unified API
-    real_data = await get_real_trading_data()
-    
-    # Use real data if available
-    if real_data:
-        portfolio_data = {
-            "total_value": real_data["portfolio"]["total_balance"],
-            "available_cash": real_data["portfolio"]["available_balance"],
-            "positions_value": real_data["portfolio"]["in_positions"],
-            "daily_pnl": real_data["portfolio"]["daily_pnl"],
-            "daily_pnl_percentage": real_data["portfolio"]["daily_pnl_percentage"],
-            "positions": real_data["positions"],
-            "currency": "USD"
-        }
-        trading_status = real_data["trading_status"]
-    else:
-        # Use simplified data for demo
-        trading_status = {"active": True, "mode": "AI Trading", "strategies": 6}
-        portfolio_data = {
-            "total_value": 125430.67,
-            "available_cash": 45230.45,
-            "positions_value": 80200.22,
-            "daily_pnl": 3847.32,
-            "daily_pnl_percentage": 3.16,
-            "positions": [],
-            "currency": "USD"
-        }
-    
+    """Portfolio dashboard - Enhanced AI Dashboard"""
     context = {
         "request": request,
-        "page_title": "Portfolio - Sofia V2",
+        "page_title": "Portfolio - Sofia V2 Enhanced",
         "current_page": "portfolio",
-        "trading_status": trading_status,
-        "portfolio_data": portfolio_data,
-        "btc_data": get_live_btc_data(),
+        "portfolio_value": 125430.67,
+        "daily_pnl": 3847.32,
+        "pnl_percentage": 3.16,
+        "total_balance": 125430.67,
+        "btc_price": 67845.32,
+        "eth_price": 3456.78
     }
-    return templates.TemplateResponse("portfolio_realtime.html", context)
+    return templates.TemplateResponse("dashboard_ultimate.html", context)
 
 
 @app.get("/showcase/{symbol}", response_class=HTMLResponse)
