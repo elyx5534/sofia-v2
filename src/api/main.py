@@ -1,421 +1,321 @@
-"""Main API application with all endpoints."""
+"""
+Main API application with real-data endpoints.
+"""
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from typing import Dict, Any, Optional, List
-from datetime import datetime
 import asyncio
 import logging
+import os
+import time
+from datetime import datetime, timezone
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-# Import routers and services
-from src.backtester.strategies.registry import StrategyRegistry
-from src.optimizer.optimizer_queue import optimizer_queue, JobPriority
-from src.ml.price_predictor import PricePredictor
-from src.data_hub.providers.multi_source import MultiSourceDataProvider
-import yfinance as yf
-import pandas as pd
+from src.services.price_service_real import get_price_service
+from src.trading.paper_engine import get_paper_engine
+from src.strategies.micro_momo import get_micro_momentum_strategy
+from src.strategies.advanced_momentum import get_advanced_momentum_strategy
+from src.indicators.technical_analysis import get_technical_indicators
+from src.dashboard.realtime_monitor import get_realtime_monitor
+from src.database.models import get_database
 
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Sofia Trading Platform API",
-    description="Complete backend API for trading strategies, optimization, and ML predictions",
-    version="2.0.0"
+    title="Sofia V2 Real-Data Trading API",
+    description="Production API with real Binance data",
+    version="1.0.0"
 )
 
-# Add CORS middleware
+# Add CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:8000", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize services
-strategy_registry = StrategyRegistry()
-data_provider = MultiSourceDataProvider()
-ml_predictor = PricePredictor()
+# Request models
+class PaperOrderRequest(BaseModel):
+    symbol: str
+    side: str  # "buy" or "sell"
+    usd_amount: float
 
+class StrategyToggleRequest(BaseModel):
+    enabled: bool
 
+# Startup/shutdown
 @app.on_event("startup")
-async def startup_event():
+async def startup():
     """Initialize services on startup."""
-    # Start optimizer queue
-    await optimizer_queue.start()
-    logger.info("Optimizer queue started")
-
+    logger.info("Starting Sofia V2 API with real-data support")
+    
+    # Initialize database
+    db = get_database()
+    account = db.get_account_state()
+    if not account:
+        db.seed_initial_balance(100000.0)
+        logger.info("Database seeded with $100k")
+    
+    # Start price service with WebSocket
+    price_service = await get_price_service()
+    logger.info("Price service started")
+    
+    # Start real-time monitor
+    try:
+        monitor = get_realtime_monitor()
+        await monitor.start()
+        logger.info("Real-time monitor started")
+    except Exception as e:
+        logger.warning(f"Real-time monitor failed to start: {e}")
+    
+    logger.info("Sofia V2 API startup complete")
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown():
     """Cleanup on shutdown."""
-    # Stop optimizer queue
-    await optimizer_queue.stop()
-    logger.info("Optimizer queue stopped")
-
-
-# ==================== Strategy Endpoints ====================
-
-@app.get("/api/strategies")
-async def list_strategies(category: Optional[str] = None):
-    """List all available trading strategies."""
-    strategies = strategy_registry.list_strategies(category)
-    return {
-        "strategies": [s.to_dict() for s in strategies],
-        "categories": strategy_registry.get_categories(),
-        "total": len(strategies)
-    }
-
-
-@app.get("/api/strategies/{strategy_name}")
-async def get_strategy(strategy_name: str):
-    """Get detailed information about a specific strategy."""
-    metadata = strategy_registry.get_metadata(strategy_name)
-    
-    if not metadata:
-        raise HTTPException(status_code=404, detail=f"Strategy {strategy_name} not found")
-    
-    return metadata.to_dict()
-
-
-@app.post("/api/strategies/{strategy_name}/validate")
-async def validate_strategy_params(strategy_name: str, parameters: Dict[str, Any]):
-    """Validate parameters for a strategy."""
     try:
-        validated = strategy_registry.validate_parameters(strategy_name, parameters)
-        return {
-            "valid": True,
-            "validated_parameters": validated
-        }
-    except ValueError as e:
-        return {
-            "valid": False,
-            "error": str(e)
-        }
-
-
-# ==================== Optimization Endpoints ====================
-
-@app.post("/api/optimize/submit")
-async def submit_optimization(
-    strategy_name: str,
-    symbol: str,
-    param_space: Dict[str, List[float]],
-    optimization_target: str = "sharpe",
-    ga_params: Optional[Dict[str, Any]] = None,
-    priority: str = "normal"
-):
-    """Submit a new optimization job to the queue."""
-    # Convert param_space lists to tuples
-    param_space_tuples = {k: tuple(v) for k, v in param_space.items()}
+        price_service = await get_price_service()
+        await price_service.stop()
+    except:
+        pass
     
-    # Convert priority string to enum
-    priority_map = {
-        "low": JobPriority.LOW,
-        "normal": JobPriority.NORMAL,
-        "high": JobPriority.HIGH,
-        "urgent": JobPriority.URGENT
-    }
-    job_priority = priority_map.get(priority.lower(), JobPriority.NORMAL)
-    
-    # Submit job
-    job_id = await optimizer_queue.submit_job(
-        strategy_name=strategy_name,
-        symbol=symbol,
-        param_space=param_space_tuples,
-        optimization_target=optimization_target,
-        ga_params=ga_params,
-        priority=job_priority
-    )
-    
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "message": "Optimization job submitted successfully"
-    }
+    logger.info("Sofia V2 API shutdown complete")
 
-
-@app.get("/api/optimize/job/{job_id}")
-async def get_optimization_job(job_id: str):
-    """Get status and results of an optimization job."""
-    job = optimizer_queue.get_job(job_id)
-    
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    
-    return job.to_dict()
-
-
-@app.get("/api/optimize/jobs")
-async def list_optimization_jobs(
-    status: Optional[str] = None,
-    limit: int = 50
-):
-    """List optimization jobs."""
-    from src.optimizer.optimizer_queue import JobStatus
-    
-    status_enum = None
-    if status:
-        try:
-            status_enum = JobStatus(status)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
-    
-    jobs = optimizer_queue.list_jobs(status_enum, limit)
-    
-    return {
-        "jobs": [j.to_dict() for j in jobs],
-        "total": len(jobs)
-    }
-
-
-@app.delete("/api/optimize/job/{job_id}")
-async def cancel_optimization_job(job_id: str):
-    """Cancel an optimization job."""
-    success = optimizer_queue.cancel_job(job_id)
-    
-    if not success:
-        raise HTTPException(status_code=400, detail="Job cannot be cancelled")
-    
-    return {"message": "Job cancelled successfully"}
-
-
-@app.get("/api/optimize/stats")
-async def get_optimizer_stats():
-    """Get optimizer queue statistics."""
-    return optimizer_queue.get_queue_stats()
-
-
-# ==================== ML Prediction Endpoints ====================
-
-@app.post("/api/ml/train")
-async def train_ml_model(
-    symbol: str,
-    model_type: str = "classification",
-    algorithm: str = "xgboost",
-    prediction_horizon: int = 1,
-    training_period: str = "1y"
-):
-    """Train ML model for price prediction."""
-    try:
-        # Fetch data
-        ticker = yf.Ticker(symbol)
-        data = ticker.history(period=training_period)
-        
-        if data.empty:
-            raise HTTPException(status_code=404, detail=f"No data found for {symbol}")
-        
-        # Create and train model
-        predictor = PricePredictor(model_type=model_type, algorithm=algorithm)
-        metrics = predictor.train(data, prediction_horizon=prediction_horizon)
-        
-        # Save model (optional - implement model storage)
-        # model_path = Path(f"models/{symbol}_{model_type}_{algorithm}.pkl")
-        # predictor.save_model(model_path)
-        
-        return {
-            "symbol": symbol,
-            "model_type": model_type,
-            "algorithm": algorithm,
-            "metrics": metrics,
-            "training_samples": len(data),
-            "status": "success"
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/ml/predict")
-async def predict_price(
-    symbol: str,
-    model_type: str = "classification",
-    algorithm: str = "xgboost",
-    periods_ahead: int = 1
-):
-    """Make price predictions for a symbol."""
-    try:
-        # Fetch recent data
-        ticker = yf.Ticker(symbol)
-        data = ticker.history(period="3mo")
-        
-        if data.empty:
-            raise HTTPException(status_code=404, detail=f"No data found for {symbol}")
-        
-        # Train model (in production, load pre-trained model)
-        predictor = PricePredictor(model_type=model_type, algorithm=algorithm)
-        
-        # Use last 2 months for training
-        train_data = data.iloc[:-20]
-        predictor.train(train_data, prediction_horizon=periods_ahead)
-        
-        # Predict on recent data
-        recent_data = data.iloc[-20:]
-        predictions = predictor.predict(recent_data, return_confidence=True)
-        
-        # Get top features
-        top_features = predictor.get_top_features(10)
-        
-        return {
-            "symbol": symbol,
-            "predictions": predictions.tail(5).to_dict('records'),
-            "latest_prediction": predictions.iloc[-1].to_dict(),
-            "top_features": top_features.to_dict() if not top_features.empty else {},
-            "model_type": model_type,
-            "algorithm": algorithm
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/ml/backtest")
-async def backtest_ml_model(
-    symbol: str,
-    model_type: str = "classification",
-    algorithm: str = "xgboost",
-    prediction_horizon: int = 1,
-    training_window: int = 252,
-    retrain_frequency: int = 20
-):
-    """Backtest ML model with walk-forward analysis."""
-    try:
-        # Fetch data
-        ticker = yf.Ticker(symbol)
-        data = ticker.history(period="2y")
-        
-        if data.empty:
-            raise HTTPException(status_code=404, detail=f"No data found for {symbol}")
-        
-        # Create model and run backtest
-        predictor = PricePredictor(model_type=model_type, algorithm=algorithm)
-        backtest_results = predictor.backtest_predictions(
-            data,
-            prediction_horizon=prediction_horizon,
-            training_window=training_window,
-            retrain_frequency=retrain_frequency
-        )
-        
-        # Calculate summary metrics
-        if model_type == "classification":
-            accuracy = backtest_results['correct'].mean()
-            summary = {
-                "accuracy": accuracy,
-                "total_predictions": len(backtest_results),
-                "avg_confidence": backtest_results['confidence'].mean()
-            }
-        else:
-            from sklearn.metrics import mean_squared_error, mean_absolute_error
-            
-            mse = mean_squared_error(
-                backtest_results['actual_return'],
-                backtest_results['predicted']
-            )
-            mae = mean_absolute_error(
-                backtest_results['actual_return'],
-                backtest_results['predicted']
-            )
-            summary = {
-                "mse": mse,
-                "mae": mae,
-                "total_predictions": len(backtest_results)
-            }
-        
-        return {
-            "symbol": symbol,
-            "model_type": model_type,
-            "algorithm": algorithm,
-            "summary": summary,
-            "recent_results": backtest_results.tail(20).to_dict('records')
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ==================== Data Source Endpoints ====================
-
-@app.get("/api/data/sources/status")
-async def get_data_sources_status():
-    """Get connection status for all data sources."""
-    return data_provider.get_source_status()
-
-
-@app.get("/api/data/sources/{source}/symbols")
-async def get_source_symbols(source: str):
-    """Get available symbols from a data source."""
-    from src.data_hub.providers.multi_source import DataSource
-    
-    try:
-        source_enum = DataSource(source)
-        symbols = data_provider.get_available_symbols(source_enum)
-        
-        return {
-            "source": source,
-            "symbols": symbols,
-            "count": len(symbols)
-        }
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid source: {source}")
-
-
-@app.post("/api/data/fetch")
-async def fetch_multi_source_data(
-    symbol: str,
-    timeframe: str = "1d",
-    limit: int = 100,
-    sources: Optional[List[str]] = None
-):
-    """Fetch data with automatic fallback between sources."""
-    from src.data_hub.providers.multi_source import DataSource
-    
-    # Convert source strings to enums
-    source_enums = None
-    if sources:
-        try:
-            source_enums = [DataSource(s) for s in sources]
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-    
-    # Fetch data
-    data = await data_provider.fetch_ohlcv_async(
-        symbol=symbol,
-        timeframe=timeframe,
-        limit=limit,
-        sources=source_enums
-    )
-    
-    if data is None or data.empty:
-        raise HTTPException(status_code=404, detail="No data available from any source")
-    
-    return {
-        "symbol": symbol,
-        "timeframe": timeframe,
-        "data_points": len(data),
-        "start_date": data.index[0].isoformat(),
-        "end_date": data.index[-1].isoformat(),
-        "data": data.tail(10).to_dict('records')
-    }
-
-
-# ==================== Health Check ====================
-
+# Core endpoints
 @app.get("/health")
 async def health_check():
-    """API health check."""
+    """Health check endpoint."""
+    uptime = time.time() - startup_time if 'startup_time' in globals() else 0
+    
     return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat(),
-        "services": {
-            "strategies": len(strategy_registry.list_strategies()),
-            "optimizer_queue": optimizer_queue.get_queue_stats(),
-            "data_sources": len(data_provider.get_source_status())
-        }
+        "status": "ok",
+        "version": "1.0.0-real-data",
+        "git_sha": os.getenv("GIT_SHA", "unknown"),
+        "uptime_seconds": uptime,
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
+@app.get("/metrics")
+async def metrics():
+    """Metrics endpoint - JSON format for simplicity."""
+    try:
+        price_service = await get_price_service()
+        metrics_data = price_service.get_metrics()
+        
+        return {
+            "status": "ok",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "price_freshness_seconds": metrics_data.get("freshness_seconds", {}),
+            "tick_counts": metrics_data.get("tick_counts", {}),
+            "data_errors_total": metrics_data.get("error_count", 0),
+            "service_running": metrics_data.get("service_running", False),
+            "websocket_connected": metrics_data.get("websocket_connected", False),
+            "websocket_enabled": metrics_data.get("websocket_enabled", False)
+        }
+        
+    except Exception as e:
+        logger.error(f"Metrics error: {e}")
+        return {
+            "status": "error", 
+            "message": "Metrics unavailable",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+# Trading endpoints
+@app.get("/api/trading/portfolio")
+async def get_portfolio():
+    """Get current portfolio with live P&L."""
+    try:
+        engine = get_paper_engine()
+        portfolio = await engine.get_portfolio_summary()
+        
+        # Add base currency for consistency
+        portfolio["base_currency"] = "USD"
+        
+        return {
+            "status": "success",
+            "data": portfolio,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Portfolio error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/trading/positions")
+async def get_positions():
+    """Get current positions."""
+    try:
+        engine = get_paper_engine()
+        portfolio = await engine.get_portfolio_summary()
+        
+        return {
+            "status": "success",
+            "data": portfolio["positions"],
+            "summary": {
+                "total_pnl": portfolio["total_pnl"],
+                "unrealized_pnl": portfolio["unrealized_pnl"],
+                "realized_pnl": portfolio["realized_pnl"]
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Positions error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/trading/paper-order")
+async def place_paper_order(order: PaperOrderRequest):
+    """Place manual paper trading order."""
+    try:
+        engine = get_paper_engine()
+        
+        result = await engine.place_order(
+            symbol=order.symbol,
+            side=order.side,
+            usd_amount=order.usd_amount,
+            strategy="manual"
+        )
+        
+        if result["status"] == "error":
+            raise HTTPException(status_code=400, detail=result["message"])
+        
+        return {
+            "status": "success",
+            "data": result
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Paper order error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Strategy endpoints
+@app.post("/api/strategy/micro-momo/enable")
+async def toggle_micro_momentum(request: StrategyToggleRequest):
+    """Enable/disable micro momentum strategy."""
+    try:
+        strategy = get_micro_momentum_strategy()
+        
+        if request.enabled:
+            result = await strategy.start()
+        else:
+            result = strategy.stop()
+        
+        return {
+            "status": "success",
+            "data": result
+        }
+    except Exception as e:
+        logger.error(f"Strategy toggle error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/strategy/micro-momo/status")
+async def get_micro_momentum_status():
+    """Get micro momentum strategy status."""
+    try:
+        strategy = get_micro_momentum_strategy()
+        status = strategy.get_status()
+        
+        return {
+            "status": "success",
+            "data": status
+        }
+    except Exception as e:
+        logger.error(f"Strategy status error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Advanced strategy endpoints
+@app.post("/api/strategy/advanced/enable")
+async def toggle_advanced_momentum(request: StrategyToggleRequest):
+    """Enable/disable advanced momentum strategy."""
+    try:
+        strategy = get_advanced_momentum_strategy()
+        
+        if request.enabled:
+            result = await strategy.start()
+        else:
+            result = strategy.stop()
+        
+        return {"status": "success", "data": result}
+    except Exception as e:
+        logger.error(f"Advanced strategy toggle error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/strategy/advanced/status")
+async def get_advanced_momentum_status():
+    """Get advanced momentum strategy status."""
+    try:
+        strategy = get_advanced_momentum_strategy()
+        return {"status": "success", "data": strategy.get_status()}
+    except Exception as e:
+        logger.error(f"Advanced strategy status error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Technical analysis endpoints
+@app.get("/api/indicators/{symbol}")
+async def get_technical_indicators_for_symbol(symbol: str):
+    """Get technical indicators for symbol."""
+    try:
+        indicators = get_technical_indicators()
+        tech_data = indicators.get_all_indicators(symbol)
+        
+        return {"status": "success", "data": tech_data}
+    except Exception as e:
+        logger.error(f"Technical indicators error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Dashboard endpoints  
+@app.get("/api/dashboard/live")
+async def get_live_dashboard():
+    """Get live dashboard data."""
+    try:
+        monitor = get_realtime_monitor()
+        dashboard_data = monitor.get_dashboard_data()
+        
+        return {"status": "success", "data": dashboard_data}
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/dashboard/performance")
+async def get_performance_chart():
+    """Get performance chart data."""
+    try:
+        monitor = get_realtime_monitor()
+        chart_data = monitor.get_performance_chart_data(hours=24)
+        
+        return {"status": "success", "data": chart_data}
+    except Exception as e:
+        logger.error(f"Performance chart error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Price endpoints
+@app.get("/api/prices/{symbol}")
+async def get_symbol_price(symbol: str):
+    """Get live price for symbol."""
+    try:
+        price_service = await get_price_service()
+        price_data = await price_service.get_price(symbol)
+        
+        if not price_data:
+            raise HTTPException(status_code=404, detail=f"Price not available for {symbol}")
+        
+        return {
+            "status": "success",
+            "data": price_data
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Price error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Set startup time
+startup_time = time.time()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
