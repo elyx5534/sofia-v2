@@ -407,21 +407,16 @@ async def get_portfolio_data():
 
 @app.get("/portfolio", response_class=HTMLResponse)
 async def portfolio(request: Request):
-    """Portfolio dashboard - Enhanced AI Dashboard with consistent data"""
+    """Portfolio dashboard - Unique portfolio page"""
     portfolio_data = await get_consistent_portfolio_data()
     
     context = {
         "request": request,
         "page_title": "Portfolio - Sofia V2 Enhanced",
         "current_page": "portfolio", 
-        "total_balance": portfolio_data["total_balance"],
-        "daily_pnl": portfolio_data["daily_pnl"],
-        "pnl_percentage": portfolio_data["daily_pnl_percentage"],
-        "portfolio_value": portfolio_data["total_balance"],
-        "btc_price": 67845.32,
-        "eth_price": 3456.78
+        "portfolio_data": portfolio_data
     }
-    return templates.TemplateResponse("dashboard_ultimate.html", context)
+    return templates.TemplateResponse("portfolio_ultra.html", context)
 
 
 @app.get("/showcase/{symbol}", response_class=HTMLResponse)
