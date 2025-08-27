@@ -45,9 +45,10 @@ except ImportError as e:
     
     User = None
 
-# Import our new advanced AI features
+# Import unified portfolio system
 try:
     sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from unified_portfolio_system import unified_portfolio
     from src.data.real_time_fetcher import fetcher
     from src.trading.paper_trading_engine import paper_engine
     from src.ml.real_time_predictor import prediction_engine
@@ -55,10 +56,13 @@ try:
     from src.scanner.advanced_market_scanner import market_scanner
     from src.trading.unified_execution_engine import execution_engine
     ADVANCED_AI_ENABLED = True
-    print("Advanced AI features loaded!")
+    print("Advanced AI features + Unified Portfolio loaded!")
 except ImportError as e:
     print(f"Advanced AI features not available: {e}")
     ADVANCED_AI_ENABLED = False
+    # Create fallback unified portfolio
+    from unified_portfolio_system import UnifiedPortfolioSystem
+    unified_portfolio = UnifiedPortfolioSystem()
 
 try:
     from live_data import live_data_service
@@ -259,32 +263,10 @@ def get_mock_strategies():
 
 # Routes
 async def get_consistent_portfolio_data():
-    """Get consistent portfolio data for all dashboard pages"""
-    # Get real trading data from AI engines
-    real_data = await get_real_trading_data()
-    
-    if real_data:
-        portfolio = real_data["portfolio"]
-        total_balance = portfolio["total_balance"]
-        daily_pnl = portfolio["daily_pnl"] 
-        pnl_percentage = portfolio["daily_pnl_percentage"]
-        print(f"Using AI portfolio data: ${total_balance}, P&L: ${daily_pnl}")
-    else:
-        # Use consistent simulation across all pages
-        import random
-        # Use time-based seed for consistency within same minute
-        minute_seed = int(datetime.now().timestamp() / 60)
-        random.seed(minute_seed)
-        
-        total_balance = 125430.67 + (random.randint(-1000, 2000))
-        daily_pnl = 3847.32 + (random.randint(-500, 1000))
-        pnl_percentage = (daily_pnl / total_balance) * 100
-    
-    return {
-        "total_balance": total_balance,
-        "daily_pnl": daily_pnl,
-        "pnl_percentage": pnl_percentage
-    }
+    """Get consistent portfolio data from unified system"""
+    # Use unified portfolio system for all pages
+    portfolio_data = await unified_portfolio.get_portfolio_data("demo")
+    return portfolio_data
 
 @app.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
@@ -1950,7 +1932,8 @@ async def broadcast_ai_data():
 # Start AI engines on app startup
 @app.on_event("startup")
 async def startup_ai():
-    """Start AI engines on startup"""
+    """Start AI engines and unified portfolio on startup"""
+    await unified_portfolio.start()
     asyncio.create_task(start_ai_engines())
 
 @app.on_event("shutdown")
