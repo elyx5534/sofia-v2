@@ -45,6 +45,21 @@ except ImportError as e:
     
     User = None
 
+# Import our new advanced AI features
+try:
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from src.data.real_time_fetcher import fetcher
+    from src.trading.paper_trading_engine import paper_engine
+    from src.ml.real_time_predictor import prediction_engine
+    from src.portfolio.advanced_portfolio_manager import portfolio_manager
+    from src.scanner.advanced_market_scanner import market_scanner
+    from src.trading.unified_execution_engine import execution_engine
+    ADVANCED_AI_ENABLED = True
+    print("Advanced AI features loaded!")
+except ImportError as e:
+    print(f"Advanced AI features not available: {e}")
+    ADVANCED_AI_ENABLED = False
+
 try:
     from live_data import live_data_service
 except:
@@ -59,7 +74,7 @@ except:
                 "change_percent": 3.74,
                 "volume": "28.5B",
                 "market_cap": "1.34T",
-                "last_updated": datetime.now().strftime("%H:%M:%S"),
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
             }
 
         def get_multiple_prices(self, symbols):
@@ -160,7 +175,7 @@ def get_live_btc_data():
             "change_percent": 3.74,
             "volume": "28.5B",
             "market_cap": "1.34T",
-            "last_updated": datetime.now().strftime("%H:%M:%S"),
+            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
         }
 
 
@@ -518,7 +533,7 @@ async def get_multiple_quotes(symbols: str = "BTC-USD,ETH-USD,AAPL"):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "ok", "timestamp": datetime.now().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 @app.get("/test", response_class=HTMLResponse)
 async def test_page(request: Request):
@@ -573,7 +588,7 @@ async def websocket_portfolio(websocket: WebSocket):
                 "positions": base_portfolio_data["positions"],
                 "new_trade": (
                     {
-                        "time": datetime.now().isoformat(),
+                        "time": datetime.now(timezone.utc).isoformat(),
                         "symbol": random.choice(["BTCUSDT", "ETHUSDT", "SOLUSDT"]),
                         "type": random.choice(["BUY", "SELL"]),
                         "price": random.uniform(100, 70000),
@@ -683,7 +698,7 @@ async def get_crypto_prices():
                     f"{volume/1000000000:.1f}B" if volume > 1000000000 else f"{volume/1000000:.1f}M"
                 ),
                 "market_cap": f"{(price * volume / 100):.0f}",
-                "last_updated": datetime.now().strftime("%H:%M:%S"),
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                 "icon": crypto.get("icon", ""),
                 "color": crypto.get("color", "gray"),
                 "rank": i + 1,
@@ -702,7 +717,7 @@ async def get_crypto_prices():
                 "change": 45.67,
                 "change_percent": 1.34,
                 "volume": "15.2B",
-                "last_updated": datetime.now().strftime("%H:%M:%S"),
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
                 "icon": "fab fa-ethereum",
             },
         }
@@ -1065,7 +1080,7 @@ async def get_trading_positions():
             "current_price": 67845.32,
             "unrealized_pnl": 96.75,
             "pnl_percent": 0.14,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         },
         "ETHUSDT": {
             "symbol": "ETHUSDT", 
@@ -1075,7 +1090,7 @@ async def get_trading_positions():
             "current_price": 2456.78,
             "unrealized_pnl": 91.95,
             "pnl_percent": 1.52,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         },
         "SOLUSDT": {
             "symbol": "SOLUSDT",
@@ -1085,7 +1100,7 @@ async def get_trading_positions():
             "current_price": 182.34,
             "unrealized_pnl": 25.28,
             "pnl_percent": 1.70,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     }
     
@@ -1115,7 +1130,7 @@ async def get_portfolio_data():
                 "current_price": pos["current_price"],
                 "unrealized_pnl": pos["pnl"],
                 "pnl_percent": pos["pnl_percentage"],
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now(timezone.utc).isoformat()
             }
             for pos in real_data["positions"]
         }
@@ -1367,6 +1382,567 @@ async def get_market_data_extended():
             {"symbol": "AVAX", "change": -0.87},
         ]
     }
+
+
+# BIST Data Service import
+try:
+    from sofia_ui.bist_data_service import bist_data_service
+    BIST_SERVICE_AVAILABLE = True
+    print("[SUCCESS] BIST data service successfully imported!")
+except ImportError as e:
+    print(f"[ERROR] BIST data service import failed: {e}")
+    BIST_SERVICE_AVAILABLE = False
+    bist_data_service = None
+
+print(f"BIST_SERVICE_AVAILABLE = {BIST_SERVICE_AVAILABLE}")
+
+# Google Trends import
+try:
+    from src.analytics.google_trends import GoogleTrendsAnalyzer
+    google_trends = GoogleTrendsAnalyzer()
+    TRENDS_AVAILABLE = True
+    print("[SUCCESS] Google Trends analyzer imported!")
+except ImportError as e:
+    print(f"[ERROR] Google Trends import failed: {e}")
+    TRENDS_AVAILABLE = False
+    google_trends = None
+
+# BIST (Borsa İstanbul) Routes
+def get_bist_stocks():
+    """BIST hisseleri - gerçek veriler servisten çekiliyor"""
+    from datetime import datetime, timedelta
+    import random
+    
+    # Always try to get real data when service is available
+    if BIST_SERVICE_AVAILABLE and bist_data_service:
+        try:
+            print("[BIST] Fetching real data from Yahoo Finance...")
+            # Force refresh on first load
+            stocks = bist_data_service.get_all_stocks(force_refresh=False)
+            
+            # Check if we got valid data
+            valid_stocks = [s for s in stocks if s.get('price', 0) > 0]
+            if valid_stocks:
+                print(f"[BIST] SUCCESS: Got {len(valid_stocks)} stocks with real prices")
+                return stocks
+            else:
+                print(f"[BIST] WARNING: Service returned no valid stock data")
+        except Exception as e:
+            print(f"[BIST] ERROR: Failed to get real data: {e}")
+            import traceback
+            traceback.print_exc()
+    else:
+        print(f"[BIST] Service not available (BIST_SERVICE_AVAILABLE={BIST_SERVICE_AVAILABLE})")
+    
+    # Fallback: Mock data
+    print("[BIST] Using fallback mock data")
+    import yfinance as yf
+    
+    # BIST 30 hisseleri ve bilgileri
+    bist_stocks = [
+        {"symbol": "THYAO", "name": "Türk Hava Yolları", "sector": "Ulaştırma", "lot": 10},
+        {"symbol": "EREGL", "name": "Ereğli Demir Çelik", "sector": "Metal", "lot": 100},
+        {"symbol": "ASELS", "name": "Aselsan", "sector": "Savunma", "lot": 100},
+        {"symbol": "TUPRS", "name": "Tüpraş", "sector": "Petrol", "lot": 10},
+        {"symbol": "SAHOL", "name": "Sabancı Holding", "sector": "Holding", "lot": 100},
+        {"symbol": "SISE", "name": "Şişecam", "sector": "Cam", "lot": 100},
+        {"symbol": "AKBNK", "name": "Akbank", "sector": "Bankacılık", "lot": 100},
+        {"symbol": "GARAN", "name": "Garanti BBVA", "sector": "Bankacılık", "lot": 100},
+        {"symbol": "ISCTR", "name": "İş Bankası (C)", "sector": "Bankacılık", "lot": 100},
+        {"symbol": "YKBNK", "name": "Yapı Kredi", "sector": "Bankacılık", "lot": 100},
+        {"symbol": "KCHOL", "name": "Koç Holding", "sector": "Holding", "lot": 10},
+        {"symbol": "TCELL", "name": "Turkcell", "sector": "Telekomünikasyon", "lot": 100},
+        {"symbol": "BIMAS", "name": "BİM Mağazaları", "sector": "Perakende", "lot": 10},
+        {"symbol": "FROTO", "name": "Ford Otosan", "sector": "Otomotiv", "lot": 1},
+        {"symbol": "TOASO", "name": "Tofaş", "sector": "Otomotiv", "lot": 10},
+        {"symbol": "PETKM", "name": "Petkim", "sector": "Kimya", "lot": 100},
+        {"symbol": "ARCLK", "name": "Arçelik", "sector": "Dayanıklı Tüketim", "lot": 10},
+        {"symbol": "EKGYO", "name": "Emlak Konut GYO", "sector": "GYO", "lot": 1000},
+        {"symbol": "HALKB", "name": "Halkbank", "sector": "Bankacılık", "lot": 100},
+        {"symbol": "VAKBN", "name": "Vakıfbank", "sector": "Bankacılık", "lot": 100},
+        {"symbol": "KOZAL", "name": "Koza Altın", "sector": "Madencilik", "lot": 100},
+        {"symbol": "KOZAA", "name": "Koza Madencilik", "sector": "Madencilik", "lot": 100},
+        {"symbol": "SODA", "name": "Soda Sanayii", "sector": "Kimya", "lot": 10},
+        {"symbol": "MGROS", "name": "Migros", "sector": "Perakende", "lot": 10},
+        {"symbol": "VESBE", "name": "Vestel Beyaz Eşya", "sector": "Dayanıklı Tüketim", "lot": 10},
+        {"symbol": "VESTL", "name": "Vestel", "sector": "Teknoloji", "lot": 100},
+        {"symbol": "TTKOM", "name": "Türk Telekom", "sector": "Telekomünikasyon", "lot": 100},
+        {"symbol": "KRDMD", "name": "Kardemir (D)", "sector": "Metal", "lot": 100},
+        {"symbol": "TAVHL", "name": "TAV Havalimanları", "sector": "Ulaştırma", "lot": 10},
+        {"symbol": "PGSUS", "name": "Pegasus", "sector": "Ulaştırma", "lot": 10},
+    ]
+    
+    stocks = []
+    
+    # Her hisse için gerçek veri çek
+    for stock_info in bist_stocks:  # Tüm hisseler için gerçek veri çekelim
+        symbol = stock_info["symbol"]
+        try:
+            # Yahoo Finance'de BIST hisseleri .IS uzantısı ile
+            ticker = yf.Ticker(f"{symbol}.IS")
+            info = ticker.info
+            
+            # Son fiyat ve değişim bilgileri - önce currentPrice'ı dene
+            current_price = info.get('currentPrice', None)
+            if current_price is None:
+                current_price = info.get('regularMarketPrice', None)
+            if current_price is None:
+                # History'den al
+                hist = ticker.history(period="2d")
+                if not hist.empty:
+                    current_price = float(hist['Close'].iloc[-1])
+                    if len(hist) > 1:
+                        previous_close = float(hist['Close'].iloc[-2])
+                    else:
+                        previous_close = info.get('previousClose', current_price)
+                else:
+                    current_price = 0
+                    previous_close = 0
+            else:
+                previous_close = info.get('previousClose') or info.get('regularMarketPreviousClose') or current_price
+            
+            if current_price and previous_close:
+                change = current_price - previous_close
+                change_percent = (change / previous_close) * 100 if previous_close != 0 else 0
+            else:
+                # Eğer veri alınamazsa mock data kullan
+                current_price = random.uniform(20, 500)
+                change_percent = random.uniform(-5, 5)
+                change = current_price * change_percent / 100
+            
+            # Debug için print ekleyelim
+            print(f"DEBUG {symbol}: current_price={current_price}, change={change}")
+            
+            stock = {
+                "symbol": symbol,
+                "name": stock_info["name"],
+                "sector": stock_info["sector"],
+                "lot": stock_info["lot"],
+                "price": round(current_price, 2) if current_price else 0,
+                "change": round(change, 2),
+                "change_percent": round(change_percent, 2),
+                "volume": info.get('volume') or random.randint(1000000, 50000000),
+                "market_cap": round((info.get('marketCap') or random.randint(1000000000, 50000000000)) / 1000000, 2),  # Milyon TL
+                "pe_ratio": round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else None,
+                "pb_ratio": round(info.get('priceToBook', 0), 2) if info.get('priceToBook') else round(random.uniform(0.8, 3.5), 2),
+                "dividend_yield": round(info.get('dividendYield', 0) * 100, 2) if info.get('dividendYield') else 0,
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+            }
+            stocks.append(stock)
+            
+        except Exception as e:
+            print(f"Error fetching data for {symbol}: {e}")
+            # Hata durumunda mock data kullan
+            current_price = random.uniform(20, 500)
+            change_percent = random.uniform(-5, 5)
+            change = current_price * change_percent / 100
+            
+            # Debug için print ekleyelim
+            print(f"DEBUG {symbol}: current_price={current_price}, change={change}")
+            
+            stock = {
+                "symbol": symbol,
+                "name": stock_info["name"],
+                "sector": stock_info["sector"],
+                "lot": stock_info["lot"],
+                "price": round(current_price, 2) if current_price else 0,
+                "change": round(change, 2),
+                "change_percent": round(change_percent, 2),
+                "volume": random.randint(1000000, 50000000),
+                "market_cap": round(current_price * random.randint(100000000, 5000000000) / 1000000, 2),
+                "pe_ratio": round(random.uniform(5, 25), 2) if random.random() > 0.2 else None,
+                "pb_ratio": round(random.uniform(0.8, 3.5), 2),
+                "dividend_yield": round(random.uniform(0, 8), 2) if random.random() > 0.3 else 0,
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+            }
+            stocks.append(stock)
+    
+        
+    return stocks
+
+
+@app.get("/bist", response_class=HTMLResponse)
+async def bist_markets(request: Request):
+    """BIST piyasaları sayfası"""
+    print(f"[BIST PAGE] Service available: {BIST_SERVICE_AVAILABLE}")
+    stocks = get_bist_stocks()
+    
+    # Sektörlere göre grupla
+    sectors = {}
+    for stock in stocks:
+        if stock["sector"] not in sectors:
+            sectors[stock["sector"]] = []
+        sectors[stock["sector"]].append(stock)
+    
+    # En çok kazananlar ve kaybedenler
+    sorted_stocks = sorted(stocks, key=lambda x: x["change_percent"], reverse=True)
+    top_gainers = sorted_stocks[:5]
+    top_losers = sorted_stocks[-5:]
+    
+    # BIST 100 endeksi
+    if BIST_SERVICE_AVAILABLE:
+        try:
+            bist100 = bist_data_service.get_bist100_index()
+            bist100["volume"] = f"{bist100.get('volume', '0')} TL"
+        except:
+            bist100 = {
+                "value": 9875.43,
+                "change": 125.67,
+                "change_percent": 1.29,
+                "volume": "45.8 Milyar TL",
+                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+            }
+    else:
+        bist100 = {
+            "value": 9875.43,
+            "change": 125.67,
+            "change_percent": 1.29,
+            "volume": "45.8 Milyar TL",
+            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+        }
+    
+    context = {
+        "request": request,
+        "page_title": "BIST - Borsa İstanbul",
+        "current_page": "bist",
+        "stocks": stocks,
+        "sectors": sectors,
+        "top_gainers": top_gainers,
+        "top_losers": top_losers,
+        "bist100": bist100,
+        "total_volume": sum(s["volume"] for s in stocks),
+        "total_stocks": len(stocks)
+    }
+    return templates.TemplateResponse("bist_markets.html", context)
+
+
+@app.get("/bist/analysis", response_class=HTMLResponse)
+async def bist_analysis(request: Request):
+    """BIST günlük analiz sayfası"""
+    from datetime import datetime, timedelta
+    
+    # Günlük analiz verisi
+    analysis = {
+        "date": datetime.now(timezone.utc).strftime("%d %B %Y"),
+        "bist100": {
+            "current": 9875.43,
+            "change": 125.67,
+            "change_percent": 1.29,
+            "support": 9700,
+            "resistance": 10000,
+            "rsi": 62.5,
+            "sentiment": "Pozitif"
+        },
+        "market_summary": {
+            "advancing": 68,
+            "declining": 32,
+            "unchanged": 5,
+            "total_volume": "45.8 Milyar TL",
+            "foreign_net": "+2.3 Milyar TL",
+            "retail_net": "-1.8 Milyar TL"
+        },
+        "sector_performance": [
+            {"name": "Bankacılık", "change": 2.45, "leader": "GARAN"},
+            {"name": "Savunma", "change": 3.12, "leader": "ASELS"},
+            {"name": "Holding", "change": 1.85, "leader": "KCHOL"},
+            {"name": "Ulaştırma", "change": -0.45, "leader": "THYAO"},
+            {"name": "Perakende", "change": 1.23, "leader": "BIMAS"},
+            {"name": "Metal", "change": -1.67, "leader": "EREGL"}
+        ],
+        "top_movers": {
+            "gainers": [
+                {"symbol": "ASELS", "change": 5.23, "reason": "Yeni savunma anlaşması"},
+                {"symbol": "BIMAS", "change": 4.87, "reason": "Güçlü çeyrek sonuçları"},
+                {"symbol": "FROTO", "change": 4.12, "reason": "İhracat artışı"}
+            ],
+            "losers": [
+                {"symbol": "EREGL", "change": -3.45, "reason": "Çelik fiyatlarında düşüş"},
+                {"symbol": "PETKM", "change": -2.89, "reason": "Ham petrol fiyat artışı"},
+                {"symbol": "THYAO", "change": -2.34, "reason": "Yakıt maliyetleri endişesi"}
+            ]
+        },
+        "recommendations": [
+            {
+                "symbol": "GARAN",
+                "action": "AL",
+                "target": 145.00,
+                "current": 135.40,
+                "potential": 7.09,
+                "reason": "Güçlü kredi büyümesi ve NIM artışı"
+            },
+            {
+                "symbol": "SAHOL",
+                "action": "TUT",
+                "target": 92.00,
+                "current": 89.75,
+                "potential": 2.51,
+                "reason": "Çeşitlendirilmiş portföy avantajı"
+            },
+            {
+                "symbol": "EREGL",
+                "action": "SAT",
+                "target": 48.00,
+                "current": 52.30,
+                "potential": -8.22,
+                "reason": "Global çelik talebinde zayıflama"
+            }
+        ],
+        "technical_signals": [
+            {"indicator": "MACD", "signal": "Alım", "strength": "Güçlü"},
+            {"indicator": "RSI (14)", "signal": "Nötr", "strength": "Orta"},
+            {"indicator": "Moving Average (20)", "signal": "Alım", "strength": "Orta"},
+            {"indicator": "Stochastic", "signal": "Aşırı Alım", "strength": "Zayıf"}
+        ],
+        "economic_indicators": [
+            {"name": "USD/TRY", "value": 32.45, "change": 0.15},
+            {"name": "EUR/TRY", "value": 35.12, "change": 0.22},
+            {"name": "Faiz", "value": 50.0, "change": 0.0},
+            {"name": "Enflasyon", "value": 61.78, "change": -2.34},
+            {"name": "Altın (gr)", "value": 2845, "change": 12.50}
+        ],
+        "news": [
+            {
+                "time": "14:30",
+                "title": "TCMB faiz kararını açıkladı",
+                "impact": "Yüksek",
+                "summary": "Merkez Bankası politika faizini %50'de sabit tuttu"
+            },
+            {
+                "time": "11:45",
+                "title": "ASELS yeni ihracat anlaşması imzaladı",
+                "impact": "Orta",
+                "summary": "500 milyon dolarlık yeni savunma sanayi ihracatı"
+            },
+            {
+                "time": "09:15",
+                "title": "Moody's Türkiye değerlendirmesi",
+                "impact": "Yüksek",
+                "summary": "Kredi notu görünümü pozitife çevrildi"
+            }
+        ]
+    }
+    
+    context = {
+        "request": request,
+        "page_title": "BIST Günlük Analiz",
+        "current_page": "bist_analysis",
+        "analysis": analysis
+    }
+    return templates.TemplateResponse("bist_analysis.html", context)
+
+
+@app.get("/api/bist/stocks")
+async def get_bist_stocks_api():
+    """BIST hisseleri API endpoint"""
+    return {"stocks": get_bist_stocks()}
+
+
+@app.get("/api/bist/{symbol}")
+async def get_bist_stock(symbol: str):
+    """Tek bir BIST hissesi verisi"""
+    from datetime import timedelta
+    stocks = get_bist_stocks()
+    stock = next((s for s in stocks if s["symbol"] == symbol.upper()), None)
+    
+    if not stock:
+        raise HTTPException(status_code=404, detail=f"Stock {symbol} not found")
+    
+    # Detaylı veri ekle
+    stock["history"] = [
+        {"date": (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d"), 
+         "close": stock["price"] * random.uniform(0.95, 1.05)}
+        for i in range(30)
+    ]
+    
+    return stock
+
+
+# Google Trends API Endpoints
+@app.get("/api/trends/sentiment/{symbol}")
+async def get_trend_sentiment(symbol: str):
+    """Get Google Trends sentiment for a symbol"""
+    if not TRENDS_AVAILABLE:
+        return {"error": "Google Trends service not available"}
+    
+    try:
+        sentiment = google_trends.get_crypto_sentiment(symbol.upper())
+        return sentiment
+    except Exception as e:
+        return {"error": str(e), "symbol": symbol}
+
+
+@app.get("/api/trends/fear-greed")
+async def get_fear_greed_index():
+    """Get Fear/Greed index from Google Trends"""
+    if not TRENDS_AVAILABLE:
+        return {"error": "Google Trends service not available", "index": 50, "sentiment": "neutral"}
+    
+    try:
+        return google_trends.get_fear_greed_index()
+    except Exception as e:
+        return {"error": str(e), "index": 50, "sentiment": "neutral"}
+
+
+@app.get("/api/trends/market-cycle")
+async def get_market_cycle():
+    """Analyze market cycle from search trends"""
+    if not TRENDS_AVAILABLE:
+        return {"error": "Service not available", "stage": "unknown"}
+    
+    try:
+        return google_trends.analyze_market_cycle()
+    except Exception as e:
+        return {"error": str(e), "stage": "unknown"}
+
+
+@app.get("/api/trends/trending-cryptos")
+async def get_trending_cryptos():
+    """Get trending cryptocurrencies"""
+    if not TRENDS_AVAILABLE:
+        return {"error": "Service not available", "trending": []}
+    
+    try:
+        return {"trending": google_trends.get_trending_cryptos()}
+    except Exception as e:
+        return {"error": str(e), "trending": []}
+
+
+@app.get("/api/bist/real-data")
+async def get_bist_real_data():
+    """BIST gerçek verileri - Yahoo Finance'den"""
+    if BIST_SERVICE_AVAILABLE:
+        try:
+            # Gerçek verileri çek
+            print("Fetching real BIST data from Yahoo Finance...")
+            stocks = bist_data_service.get_all_stocks(force_refresh=True)
+            bist100 = bist_data_service.get_bist100_index()
+            
+            return {
+                "status": "success",
+                "source": "Yahoo Finance",
+                "stocks": stocks,
+                "bist100": bist100,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        except Exception as e:
+            print(f"Error fetching real BIST data: {e}")
+            return {
+                "status": "error",
+                "message": str(e),
+                "stocks": [],
+                "bist100": None
+            }
+    else:
+        return {
+            "status": "error",
+            "message": "BIST data service not available",
+            "stocks": [],
+            "bist100": None
+        }
+
+
+# NEW AI FEATURES ENDPOINTS - Added without breaking existing functionality
+
+class AIConnectionManager:
+    """WebSocket manager for AI features"""
+    def __init__(self):
+        self.active_connections = {}
+        
+    async def connect(self, websocket: WebSocket, client_id: str):
+        await websocket.accept()
+        self.active_connections[client_id] = websocket
+        print(f"AI client {client_id} connected")
+        
+    def disconnect(self, client_id: str):
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
+            print(f"AI client {client_id} disconnected")
+            
+    async def broadcast_to_all(self, message: dict):
+        disconnected = []
+        for client_id, websocket in self.active_connections.items():
+            try:
+                await websocket.send_text(json.dumps(message))
+            except:
+                disconnected.append(client_id)
+        for client_id in disconnected:
+            self.disconnect(client_id)
+
+ai_manager = AIConnectionManager()
+
+@app.websocket("/ws")
+async def ai_websocket_endpoint(websocket: WebSocket):
+    """WebSocket for real-time AI data"""
+    client_id = str(len(ai_manager.active_connections))
+    await ai_manager.connect(websocket, client_id)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Handle client messages if needed
+    except WebSocketDisconnect:
+        ai_manager.disconnect(client_id)
+
+async def start_ai_engines():
+    """Start AI engines if available"""
+    if ADVANCED_AI_ENABLED:
+        try:
+            await execution_engine.start()
+            asyncio.create_task(broadcast_ai_data())
+            print("AI engines started successfully")
+        except Exception as e:
+            print(f"Error starting AI engines: {e}")
+
+async def broadcast_ai_data():
+    """Broadcast AI data to all connected clients"""
+    while True:
+        try:
+            if ADVANCED_AI_ENABLED:
+                # Get AI predictions
+                predictions = prediction_engine.get_all_predictions()
+                if predictions:
+                    await ai_manager.broadcast_to_all({
+                        "type": "ai_predictions",
+                        "data": predictions
+                    })
+                
+                # Get scanner signals
+                overview = await market_scanner.get_market_overview()
+                if overview.get("recent_signals"):
+                    await ai_manager.broadcast_to_all({
+                        "type": "scanner_signals",
+                        "data": overview["recent_signals"]
+                    })
+                
+                # Get portfolio data
+                portfolio = paper_engine.get_portfolio_summary("demo")
+                if portfolio:
+                    await ai_manager.broadcast_to_all({
+                        "type": "portfolio_update",
+                        "data": portfolio
+                    })
+            
+            await asyncio.sleep(10)  # Update every 10 seconds
+            
+        except Exception as e:
+            print(f"Error broadcasting AI data: {e}")
+            await asyncio.sleep(30)
+
+# Start AI engines on app startup
+@app.on_event("startup")
+async def startup_ai():
+    """Start AI engines on startup"""
+    asyncio.create_task(start_ai_engines())
+
+@app.on_event("shutdown")
+async def shutdown_ai():
+    """Stop AI engines on shutdown"""
+    if ADVANCED_AI_ENABLED:
+        try:
+            await execution_engine.stop()
+            print("AI engines stopped")
+        except Exception as e:
+            print(f"Error stopping AI engines: {e}")
 
 
 if __name__ == "__main__":
