@@ -66,6 +66,7 @@ except:
 
     class MockLiveDataService:
         def get_live_price(self, symbol):
+            from datetime import timezone
             return {
                 "symbol": symbol,
                 "name": "Bitcoin" if "BTC" in symbol else symbol,
@@ -74,7 +75,7 @@ except:
                 "change_percent": 3.74,
                 "volume": "28.5B",
                 "market_cap": "1.34T",
-                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                "last_updated": datetime.utcnow().strftime("%H:%M:%S"),
             }
 
         def get_multiple_prices(self, symbols):
@@ -175,7 +176,7 @@ def get_live_btc_data():
             "change_percent": 3.74,
             "volume": "28.5B",
             "market_cap": "1.34T",
-            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+            "last_updated": datetime.utcnow().strftime("%H:%M:%S"),
         }
 
 
@@ -251,14 +252,14 @@ def get_mock_strategies():
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
-async def welcome_page(request: Request):
-    """Welcome page - Turkish/English language selection"""
+async def homepage(request: Request):
+    """Ana dashboard - Enhanced with AI features"""
     context = {
         "request": request,
         "page_title": "Sofia V2 - AI Trading Platform",
-        "current_page": "welcome",
+        "current_page": "dashboard",
     }
-    return templates.TemplateResponse("welcome.html", context)
+    return templates.TemplateResponse("dashboard_ultimate.html", context)
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def homepage(request: Request):
@@ -413,8 +414,17 @@ async def portfolio(request: Request):
         }
         trading_status = real_data["trading_status"]
     else:
-        trading_status = await get_trading_status()
-        portfolio_data = await get_portfolio_data()
+        # Use simplified data for demo
+        trading_status = {"active": True, "mode": "AI Trading", "strategies": 6}
+        portfolio_data = {
+            "total_value": 125430.67,
+            "available_cash": 45230.45,
+            "positions_value": 80200.22,
+            "daily_pnl": 3847.32,
+            "daily_pnl_percentage": 3.16,
+            "positions": [],
+            "currency": "USD"
+        }
     
     context = {
         "request": request,
@@ -533,7 +543,8 @@ async def get_multiple_quotes(symbols: str = "BTC-USD,ETH-USD,AAPL"):
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    from datetime import timezone
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
 @app.get("/test", response_class=HTMLResponse)
 async def test_page(request: Request):
@@ -582,13 +593,14 @@ async def websocket_portfolio(websocket: WebSocket):
             base_portfolio_data = await get_portfolio_data()
             
             # Add small variations for real-time effect
+            from datetime import timezone
             portfolio_data = {
                 "balance": base_portfolio_data["total_value"] + random.uniform(-50, 50),
                 "daily_pnl": base_portfolio_data["daily_pnl"] + random.uniform(-10, 10),
                 "positions": base_portfolio_data["positions"],
                 "new_trade": (
                     {
-                        "time": datetime.now(timezone.utc).isoformat(),
+                        "time": datetime.utcnow().isoformat(),
                         "symbol": random.choice(["BTCUSDT", "ETHUSDT", "SOLUSDT"]),
                         "type": random.choice(["BUY", "SELL"]),
                         "price": random.uniform(100, 70000),
@@ -610,6 +622,7 @@ async def websocket_portfolio(websocket: WebSocket):
 @app.get("/api/crypto-prices")
 async def get_crypto_prices():
     """Tüm desteklenen crypto coinlerin fiyatları - 100+ coin"""
+    from datetime import timezone
     try:
         # Top 100 kripto listesi
         top_cryptos = [
@@ -698,7 +711,7 @@ async def get_crypto_prices():
                     f"{volume/1000000000:.1f}B" if volume > 1000000000 else f"{volume/1000000:.1f}M"
                 ),
                 "market_cap": f"{(price * volume / 100):.0f}",
-                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                "last_updated": datetime.utcnow().strftime("%H:%M:%S"),
                 "icon": crypto.get("icon", ""),
                 "color": crypto.get("color", "gray"),
                 "rank": i + 1,
@@ -717,7 +730,7 @@ async def get_crypto_prices():
                 "change": 45.67,
                 "change_percent": 1.34,
                 "volume": "15.2B",
-                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S"),
+                "last_updated": datetime.utcnow().strftime("%H:%M:%S"),
                 "icon": "fab fa-ethereum",
             },
         }
@@ -1070,6 +1083,7 @@ async def subscription_cancel(request: Request):
 @app.get("/api/trading/positions")
 async def get_trading_positions():
     """Get current trading positions"""
+    from datetime import timezone
     # Sofia V2 demo positions with realistic data
     positions = {
         "BTCUSDT": {
@@ -1080,7 +1094,7 @@ async def get_trading_positions():
             "current_price": 67845.32,
             "unrealized_pnl": 96.75,
             "pnl_percent": 0.14,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.utcnow().isoformat()
         },
         "ETHUSDT": {
             "symbol": "ETHUSDT", 
@@ -1090,7 +1104,7 @@ async def get_trading_positions():
             "current_price": 2456.78,
             "unrealized_pnl": 91.95,
             "pnl_percent": 1.52,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.utcnow().isoformat()
         },
         "SOLUSDT": {
             "symbol": "SOLUSDT",
@@ -1100,7 +1114,7 @@ async def get_trading_positions():
             "current_price": 182.34,
             "unrealized_pnl": 25.28,
             "pnl_percent": 1.70,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.utcnow().isoformat()
         }
     }
     
@@ -1130,7 +1144,7 @@ async def get_portfolio_data():
                 "current_price": pos["current_price"],
                 "unrealized_pnl": pos["pnl"],
                 "pnl_percent": pos["pnl_percentage"],
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.utcnow().isoformat()
             }
             for pos in real_data["positions"]
         }
@@ -1410,7 +1424,7 @@ except ImportError as e:
 # BIST (Borsa İstanbul) Routes
 def get_bist_stocks():
     """BIST hisseleri - gerçek veriler servisten çekiliyor"""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     import random
     
     # Always try to get real data when service is available
@@ -1526,7 +1540,7 @@ def get_bist_stocks():
                 "pe_ratio": round(info.get('trailingPE', 0), 2) if info.get('trailingPE') else None,
                 "pb_ratio": round(info.get('priceToBook', 0), 2) if info.get('priceToBook') else round(random.uniform(0.8, 3.5), 2),
                 "dividend_yield": round(info.get('dividendYield', 0) * 100, 2) if info.get('dividendYield') else 0,
-                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+                "last_updated": datetime.utcnow().strftime("%H:%M:%S")
             }
             stocks.append(stock)
             
@@ -1553,7 +1567,7 @@ def get_bist_stocks():
                 "pe_ratio": round(random.uniform(5, 25), 2) if random.random() > 0.2 else None,
                 "pb_ratio": round(random.uniform(0.8, 3.5), 2),
                 "dividend_yield": round(random.uniform(0, 8), 2) if random.random() > 0.3 else 0,
-                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+                "last_updated": datetime.utcnow().strftime("%H:%M:%S")
             }
             stocks.append(stock)
     
@@ -1590,7 +1604,7 @@ async def bist_markets(request: Request):
                 "change": 125.67,
                 "change_percent": 1.29,
                 "volume": "45.8 Milyar TL",
-                "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+                "last_updated": datetime.utcnow().strftime("%H:%M:%S")
             }
     else:
         bist100 = {
@@ -1598,7 +1612,7 @@ async def bist_markets(request: Request):
             "change": 125.67,
             "change_percent": 1.29,
             "volume": "45.8 Milyar TL",
-            "last_updated": datetime.now(timezone.utc).strftime("%H:%M:%S")
+            "last_updated": datetime.utcnow().strftime("%H:%M:%S")
         }
     
     context = {
@@ -1619,11 +1633,11 @@ async def bist_markets(request: Request):
 @app.get("/bist/analysis", response_class=HTMLResponse)
 async def bist_analysis(request: Request):
     """BIST günlük analiz sayfası"""
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
     
     # Günlük analiz verisi
     analysis = {
-        "date": datetime.now(timezone.utc).strftime("%d %B %Y"),
+        "date": datetime.utcnow().strftime("%d %B %Y"),
         "bist100": {
             "current": 9875.43,
             "change": 125.67,
@@ -1749,7 +1763,7 @@ async def get_bist_stock(symbol: str):
     
     # Detaylı veri ekle
     stock["history"] = [
-        {"date": (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d"), 
+        {"date": (datetime.utcnow() - timedelta(days=i)).strftime("%Y-%m-%d"), 
          "close": stock["price"] * random.uniform(0.95, 1.05)}
         for i in range(30)
     ]
@@ -1822,7 +1836,7 @@ async def get_bist_real_data():
                 "source": "Yahoo Finance",
                 "stocks": stocks,
                 "bist100": bist100,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.utcnow().isoformat()
             }
         except Exception as e:
             print(f"Error fetching real BIST data: {e}")
