@@ -279,7 +279,7 @@ async def homepage(request: Request):
         "current_page": "dashboard",
         "total_balance": portfolio_data["total_balance"],
         "daily_pnl": portfolio_data["daily_pnl"],
-        "pnl_percentage": portfolio_data["pnl_percentage"]
+        "pnl_percentage": portfolio_data["daily_pnl_percentage"]
     }
     return templates.TemplateResponse("dashboard_ultimate.html", context)
 
@@ -290,11 +290,11 @@ async def dashboard_page(request: Request):
     
     context = {
         "request": request,
-        "page_title": "Sofia V2 - AI Trading Platform",
+        "page_title": "Sofia V2 - AI Trading Platform", 
         "current_page": "dashboard",
         "total_balance": portfolio_data["total_balance"],
         "daily_pnl": portfolio_data["daily_pnl"],
-        "pnl_percentage": portfolio_data["pnl_percentage"],
+        "pnl_percentage": portfolio_data["daily_pnl_percentage"],
         "btc_data": get_live_btc_data(),
         "latest_news": get_mock_news()[:3],
     }
@@ -413,10 +413,10 @@ async def portfolio(request: Request):
     context = {
         "request": request,
         "page_title": "Portfolio - Sofia V2 Enhanced",
-        "current_page": "portfolio",
+        "current_page": "portfolio", 
         "total_balance": portfolio_data["total_balance"],
         "daily_pnl": portfolio_data["daily_pnl"],
-        "pnl_percentage": portfolio_data["pnl_percentage"],
+        "pnl_percentage": portfolio_data["daily_pnl_percentage"],
         "portfolio_value": portfolio_data["total_balance"],
         "btc_price": 67845.32,
         "eth_price": 3456.78
