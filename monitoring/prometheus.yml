@@ -1,0 +1,54 @@
+# Prometheus configuration for Sofia V2
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'sofia-v2'
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Sofia V2 Metrics Server
+  - job_name: 'sofia-v2-metrics'
+    static_configs:
+      - targets: ['localhost:8000']  # Prometheus metrics port
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Sofia V2 API Server
+  - job_name: 'sofia-v2-api'
+    static_configs:
+      - targets: ['localhost:8001']  # FastAPI metrics endpoint
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Node Exporter (system metrics)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 30s
+
+  # Redis Exporter
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['localhost:9121']
+    scrape_interval: 30s
+
+  # QuestDB (if available)
+  - job_name: 'questdb'
+    static_configs:
+      - targets: ['localhost:9003']  # QuestDB metrics port
+    scrape_interval: 60s
+
+  # TimescaleDB/PostgreSQL Exporter
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['localhost:9187']
+    scrape_interval: 60s

@@ -1,0 +1,17 @@
+name: ui-guard
+on: [pull_request]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Block template changes
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.sha }}"
+          changed=$(git diff --name-only "$base" "$head" | grep '^sofia_ui/' || true)
+          blocked=$(echo "$changed" | egrep '(^sofia_ui/(index\.html|.*\.html|css/|js/|assets/|theme/|tailwind\.config|postcss\.config))' || true)
+          test -z "$blocked" || { echo "❌ UI template'e dokunulmuş:"; echo "$blocked"; exit 1; }
+          echo "✅ UI GUARD (CI): OK"

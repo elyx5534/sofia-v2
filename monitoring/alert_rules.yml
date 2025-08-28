@@ -1,0 +1,199 @@
+# Prometheus alerting rules for Sofia V2
+groups:
+  - name: sofia-v2-system
+    rules:
+      # System Health Alerts
+      - alert: SystemUnhealthy
+        expr: sofia_system_health{component="overall"} < 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sofia V2 system health is degraded"
+          description: "Overall system health is {{ $value | humanizePercentage }} for {{ $labels.instance }}"
+
+      - alert: ComponentDown
+        expr: sofia_component_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Sofia V2 component is down"
+          description: "Component {{ $labels.component }} ({{ $labels.instance }}) is not responding"
+
+      - alert: RedisConnectionLost
+        expr: sofia_redis_connection_status == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis connection lost"
+          description: "Sofia V2 has lost connection to Redis"
+
+  - name: sofia-v2-data-ingestion
+    rules:
+      # Data Ingestion Alerts
+      - alert: CryptoTickRateVeryLow
+        expr: rate(crypto_ticks_total[5m]) < 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Crypto tick rate is very low"
+          description: "{{ $labels.exchange }}/{{ $labels.symbol }} tick rate is {{ $value }} ticks/sec"
+
+      - alert: CryptoConnectionsDown
+        expr: crypto_connections_active == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Crypto exchange connections down"
+          description: "No active connections to {{ $labels.exchange }}"
+
+      - alert: HighMessageLatency
+        expr: crypto_message_latency_seconds > 1.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High message processing latency"
+          description: "{{ $labels.exchange }} message latency is {{ $value }}s"
+
+      - alert: StaleDataDetected
+        expr: crypto_stale_ratio > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High stale data ratio detected"
+          description: "{{ $labels.exchange }} has {{ $value | humanizePercentage }} stale data"
+
+  - name: sofia-v2-database
+    rules:
+      # Database Alerts
+      - alert: DatabaseWriteErrors
+        expr: rate(ts_write_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database write error rate"
+          description: "{{ $labels.db_type }} write error rate is {{ $value }} errors/sec"
+
+      - alert: HighDatabaseWriteLatency
+        expr: ts_write_latency_seconds > 5.0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database write latency"
+          description: "{{ $labels.db_type }}/{{ $labels.table }} write latency is {{ $value }}s"
+
+      - alert: WriterQueueBacklog
+        expr: ts_writer_queue_size > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Writer queue backlog detected"
+          description: "{{ $labels.exchange }}/{{ $labels.symbol }} queue size is {{ $value }}"
+
+  - name: sofia-v2-ai-trading
+    rules:
+      # AI & Trading Alerts
+      - alert: HighAIPredictionLatency
+        expr: ai_prediction_latency_seconds > 0.15
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI prediction latency exceeds target"
+          description: "{{ $labels.model_type }} prediction latency is {{ $value }}s (target: <0.15s)"
+
+      - alert: ModelAccuracyDrop
+        expr: ai_model_accuracy < 0.55
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model accuracy has dropped"
+          description: "{{ $labels.model_type }} accuracy for {{ $labels.symbol }} is {{ $value | humanizePercentage }}"
+
+      - alert: PaperTradingLoss
+        expr: paper_portfolio_pnl_usdt < -5000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Paper trading portfolio loss"
+          description: "Portfolio PnL is ${{ $value }}"
+
+      - alert: HighFeatureComputationErrors
+        expr: rate(ai_feature_errors_total[5m]) > 0.01
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High feature computation error rate"
+          description: "{{ $labels.symbol }} feature errors: {{ $value }} errors/sec"
+
+  - name: sofia-v2-news-alerts
+    rules:
+      # News & Alerts
+      - alert: NewsSourceDown
+        expr: news_source_health < 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "News source health degraded"
+          description: "{{ $labels.source }} health is {{ $value | humanizePercentage }}"
+
+      - alert: WhaleTradeVolumeSpike
+        expr: increase(whale_trades_detected_total[1m]) > 5
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "High whale trading activity"
+          description: "{{ $value }} whale trades detected in the last minute"
+
+      - alert: NewsProcessingStalled
+        expr: rate(news_articles_processed_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "News processing has stalled"
+          description: "No news articles processed from {{ $labels.source }} in 10 minutes"
+
+  - name: sofia-v2-performance
+    rules:
+      # Performance Alerts  
+      - alert: HighCPUUsage
+        expr: 100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}%"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is low"
+          description: "Disk usage is {{ $value }}% on {{ $labels.mountpoint }}"
