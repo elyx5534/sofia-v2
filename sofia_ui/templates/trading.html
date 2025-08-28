@@ -1,0 +1,552 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Trading Page Header -->
+<section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2">
+                <i class="fas fa-exchange-alt mr-3"></i>
+                Paper Trading
+            </h1>
+            <p class="text-lg text-blue-100">
+                Practice trading with virtual funds - Live P&L tracking
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Main Trading Interface -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column - Portfolio & Orders -->
+        <div class="lg:col-span-1 space-y-6">
+            
+            <!-- Portfolio Summary -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                    <i class="fas fa-wallet mr-2 text-blue-600"></i>
+                    Portfolio
+                </h2>
+                
+                <div id="portfolio-summary" class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Cash Balance:</span>
+                        <span class="font-mono font-bold text-gray-900 dark:text-white" id="cash-balance">Loading...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Positions Value:</span>
+                        <span class="font-mono font-bold text-gray-900 dark:text-white" id="positions-value">Loading...</span>
+                    </div>
+                    <div class="flex justify-between border-t pt-3">
+                        <span class="text-gray-600 dark:text-gray-400">Total Value:</span>
+                        <span class="font-mono font-bold text-xl text-gray-900 dark:text-white" id="total-value">Loading...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Total P&L:</span>
+                        <span class="font-mono font-bold" id="total-pnl">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Form -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                    <i class="fas fa-shopping-cart mr-2 text-green-600"></i>
+                    Place Order
+                </h2>
+                
+                <form id="order-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Symbol
+                        </label>
+                        <select id="order-symbol" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="BTC-USD">BTC-USD</option>
+                            <option value="ETH-USD">ETH-USD</option>
+                            <option value="BNB-USD">BNB-USD</option>
+                            <option value="XRP-USD">XRP-USD</option>
+                            <option value="ADA-USD">ADA-USD</option>
+                            <option value="DOGE-USD">DOGE-USD</option>
+                            <option value="SOL-USD">SOL-USD</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Side
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" id="buy-btn" class="py-2 px-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 focus:ring-2 focus:ring-green-500">
+                                BUY
+                            </button>
+                            <button type="button" id="sell-btn" class="py-2 px-4 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 focus:ring-2 focus:ring-red-500">
+                                SELL
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            USD Amount
+                        </label>
+                        <input type="number" id="order-amount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" value="1000" min="100" step="100">
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            Current Price: <span id="current-price" class="font-mono font-bold text-gray-900 dark:text-white">-</span>
+                        </div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            Est. Quantity: <span id="est-quantity" class="font-mono font-bold text-gray-900 dark:text-white">-</span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full py-3 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Execute Trade
+                    </button>
+                </form>
+            </div>
+            
+        </div>
+        
+        <!-- Center Column - Positions & Charts -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Open Positions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                    <i class="fas fa-list mr-2 text-purple-600"></i>
+                    Open Positions
+                </h2>
+                
+                <div id="positions-container">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="text-left text-gray-600 dark:text-gray-400 border-b dark:border-gray-700">
+                                <tr>
+                                    <th class="pb-2">Symbol</th>
+                                    <th class="pb-2">Quantity</th>
+                                    <th class="pb-2">Entry Price</th>
+                                    <th class="pb-2">Current Price</th>
+                                    <th class="pb-2">P&L</th>
+                                    <th class="pb-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="positions-table" class="text-gray-900 dark:text-white">
+                                <!-- Positions will be inserted here -->
+                            </tbody>
+                        </table>
+                        
+                        <div id="no-positions" class="text-center py-8 text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-2"></i>
+                            <p>No open positions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Price Chart -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                    <i class="fas fa-chart-line mr-2 text-indigo-600"></i>
+                    Live Price Chart
+                </h2>
+                
+                <div class="mb-4">
+                    <select id="chart-symbol" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="BTC-USD">BTC-USD</option>
+                        <option value="ETH-USD">ETH-USD</option>
+                        <option value="BNB-USD">BNB-USD</option>
+                    </select>
+                </div>
+                
+                <div class="h-96 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <canvas id="price-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Trade History -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+                    <i class="fas fa-history mr-2 text-orange-600"></i>
+                    Recent Trades
+                </h2>
+                
+                <div id="trades-container">
+                    <div class="space-y-2" id="trades-list">
+                        <!-- Trades will be inserted here -->
+                    </div>
+                    
+                    <div id="no-trades" class="text-center py-8 text-gray-500">
+                        <i class="fas fa-clock text-4xl mb-2"></i>
+                        <p>No trades yet</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Status Messages -->
+<div id="toast-container" class="fixed bottom-4 right-4 z-50"></div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// API configuration
+const API_BASE = '{{ api_base_url|default("http://localhost:8001") }}';
+
+// State
+let portfolio = null;
+let positions = [];
+let currentPrices = {};
+let selectedSide = 'buy';
+let priceChart = null;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTrading();
+    setInterval(updatePrices, 5000);
+    setInterval(refreshPortfolio, 10000);
+});
+
+async function initializeTrading() {
+    // Load portfolio
+    await refreshPortfolio();
+    
+    // Setup order form
+    setupOrderForm();
+    
+    // Initialize chart
+    initPriceChart();
+    
+    // Start price updates
+    await updatePrices();
+}
+
+async function refreshPortfolio() {
+    try {
+        const response = await fetch(`${API_BASE}/api/trading/portfolio`);
+        portfolio = await response.json();
+        
+        // Update UI
+        updatePortfolioDisplay();
+        updatePositionsTable();
+        
+    } catch (error) {
+        console.error('Portfolio refresh error:', error);
+    }
+}
+
+function updatePortfolioDisplay() {
+    if (!portfolio) return;
+    
+    document.getElementById('cash-balance').textContent = `$${portfolio.cash_balance.toLocaleString()}`;
+    document.getElementById('positions-value').textContent = `$${portfolio.positions_value.toLocaleString()}`;
+    document.getElementById('total-value').textContent = `$${portfolio.total_balance.toLocaleString()}`;
+    
+    const pnl = portfolio.total_balance - 100000;
+    const pnlPct = (pnl / 100000) * 100;
+    const pnlElement = document.getElementById('total-pnl');
+    pnlElement.textContent = `$${pnl.toLocaleString()} (${pnlPct.toFixed(2)}%)`;
+    pnlElement.className = `font-mono font-bold ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`;
+}
+
+function updatePositionsTable() {
+    if (!portfolio || !portfolio.positions) return;
+    
+    const table = document.getElementById('positions-table');
+    const noPositions = document.getElementById('no-positions');
+    
+    if (portfolio.positions.length === 0) {
+        table.innerHTML = '';
+        noPositions.style.display = 'block';
+    } else {
+        noPositions.style.display = 'none';
+        
+        table.innerHTML = portfolio.positions.map(pos => {
+            const pnlClass = pos.pnl >= 0 ? 'text-green-600' : 'text-red-600';
+            return `
+                <tr class="border-b dark:border-gray-700">
+                    <td class="py-2 font-bold">${pos.symbol}</td>
+                    <td class="py-2">${pos.quantity.toFixed(8)}</td>
+                    <td class="py-2">$${pos.entry_price.toFixed(2)}</td>
+                    <td class="py-2">$${pos.current_price.toFixed(2)}</td>
+                    <td class="py-2 ${pnlClass} font-bold">
+                        $${pos.pnl.toFixed(2)} (${pos.pnl_pct.toFixed(2)}%)
+                    </td>
+                    <td class="py-2">
+                        <button onclick="closePosition('${pos.symbol}')" class="text-red-600 hover:text-red-800 font-semibold">
+                            Close
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+}
+
+function setupOrderForm() {
+    // Side buttons
+    document.getElementById('buy-btn').addEventListener('click', function() {
+        selectedSide = 'buy';
+        this.classList.add('ring-2', 'ring-green-500');
+        document.getElementById('sell-btn').classList.remove('ring-2', 'ring-red-500');
+    });
+    
+    document.getElementById('sell-btn').addEventListener('click', function() {
+        selectedSide = 'sell';
+        this.classList.add('ring-2', 'ring-red-500');
+        document.getElementById('buy-btn').classList.remove('ring-2', 'ring-green-500');
+    });
+    
+    // Symbol change
+    document.getElementById('order-symbol').addEventListener('change', updateOrderPreview);
+    document.getElementById('order-amount').addEventListener('input', updateOrderPreview);
+    
+    // Form submit
+    document.getElementById('order-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        await executeTrade();
+    });
+    
+    // Default to buy
+    document.getElementById('buy-btn').click();
+}
+
+async function updatePrices() {
+    const symbols = ['BTC-USD', 'ETH-USD', 'BNB-USD'];
+    
+    for (const symbol of symbols) {
+        try {
+            const response = await fetch(`${API_BASE}/api/price/${symbol}`);
+            const data = await response.json();
+            currentPrices[symbol] = data.price;
+        } catch (error) {
+            console.error(`Price update error for ${symbol}:`, error);
+        }
+    }
+    
+    updateOrderPreview();
+    
+    // Update position prices
+    if (portfolio && portfolio.positions) {
+        const positionPrices = {};
+        for (const pos of portfolio.positions) {
+            if (currentPrices[pos.symbol]) {
+                positionPrices[pos.symbol] = currentPrices[pos.symbol];
+            }
+        }
+        
+        // Send to backend
+        if (Object.keys(positionPrices).length > 0) {
+            await fetch(`${API_BASE}/api/portfolio/update-prices`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(positionPrices)
+            });
+        }
+    }
+}
+
+function updateOrderPreview() {
+    const symbol = document.getElementById('order-symbol').value;
+    const amount = parseFloat(document.getElementById('order-amount').value) || 0;
+    const price = currentPrices[symbol] || 0;
+    
+    document.getElementById('current-price').textContent = price ? `$${price.toFixed(2)}` : '-';
+    
+    if (price && amount) {
+        const quantity = amount / price;
+        document.getElementById('est-quantity').textContent = quantity.toFixed(8);
+    } else {
+        document.getElementById('est-quantity').textContent = '-';
+    }
+}
+
+async function executeTrade() {
+    const symbol = document.getElementById('order-symbol').value;
+    const amount = parseFloat(document.getElementById('order-amount').value);
+    const price = currentPrices[symbol];
+    
+    if (!price) {
+        showToast('Price not available', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/trading/paper-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                symbol: symbol,
+                side: selectedSide,
+                usd_amount: amount
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Order executed: ${selectedSide.toUpperCase()} ${symbol}`, 'success');
+            await refreshPortfolio();
+            
+            // Add to trade history
+            addTradeToHistory(result);
+        } else {
+            showToast(result.error || 'Order failed', 'error');
+        }
+    } catch (error) {
+        console.error('Trade execution error:', error);
+        showToast('Trade execution failed', 'error');
+    }
+}
+
+async function closePosition(symbol) {
+    const price = currentPrices[symbol];
+    if (!price) {
+        showToast('Price not available', 'error');
+        return;
+    }
+    
+    const position = portfolio.positions.find(p => p.symbol === symbol);
+    if (!position) return;
+    
+    const amount = position.quantity * price;
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/trading/paper-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                symbol: symbol,
+                side: 'sell',
+                usd_amount: amount
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast(`Position closed: ${symbol}`, 'success');
+            await refreshPortfolio();
+        } else {
+            showToast(result.error || 'Close failed', 'error');
+        }
+    } catch (error) {
+        console.error('Position close error:', error);
+        showToast('Close position failed', 'error');
+    }
+}
+
+function addTradeToHistory(trade) {
+    const tradesContainer = document.getElementById('trades-list');
+    const noTrades = document.getElementById('no-trades');
+    
+    noTrades.style.display = 'none';
+    
+    const tradeHtml = `
+        <div class="border-l-4 ${trade.side === 'buy' ? 'border-green-500' : 'border-red-500'} pl-4 py-2">
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="font-bold">${trade.side.toUpperCase()}</span>
+                    <span class="ml-2">${trade.symbol}</span>
+                    <span class="ml-2 text-gray-500">@ $${trade.price.toFixed(2)}</span>
+                </div>
+                <div class="text-sm text-gray-500">
+                    ${new Date().toLocaleTimeString()}
+                </div>
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                Qty: ${trade.quantity.toFixed(8)}
+            </div>
+        </div>
+    `;
+    
+    tradesContainer.insertAdjacentHTML('afterbegin', tradeHtml);
+    
+    // Keep only last 10 trades
+    while (tradesContainer.children.length > 10) {
+        tradesContainer.removeChild(tradesContainer.lastChild);
+    }
+}
+
+function initPriceChart() {
+    const ctx = document.getElementById('price-chart').getContext('2d');
+    priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Price',
+                data: [],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    
+    // Update chart periodically
+    setInterval(updatePriceChart, 5000);
+}
+
+async function updatePriceChart() {
+    const symbol = document.getElementById('chart-symbol').value;
+    const price = currentPrices[symbol];
+    
+    if (!price) return;
+    
+    const now = new Date().toLocaleTimeString();
+    
+    priceChart.data.labels.push(now);
+    priceChart.data.datasets[0].data.push(price);
+    
+    // Keep last 20 points
+    if (priceChart.data.labels.length > 20) {
+        priceChart.data.labels.shift();
+        priceChart.data.datasets[0].data.shift();
+    }
+    
+    priceChart.update();
+}
+
+function showToast(message, type = 'info') {
+    const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg mb-2`;
+    toast.textContent = message;
+    
+    document.getElementById('toast-container').appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

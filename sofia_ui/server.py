@@ -4,21 +4,39 @@ Modern ve profesyonel trading stratejisi arayüzü
 """
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import asyncio
 from pathlib import Path
 import random
 from datetime import datetime
-from sofia_ui.live_data import live_data_service
+from live_data import live_data_service
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.models.portfolio import portfolio_manager
+from src.services.price_service_real import price_service
+from src.adapters.yahoo_free import yahoo_adapter
+from src.adapters.coingecko_free import coingecko_adapter
 
 # FastAPI uygulaması
 app = FastAPI(
     title="Sofia V2 - Trading Strategy Platform",
     description="Akıllı trading stratejileri ve backtest platformu",
     version="2.0.0"
+)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Static dosyalar ve template'ler
@@ -246,11 +264,16 @@ async def get_multiple_quotes(symbols: str = "BTC-USD,ETH-USD,AAPL"):
     """Çoklu fiyat bilgisi API"""
     try:
         symbol_list = [s.strip() for s in symbols.split(',')]
-        return live_data_service.get_multiple_prices(symbol_list)
+        result = live_data_service.get_multiple_prices(symbol_list)
+        # If it's a coroutine, await it
+        if asyncio.iscoroutine(result):
+            result = await result
+        return result
     except Exception as e:
-        # Fallback
+        # Fallback - return mock data
         symbol_list = [s.strip() for s in symbols.split(',')]
-        return {symbol: get_live_btc_data() for symbol in symbol_list}
+        mock_data = await get_live_btc_data()
+        return {symbol: mock_data for symbol in symbol_list}
 
 
 @app.get("/api/crypto-prices")
@@ -363,9 +386,79 @@ async def get_fear_greed():
         return {"value": 72, "value_classification": "Greed"}
 
 
+# Trading API endpoints
+@app.get("/api/portfolio")
+async def get_portfolio():
+    """Get current portfolio"""
+    return portfolio_manager.get_portfolio()
+
+
+@app.post("/api/portfolio/execute")
+async def execute_trade(request: Request):
+    """Execute a paper trade"""
+    data = await request.json()
+    result = portfolio_manager.execute_order(
+        symbol=data['symbol'],
+        side=data['side'],
+        usd_amount=data['usd_amount'],
+        price=data['price']
+    )
+    return result
+
+
+@app.get("/api/price/{symbol}")
+async def get_live_price(symbol: str):
+    """Get live price with fallback"""
+    # Try WebSocket/REST first
+    result = await price_service.get_price(symbol)
+    if result:
+        return result
+    
+    # Try Yahoo
+    result = await yahoo_adapter.get_quote(symbol)
+    if result:
+        return result
+    
+    # Try CoinGecko
+    result = await coingecko_adapter.get_price(symbol)
+    if result:
+        return result
+    
+    # Fallback
+    return {
+        'symbol': symbol,
+        'price': 0,
+        'source': 'none',
+        'error': 'No data available'
+    }
+
+
+@app.get("/api/metrics")
+async def get_metrics():
+    """Get system metrics"""
+    return price_service.get_metrics()
+
+
+@app.get("/trading", response_class=HTMLResponse)
+async def trading_page(request: Request):
+    """Paper trading page"""
+    # Pass API base URL to template
+    api_base_url = os.getenv('SOFIA_API_BASE', 'http://localhost:8001')
+    
+    context = {
+        "request": request,
+        "page_title": "Paper Trading - Live P&L Tracking",
+        "api_base_url": api_base_url
+    }
+    return templates.TemplateResponse("trading.html", context)
+
+
 @app.get("/assets/{symbol}", response_class=HTMLResponse)
 async def assets_detail(request: Request, symbol: str):
     """Asset detay sayfası - UI planında belirtilen"""
+    # Pass API base URL to template
+    api_base_url = os.getenv('SOFIA_API_BASE', 'http://localhost:8001')
+    
     try:
         symbol_data = live_data_service.get_live_price(symbol.upper())
     except:
@@ -389,7 +482,8 @@ async def assets_detail(request: Request, symbol: str):
             "market_cap": "1.34T",
             "volume_24h": "28.5B",
             "fear_greed_index": 72
-        }
+        },
+        "api_base_url": api_base_url
     }
     return templates.TemplateResponse("assets_detail.html", context)
 

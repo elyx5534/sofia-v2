@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git log:*)",
+      "Read(/C:\\Users\\Elyx\\Downloads/**)",
+      "Bash(dir:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(grep:*)",
+      "Read(/C:\\Users\\Elyx\\Downloads/**)",
+      "Bash(curl:*)",
+      "Bash(git checkout:*)",
+      "Bash(.venvScriptsactivate.ps1)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

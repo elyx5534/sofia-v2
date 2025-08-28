@@ -1,0 +1,94 @@
+{
+    "mappings": {
+        "BTC-USD": {
+            "ws": "BTCUSDT",
+            "rest": "BTCUSDT",
+            "ui": "BTC-USD"
+        },
+        "ETH-USD": {
+            "ws": "ETHUSDT",
+            "rest": "ETHUSDT",
+            "ui": "ETH-USD"
+        },
+        "BNB-USD": {
+            "ws": "BNBUSDT",
+            "rest": "BNBUSDT",
+            "ui": "BNB-USD"
+        },
+        "XRP-USD": {
+            "ws": "XRPUSDT",
+            "rest": "XRPUSDT",
+            "ui": "XRP-USD"
+        },
+        "ADA-USD": {
+            "ws": "ADAUSDT",
+            "rest": "ADAUSDT",
+            "ui": "ADA-USD"
+        },
+        "DOGE-USD": {
+            "ws": "DOGEUSDT",
+            "rest": "DOGEUSDT",
+            "ui": "DOGE-USD"
+        },
+        "SOL-USD": {
+            "ws": "SOLUSDT",
+            "rest": "SOLUSDT",
+            "ui": "SOL-USD"
+        },
+        "DOT-USD": {
+            "ws": "DOTUSDT",
+            "rest": "DOTUSDT",
+            "ui": "DOT-USD"
+        },
+        "MATIC-USD": {
+            "ws": "MATICUSDT",
+            "rest": "MATICUSDT",
+            "ui": "MATIC-USD"
+        },
+        "AVAX-USD": {
+            "ws": "AVAXUSDT",
+            "rest": "AVAXUSDT",
+            "ui": "AVAX-USD"
+        },
+        "BTC/USDT": {
+            "ws": "BTCUSDT",
+            "rest": "BTCUSDT",
+            "ui": "BTC/USDT"
+        },
+        "ETH/USDT": {
+            "ws": "ETHUSDT",
+            "rest": "ETHUSDT",
+            "ui": "ETH/USDT"
+        },
+        "SOL/USDT": {
+            "ws": "SOLUSDT",
+            "rest": "SOLUSDT",
+            "ui": "SOL/USDT"
+        },
+        "BTCUSDT": {
+            "ws": "BTCUSDT",
+            "rest": "BTCUSDT",
+            "ui": "BTC-USD"
+        },
+        "ETHUSDT": {
+            "ws": "ETHUSDT",
+            "rest": "ETHUSDT",
+            "ui": "ETH-USD"
+        },
+        "SOLUSDT": {
+            "ws": "SOLUSDT",
+            "rest": "SOLUSDT",
+            "ui": "SOL-USD"
+        }
+    },
+    "todo_bist": {
+        "comment": "Add BIST mappings here when needed",
+        "example": {
+            "SASA.IS": {
+                "ws": null,
+                "rest": "SASA.IS",
+                "ui": "SASA"
+            }
+        }
+    }
+}
