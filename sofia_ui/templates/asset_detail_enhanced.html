@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-800/50 backdrop-blur-xl bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button onclick="history.back()" class="p-2 text-gray-400 hover:text-white transition-all">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </button>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                            {% if coin.image %}
+                                <img src="{{ coin.image }}" alt="{{ coin.name }}" class="w-10 h-10 rounded-xl">
+                            {% else %}
+                                <span class="text-white font-bold">{{ coin.symbol[:2].upper() }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-white">{{ coin.name }}</h1>
+                            <p class="text-gray-400">{{ coin.symbol.upper() }} • Rank #{{ coin.market_cap_rank }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-white">
+                            {% if coin.current_price > 1 %}
+                                ${{ "%.2f"|format(coin.current_price) }}
+                            {% elif coin.current_price > 0.01 %}
+                                ${{ "%.4f"|format(coin.current_price) }}
+                            {% else %}
+                                ${{ "%.8f"|format(coin.current_price) }}
+                            {% endif %}
+                        </div>
+                        <div class="{% if coin.price_change_percentage_24h >= 0 %}text-green-400{% else %}text-red-400{% endif %} text-lg">
+                            {% if coin.price_change_percentage_24h >= 0 %}+{% endif %}{{ "%.2f"|format(coin.price_change_percentage_24h) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <!-- Main Analysis Area -->
+            <div class="xl:col-span-2 space-y-6">
+                <!-- Sofia AI Analysis - Main Feature -->
+                <div class="bg-gradient-to-br from-blue-900/50 to-purple-900/50 backdrop-blur-xl rounded-xl border border-blue-500/30 p-6">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <i class="fas fa-robot text-blue-400 mr-3"></i>
+                        Sofia AI Analysis
+                        <span class="ml-auto text-sm bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full animate-pulse">LIVE</span>
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- Main Signal -->
+                        <div class="md:col-span-1 text-center">
+                            <div class="text-6xl font-bold mb-2 
+                                {% if ai_analysis.signal_color == 'green' %}text-green-400
+                                {% elif ai_analysis.signal_color == 'red' %}text-red-400
+                                {% else %}text-yellow-400{% endif %}">
+                                {{ ai_analysis.confidence }}%
+                            </div>
+                            <div class="text-2xl font-bold 
+                                {% if ai_analysis.signal_color == 'green' %}text-green-400
+                                {% elif ai_analysis.signal_color == 'red' %}text-red-400
+                                {% else %}text-yellow-400{% endif %} mb-1">
+                                {{ ai_analysis.signal }}
+                            </div>
+                            <div class="text-gray-400">AI Confidence</div>
+                        </div>
+                        
+                        <!-- Price Targets -->
+                        <div class="md:col-span-2">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
+                                    <div class="text-green-400 font-bold text-lg">
+                                        {% if ai_analysis.target_price > 1 %}
+                                            ${{ "%.2f"|format(ai_analysis.target_price) }}
+                                        {% else %}
+                                            ${{ "%.6f"|format(ai_analysis.target_price) }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-gray-400 text-sm">Price Target</div>
+                                    <div class="text-green-300 text-xs">
+                                        +{{ "%.1f"|format((ai_analysis.target_price/coin.current_price - 1) * 100) }}%
+                                    </div>
+                                </div>
+                                <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-center">
+                                    <div class="text-red-400 font-bold text-lg">
+                                        {% if ai_analysis.stop_loss > 1 %}
+                                            ${{ "%.2f"|format(ai_analysis.stop_loss) }}
+                                        {% else %}
+                                            ${{ "%.6f"|format(ai_analysis.stop_loss) }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-gray-400 text-sm">Stop Loss</div>
+                                    <div class="text-red-300 text-xs">
+                                        {{ "%.1f"|format((ai_analysis.stop_loss/coin.current_price - 1) * 100) }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Analysis -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold text-white">Technical Indicators</h3>
+                            
+                            <div class="bg-slate-800/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400">RSI (14)</span>
+                                    <span class="text-white font-bold">{{ ai_analysis.rsi }}</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="
+                                        {% if ai_analysis.rsi > 70 %}bg-red-500
+                                        {% elif ai_analysis.rsi < 30 %}bg-green-500
+                                        {% else %}bg-yellow-500{% endif %}
+                                        h-2 rounded-full" style="width: {{ ai_analysis.rsi }}%"></div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    {% if ai_analysis.rsi > 70 %}Overbought
+                                    {% elif ai_analysis.rsi < 30 %}Oversold
+                                    {% else %}Neutral{% endif %}
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-800/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-400">MACD Signal</span>
+                                    <span class="
+                                        {% if ai_analysis.macd_signal == 'Bullish' %}text-green-400
+                                        {% else %}text-red-400{% endif %} font-bold">
+                                        {{ ai_analysis.macd_signal }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-800/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-400">Volume Analysis</span>
+                                    <span class="text-white font-bold">{{ ai_analysis.volume_analysis }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-semibold text-white">Market Intelligence</h3>
+                            
+                            <div class="bg-slate-800/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400">Whale Activity</span>
+                                    <span class="
+                                        {% if ai_analysis.whale_activity == 'High' %}text-red-400
+                                        {% elif ai_analysis.whale_activity == 'Moderate' %}text-yellow-400
+                                        {% else %}text-green-400{% endif %} font-bold">
+                                        {{ ai_analysis.whale_activity }}
+                                    </span>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    {% if ai_analysis.whale_activity == 'High' %}
+                                        Large holders are active - monitor for volatility
+                                    {% elif ai_analysis.whale_activity == 'Moderate' %}
+                                        Normal whale activity detected
+                                    {% else %}
+                                        Low whale movement - stable conditions
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-800/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400">News Sentiment</span>
+                                    <span class="
+                                        {% if 'Bullish' in ai_analysis.sentiment %}text-green-400
+                                        {% elif 'Bearish' in ai_analysis.sentiment %}text-red-400
+                                        {% else %}text-gray-400{% endif %} font-bold">
+                                        {{ ai_analysis.sentiment }}
+                                    </span>
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    Score: {{ "%.2f"|format(ai_analysis.sentiment_score) }}
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-800/50 p-4 rounded-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400">Risk Category</span>
+                                    <span class="
+                                        {% if ai_analysis.risk_level == 'Low' %}text-green-400
+                                        {% elif ai_analysis.risk_level == 'Medium' %}text-yellow-400
+                                        {% else %}text-red-400{% endif %} font-bold">
+                                        {{ ai_analysis.risk_level }} Risk
+                                    </span>
+                                </div>
+                                <div class="text-xs text-gray-500">{{ ai_analysis.market_cap_category }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trading Recommendation -->
+                    <div class="mt-6 p-4 bg-gradient-to-r 
+                        {% if ai_analysis.signal_color == 'green' %}from-green-900/50 to-emerald-900/50 border-green-500/30
+                        {% elif ai_analysis.signal_color == 'red' %}from-red-900/50 to-rose-900/50 border-red-500/30
+                        {% else %}from-yellow-900/50 to-amber-900/50 border-yellow-500/30{% endif %}
+                        border rounded-lg">
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-white mb-2">
+                                🤖 Sofia's Recommendation: {{ ai_analysis.signal }}
+                            </div>
+                            <div class="text-sm text-gray-300 mb-3">
+                                {% if ai_analysis.signal.startswith('BUY') %}
+                                    Bullish momentum detected. Consider entering a long position.
+                                {% elif ai_analysis.signal.startswith('SELL') %}
+                                    Bearish signals present. Consider reducing exposure.
+                                {% else %}
+                                    Mixed signals. Wait for clearer direction.
+                                {% endif %}
+                            </div>
+                            <div class="flex justify-center space-x-4">
+                                <button class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all">
+                                    <i class="fas fa-shopping-cart mr-2"></i>Execute Buy
+                                </button>
+                                <button class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
+                                    <i class="fas fa-star mr-2"></i>Add to Watchlist
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-sm text-gray-400 mb-1">Market Cap</div>
+                        <div class="text-lg font-bold text-white">
+                            {% if coin.market_cap > 1000000000000 %}
+                                ${{ "%.1f"|format(coin.market_cap/1000000000000) }}T
+                            {% elif coin.market_cap > 1000000000 %}
+                                ${{ "%.1f"|format(coin.market_cap/1000000000) }}B
+                            {% else %}
+                                ${{ "%.1f"|format(coin.market_cap/1000000) }}M
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-500">Rank #{{ coin.market_cap_rank }}</div>
+                    </div>
+                    
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-sm text-gray-400 mb-1">24h Volume</div>
+                        <div class="text-lg font-bold text-white">
+                            {% if coin.total_volume > 1000000000 %}
+                                ${{ "%.1f"|format(coin.total_volume/1000000000) }}B
+                            {% else %}
+                                ${{ "%.1f"|format(coin.total_volume/1000000) }}M
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-green-400">{{ ai_analysis.volume_analysis }}</div>
+                    </div>
+                    
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-sm text-gray-400 mb-1">All-Time High</div>
+                        <div class="text-lg font-bold text-white">
+                            {% if coin.ath > 1 %}
+                                ${{ "%.2f"|format(coin.ath) }}
+                            {% else %}
+                                ${{ "%.6f"|format(coin.ath) }}
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-red-400">{{ "%.1f"|format(coin.ath_change_percentage) }}%</div>
+                    </div>
+                    
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-sm text-gray-400 mb-1">Circulating Supply</div>
+                        <div class="text-lg font-bold text-white">
+                            {% if coin.circulating_supply > 1000000000 %}
+                                {{ "%.1f"|format(coin.circulating_supply/1000000000) }}B
+                            {% elif coin.circulating_supply > 1000000 %}
+                                {{ "%.1f"|format(coin.circulating_supply/1000000) }}M
+                            {% else %}
+                                {{ "%.0f"|format(coin.circulating_supply) }}
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {% if coin.max_supply %}
+                                / {{ "%.0f"|format(coin.max_supply/1000000) }}M max
+                            {% else %}
+                                No max supply
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price Chart Placeholder -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Price Chart</h3>
+                    <div class="h-64 bg-slate-800/30 rounded-lg flex items-center justify-center">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line text-4xl text-gray-500 mb-2"></i>
+                            <div class="text-gray-400">Interactive Chart</div>
+                            <div class="text-gray-500 text-sm">1D • 7D • 1M • 3M • 1Y</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Quick Actions -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all flex items-center justify-center">
+                            <i class="fas fa-arrow-up mr-2"></i>
+                            Buy {{ coin.symbol.upper() }}
+                        </button>
+                        <button class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all flex items-center justify-center">
+                            <i class="fas fa-arrow-down mr-2"></i>
+                            Sell {{ coin.symbol.upper() }}
+                        </button>
+                        <button class="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-all flex items-center justify-center">
+                            <i class="fas fa-star mr-2"></i>
+                            Add to Watchlist
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Risk Assessment -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Risk Assessment</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Risk Level</span>
+                            <span class="
+                                {% if ai_analysis.risk_level == 'Low' %}text-green-400
+                                {% elif ai_analysis.risk_level == 'Medium' %}text-yellow-400
+                                {% else %}text-red-400{% endif %} font-medium">
+                                {{ ai_analysis.risk_level }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Volatility</span>
+                            <span class="text-white font-medium">
+                                {% if coin.price_change_percentage_24h|abs > 10 %}High
+                                {% elif coin.price_change_percentage_24h|abs > 5 %}Medium
+                                {% else %}Low{% endif %}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Liquidity</span>
+                            <span class="text-white font-medium">
+                                {% if coin.total_volume > 1000000000 %}High
+                                {% elif coin.total_volume > 100000000 %}Medium
+                                {% else %}Low{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent News/Alerts -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Recent Activity</h3>
+                    <div class="space-y-3">
+                        <div class="text-xs bg-blue-500/10 border border-blue-500/20 rounded p-2">
+                            <div class="text-blue-400 font-medium">Price Alert</div>
+                            <div class="text-gray-300">{{ coin.name }} moved {{ "%.1f"|format(coin.price_change_percentage_24h|abs) }}% in 24h</div>
+                            <div class="text-gray-500">2 hours ago</div>
+                        </div>
+                        
+                        {% if ai_analysis.whale_activity == 'High' %}
+                        <div class="text-xs bg-yellow-500/10 border border-yellow-500/20 rounded p-2">
+                            <div class="text-yellow-400 font-medium">Whale Movement</div>
+                            <div class="text-gray-300">Large transaction detected</div>
+                            <div class="text-gray-500">4 hours ago</div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-xs bg-green-500/10 border border-green-500/20 rounded p-2">
+                            <div class="text-green-400 font-medium">Market Update</div>
+                            <div class="text-gray-300">Technical analysis completed</div>
+                            <div class="text-gray-500">6 hours ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

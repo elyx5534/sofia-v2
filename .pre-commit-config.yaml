@@ -1,4 +1,14 @@
 repos:
+  - repo: local
+    hooks:
+      - id: ui-guard
+        name: UI Guard - Protected Files Check
+        entry: python tools/ui_guard.py
+        language: system
+        stages: [commit]
+        pass_filenames: false
+        always_run: true
+        
   - repo: https://github.com/psf/black
     rev: 24.3.0
     hooks:

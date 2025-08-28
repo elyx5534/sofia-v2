@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - Sofia V2</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
+    <!-- Navigation -->
+    <nav class="relative z-10 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <i class="fas fa-chart-line text-white"></i>
+                </div>
+                <span class="text-xl font-bold text-white">Sofia V2</span>
+            </a>
+            
+            <div class="flex items-center space-x-4">
+                <a href="/login" class="text-slate-400 hover:text-white transition-colors">Login</a>
+                <a href="/register" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all">
+                    Get Started
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="relative px-6 py-16">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-5xl font-bold text-white mb-6">
+                Choose Your Trading
+                <span class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    Success Plan
+                </span>
+            </h1>
+            <p class="text-xl text-slate-400 mb-8">
+                Start free, upgrade when you're ready to unlock professional trading capabilities
+            </p>
+            
+            <!-- Billing Toggle -->
+            <div class="flex items-center justify-center space-x-4 mb-12">
+                <span class="text-slate-400">Monthly</span>
+                <button id="billingToggle" class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <span class="sr-only">Toggle billing</span>
+                    <span id="toggleThumb" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+                </button>
+                <span class="text-slate-400">
+                    Yearly 
+                    <span class="ml-1 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+                        Save 17%
+                    </span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="relative px-6 pb-20">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                
+                <!-- Free Plan -->
+                <div class="relative rounded-2xl bg-slate-800/50 border border-slate-700 p-8 backdrop-blur-sm">
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold text-white">Free</h3>
+                        <p class="text-slate-400 mt-2">Perfect for getting started</p>
+                        <div class="mt-6">
+                            <span class="text-4xl font-bold text-white">$0</span>
+                            <span class="text-slate-400">/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            100 API calls/month
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            5 backtests/day
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            2 strategies
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            12 months historical data
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Basic support
+                        </li>
+                    </ul>
+                    
+                    <button class="w-full py-3 px-4 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors">
+                        Current Plan
+                    </button>
+                </div>
+
+                <!-- Basic Plan -->
+                <div class="relative rounded-2xl bg-gradient-to-b from-blue-500/10 to-blue-600/10 border border-blue-500/30 p-8 backdrop-blur-sm">
+                    <div class="absolute top-4 right-4">
+                        <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                            Most Popular
+                        </span>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold text-white">Basic</h3>
+                        <p class="text-slate-400 mt-2">For serious traders</p>
+                        <div class="mt-6">
+                            <span id="basicPrice" class="text-4xl font-bold text-white">$49</span>
+                            <span class="text-slate-400">/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            1,000 API calls/month
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            50 backtests/day
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            10 strategies
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            24 months historical data
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            ML-powered strategies
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Email support
+                        </li>
+                    </ul>
+                    
+                    <button class="subscribe-btn w-full py-3 px-4 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium hover:opacity-90 transition-all"
+                            data-tier="basic">
+                        Get Started
+                    </button>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="relative rounded-2xl bg-gradient-to-b from-purple-500/10 to-purple-600/10 border border-purple-500/30 p-8 backdrop-blur-sm">
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold text-white">Professional</h3>
+                        <p class="text-slate-400 mt-2">Advanced features for pros</p>
+                        <div class="mt-6">
+                            <span id="proPrice" class="text-4xl font-bold text-white">$199</span>
+                            <span class="text-slate-400">/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            10,000 API calls/month
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            200 backtests/day
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            50 strategies
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            5 years historical data
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Portfolio optimization
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Real-time signals
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Priority support
+                        </li>
+                    </ul>
+                    
+                    <button class="subscribe-btn w-full py-3 px-4 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 text-white font-medium hover:opacity-90 transition-all"
+                            data-tier="pro">
+                        Get Started
+                    </button>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="relative rounded-2xl bg-slate-800/50 border border-slate-700 p-8 backdrop-blur-sm">
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-bold text-white">Enterprise</h3>
+                        <p class="text-slate-400 mt-2">Custom solutions</p>
+                        <div class="mt-6">
+                            <span id="enterprisePrice" class="text-4xl font-bold text-white">$999</span>
+                            <span class="text-slate-400">/month</span>
+                        </div>
+                    </div>
+                    
+                    <ul class="space-y-4 mb-8">
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            100,000 API calls/month
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            1,000 backtests/day
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Unlimited strategies
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            10 years historical data
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            White-label solutions
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Custom integrations
+                        </li>
+                        <li class="flex items-center text-slate-300">
+                            <i class="fas fa-check text-green-400 mr-3"></i>
+                            Dedicated support
+                        </li>
+                    </ul>
+                    
+                    <button class="subscribe-btn w-full py-3 px-4 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 transition-colors"
+                            data-tier="enterprise">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="relative px-6 py-20 border-t border-slate-800">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-white text-center mb-12">Frequently Asked Questions</h2>
+            
+            <div class="space-y-8">
+                <div class="bg-slate-800/50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Can I change plans anytime?</h3>
+                    <p class="text-slate-400">Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately and you'll be charged prorated amounts.</p>
+                </div>
+                
+                <div class="bg-slate-800/50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Is there a free trial?</h3>
+                    <p class="text-slate-400">Our Free plan gives you access to core features with no time limit. Upgrade when you need more capacity and advanced features.</p>
+                </div>
+                
+                <div class="bg-slate-800/50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">What payment methods do you accept?</h3>
+                    <p class="text-slate-400">We accept all major credit cards (Visa, MasterCard, American Express) and PayPal through our secure Stripe payment processing.</p>
+                </div>
+                
+                <div class="bg-slate-800/50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Is my data secure?</h3>
+                    <p class="text-slate-400">Absolutely. We use bank-level encryption and never store your trading credentials. All strategies and backtests are processed securely.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="relative px-6 py-20 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-bold text-white mb-4">Ready to Start Trading Smarter?</h2>
+            <p class="text-xl text-slate-400 mb-8">Join thousands of traders using Sofia V2 to optimize their strategies</p>
+            <a href="/register" class="inline-flex items-center px-8 py-4 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium hover:opacity-90 transition-all">
+                Get Started Free
+                <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Billing toggle
+        const billingToggle = document.getElementById('billingToggle');
+        const toggleThumb = document.getElementById('toggleThumb');
+        const basicPrice = document.getElementById('basicPrice');
+        const proPrice = document.getElementById('proPrice');
+        const enterprisePrice = document.getElementById('enterprisePrice');
+        
+        let isYearly = false;
+        
+        billingToggle.addEventListener('click', () => {
+            isYearly = !isYearly;
+            
+            if (isYearly) {
+                toggleThumb.style.transform = 'translateX(1.25rem)';
+                billingToggle.classList.add('bg-blue-500');
+                billingToggle.classList.remove('bg-slate-600');
+                
+                // Update prices for yearly billing (17% discount)
+                basicPrice.textContent = '$41';
+                proPrice.textContent = '$165';
+                enterprisePrice.textContent = '$829';
+            } else {
+                toggleThumb.style.transform = 'translateX(0.25rem)';
+                billingToggle.classList.remove('bg-blue-500');
+                billingToggle.classList.add('bg-slate-600');
+                
+                // Update prices for monthly billing
+                basicPrice.textContent = '$49';
+                proPrice.textContent = '$199';
+                enterprisePrice.textContent = '$999';
+            }
+        });
+        
+        // Subscribe button handlers
+        document.querySelectorAll('.subscribe-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const tier = this.dataset.tier;
+                const billingInterval = isYearly ? 'year' : 'month';
+                
+                if (tier === 'enterprise') {
+                    // Redirect to contact page for enterprise
+                    window.location.href = '/contact';
+                    return;
+                }
+                
+                // Check if user is logged in
+                const accessToken = localStorage.getItem('access_token');
+                if (!accessToken) {
+                    // Redirect to login with return URL
+                    window.location.href = `/login?return_to=${encodeURIComponent(window.location.pathname)}`;
+                    return;
+                }
+                
+                try {
+                    // Show loading state
+                    const originalText = this.textContent;
+                    this.textContent = 'Creating checkout...';
+                    this.disabled = true;
+                    
+                    const response = await fetch('/payments/create-checkout-session', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({
+                            price_tier: tier,
+                            billing_interval: billingInterval
+                        })
+                    });
+                    
+                    if (response.status === 401) {
+                        // Token expired, redirect to login
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('refresh_token');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        // Redirect to Stripe checkout
+                        window.location.href = data.checkout_url;
+                    } else {
+                        alert(data.detail || 'Failed to create checkout session');
+                        this.textContent = originalText;
+                        this.disabled = false;
+                    }
+                    
+                } catch (error) {
+                    console.error('Checkout error:', error);
+                    alert('Network error. Please try again.');
+                    this.textContent = originalText;
+                    this.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
