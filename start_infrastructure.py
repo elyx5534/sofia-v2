@@ -31,6 +31,12 @@ class ProcessManager:
         
         # Component configurations
         self.components = {
+            'redis': {
+                'command': self._get_redis_command(),
+                'description': 'Redis server',
+                'priority': 0,
+                'health_check': 'redis://localhost:6379'
+            },
             'metrics_server': {
                 'command': ['python', '-m', 'monitoring.metrics_server'],
                 'description': 'Prometheus metrics server',
@@ -84,8 +90,43 @@ class ProcessManager:
                 'description': 'Paper trading engine',
                 'priority': 5,
                 'enabled': os.getenv('ENABLE_PAPER_TRADING', 'true').lower() == 'true'
+            },
+            'data_api': {
+                'command': ['python', '-m', 'uvicorn', 'src.api.main:app', '--host', '0.0.0.0', '--port', '8001'],
+                'description': 'Data API server',
+                'priority': 6,
+                'enabled': True,
+                'health_check': 'http://localhost:8001/health'
+            },
+            'sofia_ui': {
+                'command': ['python', '-m', 'uvicorn', 'sofia_ui.server:app', '--host', '0.0.0.0', '--port', '8010'],
+                'description': 'Sofia UI web server',
+                'priority': 6,
+                'enabled': True,
+                'health_check': 'http://localhost:8010/health'
             }
         }
+    
+    def _get_redis_command(self) -> List[str]:
+        """Get Redis command based on OS"""
+        import platform
+        system = platform.system().lower()
+        
+        if system == "windows":
+            # Try redis-server.exe, fallback to WSL
+            redis_paths = [
+                "redis-server.exe",
+                "C:\\Program Files\\Redis\\redis-server.exe",
+                "wsl", "redis-server"
+            ]
+            for cmd in redis_paths:
+                if cmd == "wsl":
+                    return ["wsl", "redis-server", "--daemonize", "no"]
+                else:
+                    return [cmd, "--port", "6379"]
+        else:
+            # Linux/Mac
+            return ["redis-server", "--daemonize", "no", "--port", "6379"]
     
     def check_dependencies(self) -> bool:
         """Check if required dependencies are available"""
