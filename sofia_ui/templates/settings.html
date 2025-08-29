@@ -1,15 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Paper Trading Control</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</head>
-<body class="bg-gray-900 text-white">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-8">Trading Settings</h1>
+{% extends "base.html" %}
+
+{% block title %}Settings - Sofia V2{% endblock %}
+
+{% block content %}
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Trading Settings</h1>
+                <p class="text-gray-600 dark:text-gray-400">Configure paper trading and system parameters</p>
+            </div>
+            <div id="paper-status-badge" class="hidden">
+                <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full text-sm font-semibold">
+                    <i class="fas fa-play-circle mr-1"></i> Paper Trading ON
+                </span>
+            </div>
+        </div>
+    </div>
         
         <!-- Paper Trading Control -->
         <div class="bg-gray-800 rounded-lg p-6 mb-6">
@@ -108,9 +114,29 @@
                 toggleStatus.textContent = isRunning ? 'ON' : 'OFF';
                 
                 updateStatusIndicator(isRunning ? 'running' : 'stopped');
+                updatePaperTradingBadge(isRunning);
                 updateMetrics(data);
             } catch (error) {
-                console.error('Failed to check state:', error);
+                // Paper trading API not available - show toggle as available but OFF
+                console.log('Paper trading API not available on current branch');
+                toggle.checked = false;
+                toggleStatus.textContent = 'OFF';
+                updateStatusIndicator('stopped');
+                updatePaperTradingBadge(false);
+            }
+        }
+        
+        // Update paper trading badge
+        function updatePaperTradingBadge(isOn) {
+            const badge = document.getElementById('paper-status-badge');
+            const badgeSpan = badge.querySelector('span');
+            
+            if (isOn) {
+                badge.classList.remove('hidden');
+                badgeSpan.className = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full text-sm font-semibold';
+                badgeSpan.innerHTML = '<i class="fas fa-play-circle mr-1"></i> Paper Trading ON';
+            } else {
+                badge.classList.add('hidden');
             }
         }
         
@@ -130,6 +156,7 @@
                 if (data.status === 'success') {
                     toggleStatus.textContent = mode === 'paper' ? 'ON' : 'OFF';
                     updateStatusIndicator(mode === 'paper' ? 'running' : 'stopped');
+                    updatePaperTradingBadge(mode === 'paper');
                     
                     // Show notification
                     showNotification(data.message, 'success');

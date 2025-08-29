@@ -1,0 +1,7 @@
+/* Sofia V2 - Main Stylesheet */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import "./tokens.css";
+@import "./base.css";

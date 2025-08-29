@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ page_title }}{% endblock %}</title>
     
-    <!-- Tailwind CSS CDN -->
+    <!-- Sofia V2 Styles -->
+    <link rel="stylesheet" href="/static/styles/index.css">
+    
+    <!-- Tailwind CSS CDN (fallback) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Chart.js for beautiful charts -->
@@ -17,41 +20,13 @@
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Custom styles -->
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .glass-effect {
-            backdrop-filter: blur(20px);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .price-up { color: #10b981; }
-        .price-down { color: #ef4444; }
-        .trading-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .trading-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        .pulse-glow {
-            animation: pulse-glow 2s infinite;
-        }
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
-            50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
-        }
-    </style>
-    
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="h-full bg-gray-50 dark:bg-gray-900" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' || false, sidebarOpen: false }" x-init="$watch('darkMode', val => { localStorage.setItem('darkMode', val); document.documentElement.classList.toggle('dark', val) })" :class="{ 'dark': darkMode }">
+<body class="app-shell" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' || false, sidebarOpen: false }" x-init="$watch('darkMode', val => { localStorage.setItem('darkMode', val); document.documentElement.classList.toggle('dark', val) })" :class="{ 'dark': darkMode }">
     <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav class="app-navbar">
+        <div class="app-container">
             <div class="flex justify-between h-16">
                 <!-- Logo & Brand -->
                 <div class="flex items-center">
@@ -67,17 +42,20 @@
                         <a href="/" class="text-gray-900 dark:text-white hover:text-blue-600 px-3 py-2 text-sm font-medium">
                             <i class="fas fa-home mr-1"></i> Ana Sayfa
                         </a>
-                        <a href="/assets/BTC-USD" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fab fa-bitcoin mr-1"></i> Assets
+                        <a href="/dashboard" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                            <i class="fas fa-chart-pie mr-1"></i> Dashboard
                         </a>
-                        <a href="/backtest" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fas fa-chart-line mr-1"></i> Backtest
+                        <a href="/markets" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                            <i class="fas fa-chart-bar mr-1"></i> Markets
                         </a>
-                        <a href="/strategies" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fas fa-layer-group mr-1"></i> Strategies
+                        <a href="/live" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                            <i class="fas fa-table mr-1"></i> Live
                         </a>
-                        <a href="/cards" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fas fa-chart-area mr-1"></i> Cards
+                        <a href="/showcase/BTC" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                            <i class="fab fa-bitcoin mr-1"></i> Showcase
+                        </a>
+                        <a href="/settings" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                            <i class="fas fa-cog mr-1"></i> Settings
                         </a>
                     </div>
                 </div>
@@ -118,25 +96,30 @@
                 <a href="/" class="block px-3 py-2 text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                     <i class="fas fa-home mr-2"></i> Ana Sayfa
                 </a>
-                <a href="/assets/BTC-USD" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fab fa-bitcoin mr-2"></i> Assets
+                <a href="/dashboard" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                    <i class="fas fa-chart-pie mr-2"></i> Dashboard
                 </a>
-                <a href="/backtest" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fas fa-chart-line mr-2"></i> Backtest
+                <a href="/markets" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                    <i class="fas fa-chart-bar mr-2"></i> Markets
                 </a>
-                <a href="/strategies" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fas fa-layer-group mr-2"></i> Strategies
+                <a href="/live" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                    <i class="fas fa-table mr-2"></i> Live
                 </a>
-                <a href="/cards" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fas fa-chart-area mr-2"></i> Cards
+                <a href="/showcase/BTC" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                    <i class="fab fa-bitcoin mr-2"></i> Showcase
+                </a>
+                <a href="/settings" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                    <i class="fas fa-cog mr-2"></i> Settings
                 </a>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="flex-1">
-        {% block content %}{% endblock %}
+    <main class="app-main">
+        <div class="app-container py-6">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
     <!-- Footer -->

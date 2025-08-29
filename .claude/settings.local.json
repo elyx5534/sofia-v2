@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(start reports/paper/quickcheck.html)",
-      "Bash(start reports/nightly/summary_20250829/morning_summary.html)"
+      "Bash(start reports/nightly/summary_20250829/morning_summary.html)",
+      "Bash(where python)",
+      "Bash(pnpm dev:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(lsof:*)",
+      "Bash(playwright install:*)",
+      "Bash(playwright test:*)"
     ],
     "deny": [],
     "ask": []

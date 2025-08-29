@@ -1,0 +1,90 @@
+/* Sofia V2 - Design Tokens */
+
+:root {
+  /* Brand Colors */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-900: #1e3a8a;
+  
+  /* Surface Colors */
+  --surface: #ffffff;
+  --surface-card: #f9fafb;
+  --surface-border: #e5e7eb;
+  
+  /* Semantic Colors */
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  
+  /* Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  
+  /* Spacing Scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  
+  /* Z-Index Scale */
+  --z-navbar: 50;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-tooltip: 1001;
+  
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Dark Mode Tokens */
+.dark {
+  --surface: #111827;
+  --surface-card: #1f2937;
+  --surface-border: #374151;
+  
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+}
+
+/* Custom Properties for Trading */
+:root {
+  --price-up: #10b981;
+  --price-down: #ef4444;
+  --price-neutral: #6b7280;
+  
+  --grid-row-height: 40px;
+  --navbar-height: 64px;
+  --card-padding: 1.5rem;
+  
+  /* Animation Durations */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+}
+
+/* Trading-specific color utilities */
+.price-up { color: var(--price-up); }
+.price-down { color: var(--price-down); }
+.price-neutral { color: var(--price-neutral); }
+
+.bg-price-up { background-color: var(--price-up); }
+.bg-price-down { background-color: var(--price-down); }
