@@ -10,7 +10,8 @@
       "Bash(lsof:*)",
       "Bash(playwright install:*)",
       "Bash(playwright test:*)",
-      "Bash(npm init:*)"
+      "Bash(npm init:*)",
+      "Bash(start:*)"
     ],
     "deny": [],
     "ask": []
