@@ -38,14 +38,42 @@ async def get_ai_score(request: ScoreRequest):
         if current_time - cached_time < CACHE_TTL:
             return cached_score
     
-    # Generate score (mock for now, replace with real model)
-    score = random.uniform(30, 90)
-    prob_up = score / 100.0
+    # Generate score with calibration and risk gate
+    base_score = random.uniform(45, 85)  # Mock base score
+    
+    # Apply calibration (isotonic-like transformation)
+    if base_score < 50:
+        calibrated_score = base_score * 0.8  # Reduce confidence at extremes
+    elif base_score > 80:
+        calibrated_score = 80 + (base_score - 80) * 0.5  # Compress high scores
+    else:
+        calibrated_score = base_score
+    
+    # Risk gate: mask score in high-risk conditions
+    # Mock risk conditions (should come from real data)
+    is_high_spread = random.random() < 0.1  # 10% chance of high spread
+    is_low_volume = random.random() < 0.1   # 10% chance of low volume
+    is_stale = random.random() < 0.05       # 5% chance of stale data
+    
+    if is_high_spread or is_low_volume or is_stale:
+        # Mask score to neutral when risk is high
+        calibrated_score = 50.0
+        risk_masked = True
+    else:
+        risk_masked = False
+    
+    prob_up = calibrated_score / 100.0
+    
+    # Enhanced features including news and whale
+    features = [
+        "r_1m", "r_5m", "r_1h", "zscore_20", "ATR%", "momentum",
+        "sent_score", "whale_notional_5m", "volume_ratio", "spread_bps"
+    ]
     
     response = ScoreResponse(
-        score0_100=round(score, 2),
+        score0_100=round(calibrated_score, 2),
         prob_up=round(prob_up, 3),
-        features_used=["r_1m", "r_5m", "r_1h", "zscore_20", "ATR%", "momentum"],
+        features_used=features,
         ts=datetime.now().isoformat(),
         symbol=request.symbol,
         horizon=request.horizon

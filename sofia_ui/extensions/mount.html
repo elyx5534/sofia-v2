@@ -1,0 +1,27 @@
+<!-- 
+Sofia V2 Extension Mount Proposal
+This is a NON-INVASIVE mount suggestion for UI integration
+Add this single line to your existing HTML files to enable Sofia V2 features
+WITHOUT modifying any existing UI code or theme
+-->
+
+<!-- Option 1: Add to end of <head> section -->
+<script src="/extensions/config.js"></script>
+<script src="/extensions/adapter.js"></script>
+
+<!-- Option 2: Add before closing </body> tag (recommended) -->
+<script>
+    // Load Sofia V2 extensions
+    (function() {
+        const scripts = ['/extensions/config.js', '/extensions/adapter.js'];
+        scripts.forEach(src => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = false;
+            document.body.appendChild(script);
+        });
+    })();
+</script>
+
+<!-- Option 3: Single line loader (most minimal) -->
+<script src="/extensions/loader.js"></script>

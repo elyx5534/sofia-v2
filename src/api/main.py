@@ -8,7 +8,7 @@ import logging
 import os
 import time
 from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -26,6 +26,8 @@ from src.sofia.symbols import to_ui
 
 # Import routers
 from src.api import ai_endpoints, trade_endpoints
+from src.api.metrics_enhanced import metrics_collector
+from src.data.equities_fallback import equities_fallback
 
 # Configure logging
 logging.basicConfig(
@@ -104,31 +106,29 @@ async def health_check() -> Dict[str, Any]:
 
 @app.get("/metrics")
 async def get_metrics() -> Dict[str, Any]:
-    """System metrics endpoint"""
+    """Enhanced system metrics endpoint"""
+    # Get enhanced metrics
+    enhanced_metrics = metrics_collector.calculate_metrics()
+    
+    # Get fallback stats
+    fallback_stats = equities_fallback.get_fallback_stats()
+    
+    # Get basic metrics
     try:
-        metrics = price_service.get_metrics()
+        basic_metrics = price_service.get_metrics()
     except:
-        metrics = {}
+        basic_metrics = {}
     
-    # Extract freshness per symbol
-    freshness = {}
-    tick_counts = {}
-    
-    if metrics.get("websocket_metrics"):
-        ws_metrics = metrics["websocket_metrics"]
-        for symbol, data in ws_metrics.get("symbols", {}).items():
-            freshness[symbol] = data.get("freshness", 999)
-            tick_counts[symbol] = data.get("tick_count", 0)
-    
+    # Combine all metrics
     return {
         "status": "running",
         "timestamp": time.time(),
-        "price_freshness_seconds": freshness,
-        "tick_counts": tick_counts,
-        "data_errors_total": metrics.get("websocket_metrics", {}).get("error_count", 0),
+        **enhanced_metrics,
+        "fallback_stats": fallback_stats,
+        "basic_metrics": basic_metrics,
         "service_running": True,
-        "websocket_connected": metrics.get("websocket_connected", False),
-        "websocket_enabled": metrics.get("websocket_enabled", True)
+        "websocket_connected": len(manager.active_connections) > 0,
+        "websocket_connections": len(manager.active_connections)
     }
 
 
@@ -231,6 +231,106 @@ async def execute_paper_order(order: PaperOrderRequest) -> Dict[str, Any]:
         "fee": order.usd_amount * fee_rate,
         "timestamp": result.get("timestamp")
     }
+
+
+@app.get("/price/{symbol}")
+async def get_equity_price(symbol: str) -> Dict[str, Any]:
+    """Get equity price with fallback chain"""
+    start_time = time.time()
+    
+    # Record API call
+    price_data = await equities_fallback.get_price(symbol.upper())
+    
+    # Record metrics
+    latency_ms = (time.time() - start_time) * 1000
+    metrics_collector.record_api_latency(latency_ms)
+    metrics_collector.record_provider_latency(price_data.provider, price_data.latency_ms)
+    
+    if price_data.provider != "primary":
+        metrics_collector.record_fallback(price_data.provider)
+    
+    return {
+        "symbol": price_data.symbol,
+        "price": price_data.price,
+        "provider": price_data.provider,
+        "latency_ms": latency_ms,
+        "timestamp": price_data.timestamp
+    }
+
+
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        logger.info(f"WebSocket client connected. Total connections: {len(self.active_connections)}")
+        
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+        logger.info(f"WebSocket client disconnected. Total connections: {len(self.active_connections)}")
+        
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+        
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            try:
+                await connection.send_text(message)
+            except:
+                pass
+
+manager = ConnectionManager()
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time data streaming"""
+    await manager.connect(websocket)
+    try:
+        # Send initial connection confirmation
+        await websocket.send_json({
+            "type": "connected",
+            "message": "WebSocket connected to Sofia V2",
+            "timestamp": time.time()
+        })
+        
+        # Keep connection alive and handle messages
+        while True:
+            try:
+                # Receive message from client
+                data = await websocket.receive_text()
+                
+                # Echo back for now (can be enhanced with actual logic)
+                await websocket.send_json({
+                    "type": "echo",
+                    "data": data,
+                    "timestamp": time.time()
+                })
+                
+                # Simulate price updates (replace with real data)
+                await asyncio.sleep(5)
+                for symbol in ["BTCUSDT", "ETHUSDT", "SOLUSDT"]:
+                    await websocket.send_json({
+                        "type": "price",
+                        "symbol": symbol,
+                        "price": 50000 + (hash(symbol + str(time.time())) % 10000),
+                        "timestamp": time.time()
+                    })
+                    
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                logger.error(f"WebSocket error: {e}")
+                break
+                
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+    except Exception as e:
+        logger.error(f"WebSocket connection error: {e}")
+        manager.disconnect(websocket)
 
 
 

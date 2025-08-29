@@ -1,19 +1,14 @@
 # SITE DOCTOR REPORT
 
-## Initial Status (Before Fixes)
-```
-=== SOFIA SITE DOCTOR ===
-[OK] API /health: 200 OK
-[FAIL] /ai/score: 404 Not Found
-[FAIL] /trade/account: 404 Not Found
-[FAIL] /metrics: 404 Not Found
-[FAIL] Redis tcp: 6379
-[FAIL] QuestDB tcp: 8812
-[FAIL] Timescale tcp: 5432
-```
+**Generated:** 2025-08-29 14:47:00
+**Branch:** fix/ui-restore-and-integrate
+**API Port:** 8016
 
-## Final Status (After Fixes)
+## Latest Test Results
+
 ```
+ENV: {}
+
 === SOFIA SITE DOCTOR ===
 [OK] API /health: 200 OK
 [OK] /ai/score: 200 OK
