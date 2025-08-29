@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Trading Strategies - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Trading Strategies</h1>
+        <p class="text-gray-600">Explore and configure available trading strategies</p>
+    </div>
+
+    <!-- Strategy Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- SMA Cross Strategy -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-4">
+                <h3 class="text-xl font-bold text-white">SMA Cross</h3>
+                <span class="text-blue-100 text-sm">Trend Following</span>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">
+                    Simple Moving Average crossover strategy. Generates buy signals when fast SMA crosses above slow SMA.
+                </p>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Parameters:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• Fast SMA: 5-50 periods</li>
+                        <li>• Slow SMA: 20-200 periods</li>
+                        <li>• Signal Mode: Cross/Position</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Best For:</h4>
+                    <p class="text-sm text-gray-600">Trending markets, medium-term trades</p>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">Win Rate: ~45-55%</span>
+                    <button onclick="testStrategy('sma_cross')" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm">
+                        Test Strategy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMA Breakout Strategy -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 p-4">
+                <h3 class="text-xl font-bold text-white">EMA Breakout</h3>
+                <span class="text-purple-100 text-sm">Volatility Breakout</span>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">
+                    Exponential Moving Average breakout with ATR-based volatility bands for dynamic entry/exit points.
+                </p>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Parameters:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• EMA Period: 10-100</li>
+                        <li>• ATR Period: 7-28</li>
+                        <li>• ATR Multiplier: 1.0-4.0</li>
+                        <li>• Volume Filter: On/Off</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Best For:</h4>
+                    <p class="text-sm text-gray-600">High volatility periods, breakout trading</p>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">Win Rate: ~40-50%</span>
+                    <button onclick="testStrategy('ema_breakout')" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 text-sm">
+                        Test Strategy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RSI Mean Reversion Strategy -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 p-4">
+                <h3 class="text-xl font-bold text-white">RSI Reversion</h3>
+                <span class="text-green-100 text-sm">Mean Reversion</span>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">
+                    RSI-based mean reversion strategy. Buys oversold conditions and sells overbought conditions.
+                </p>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Parameters:</h4>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>• RSI Period: 7-28</li>
+                        <li>• Oversold: 20-40</li>
+                        <li>• Overbought: 60-80</li>
+                        <li>• Exit at Mean: Yes/No</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700 mb-2">Best For:</h4>
+                    <p class="text-sm text-gray-600">Range-bound markets, short-term trades</p>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">Win Rate: ~55-65%</span>
+                    <button onclick="testStrategy('rsi_reversion')" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm">
+                        Test Strategy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Comparison -->
+    <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Strategy Performance Comparison</h2>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Strategy</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Avg Return</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sharpe Ratio</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Max Drawdown</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Win Rate</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Trades/Month</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">SMA Cross</td>
+                        <td class="px-4 py-3 text-sm text-green-600">+12.5%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">1.25</td>
+                        <td class="px-4 py-3 text-sm text-red-600">-15.2%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">48%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">8-12</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">EMA Breakout</td>
+                        <td class="px-4 py-3 text-sm text-green-600">+18.3%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">1.45</td>
+                        <td class="px-4 py-3 text-sm text-red-600">-18.7%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">42%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">15-20</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">RSI Reversion</td>
+                        <td class="px-4 py-3 text-sm text-green-600">+9.8%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">1.65</td>
+                        <td class="px-4 py-3 text-sm text-red-600">-8.5%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">61%</td>
+                        <td class="px-4 py-3 text-sm text-gray-900">20-30</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <p class="mt-4 text-sm text-gray-500">
+            * Performance metrics based on historical backtests over the past 2 years. Past performance does not guarantee future results.
+        </p>
+    </div>
+
+    <!-- Optimization Tips -->
+    <div class="mt-8 bg-blue-50 rounded-lg p-6">
+        <h3 class="text-lg font-semibold text-blue-900 mb-3">Optimization Tips</h3>
+        <ul class="space-y-2 text-sm text-blue-800">
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">•</span>
+                <span>Use Grid Search for exhaustive parameter testing with smaller parameter spaces</span>
+            </li>
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">•</span>
+                <span>Use Genetic Algorithm for larger parameter spaces or when computation time is limited</span>
+            </li>
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">•</span>
+                <span>Always validate optimized parameters on out-of-sample data to avoid overfitting</span>
+            </li>
+            <li class="flex items-start">
+                <span class="text-blue-500 mr-2">•</span>
+                <span>Consider market regime changes when selecting strategy parameters</span>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<script>
+function testStrategy(strategy) {
+    // Redirect to backtests page with strategy pre-selected
+    window.location.href = `/backtests?strategy=${strategy}`;
+}
+</script>
+{% endblock %}

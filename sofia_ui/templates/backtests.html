@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}Backtests - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Backtesting System</h1>
+        <p class="text-gray-600">Test your trading strategies with historical data</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <button onclick="showNewBacktestModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="fas fa-plus mr-2"></i>
+            New Backtest
+        </button>
+        <button onclick="showOptimizationModal()" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+            <i class="fas fa-cogs mr-2"></i>
+            Parameter Optimization
+        </button>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Recent Backtests</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Strategy</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sharpe</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="backtestTable" class="bg-white divide-y divide-gray-200">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- New Backtest Modal -->
+<div id="newBacktestModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">New Backtest</h3>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Strategy</label>
+            <select id="strategySelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="sma_cross">SMA Cross</option>
+                <option value="ema_breakout">EMA Breakout</option>
+                <option value="rsi_reversion">RSI Mean Reversion</option>
+            </select>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
+            <input type="text" id="symbolInput" value="BTC/USDT" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Timeframe</label>
+            <select id="timeframeSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="1m">1 minute</option>
+                <option value="5m">5 minutes</option>
+                <option value="15m">15 minutes</option>
+                <option value="1h" selected>1 hour</option>
+                <option value="4h">4 hours</option>
+                <option value="1d">1 day</option>
+            </select>
+        </div>
+        
+        <div id="strategyParams" class="mb-4">
+            <!-- Dynamic parameters based on strategy -->
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+            <button onclick="hideNewBacktestModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                Cancel
+            </button>
+            <button onclick="runBacktest()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Run Backtest
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Optimization Modal -->
+<div id="optimizationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Parameter Optimization</h3>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Strategy</label>
+            <select id="optStrategySelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="sma_cross">SMA Cross</option>
+                <option value="ema_breakout">EMA Breakout</option>
+                <option value="rsi_reversion">RSI Mean Reversion</option>
+            </select>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Optimization Method</label>
+            <select id="optMethodSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="grid">Grid Search</option>
+                <option value="ga">Genetic Algorithm</option>
+            </select>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Symbol</label>
+            <input type="text" id="optSymbolInput" value="BTC/USDT" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        
+        <div class="flex justify-end space-x-2">
+            <button onclick="hideOptimizationModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                Cancel
+            </button>
+            <button onclick="runOptimization()" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+                Start Optimization
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Strategy parameters configuration
+const strategyParams = {
+    'sma_cross': {
+        'fast': { label: 'Fast SMA', default: 10, min: 5, max: 50 },
+        'slow': { label: 'Slow SMA', default: 30, min: 20, max: 200 },
+        'signal_mode': { label: 'Signal Mode', options: ['cross', 'position'], default: 'cross' }
+    },
+    'ema_breakout': {
+        'ema_period': { label: 'EMA Period', default: 20, min: 10, max: 100 },
+        'atr_period': { label: 'ATR Period', default: 14, min: 7, max: 28 },
+        'atr_multiplier': { label: 'ATR Multiplier', default: 2.0, min: 1.0, max: 4.0, step: 0.5 },
+        'use_volume': { label: 'Use Volume Filter', type: 'checkbox', default: false }
+    },
+    'rsi_reversion': {
+        'rsi_period': { label: 'RSI Period', default: 14, min: 7, max: 28 },
+        'oversold': { label: 'Oversold Level', default: 30, min: 20, max: 40 },
+        'overbought': { label: 'Overbought Level', default: 70, min: 60, max: 80 },
+        'exit_at_mean': { label: 'Exit at Mean', type: 'checkbox', default: true }
+    }
+};
+
+// Load backtests on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadBacktests();
+    setupStrategySelector();
+    setInterval(loadBacktests, 5000); // Refresh every 5 seconds
+});
+
+function loadBacktests() {
+    fetch('/backtests/list?limit=20')
+        .then(response => response.json())
+        .then(data => {
+            const table = document.getElementById('backtestTable');
+            table.innerHTML = '';
+            
+            data.forEach(job => {
+                const row = document.createElement('tr');
+                const statusClass = getStatusClass(job.status);
+                const returnClass = job.metrics && job.metrics.total_return > 0 ? 'text-green-600' : 'text-red-600';
+                
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#${job.job_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${job.strategy}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${job.symbol}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${job.status}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${job.metrics ? returnClass : 'text-gray-500'}">
+                        ${job.metrics ? job.metrics.total_return.toFixed(2) + '%' : '-'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${job.metrics ? job.metrics.sharpe_ratio.toFixed(2) : '-'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        ${job.status === 'done' ? 
+                            `<button onclick="viewReport(${job.job_id})" class="text-blue-600 hover:text-blue-900">View Report</button>` :
+                            `<button onclick="checkStatus(${job.job_id})" class="text-gray-600 hover:text-gray-900">Check Status</button>`
+                        }
+                    </td>
+                `;
+                table.appendChild(row);
+            });
+        })
+        .catch(error => console.error('Error loading backtests:', error));
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'pending': return 'bg-yellow-100 text-yellow-800';
+        case 'running': return 'bg-blue-100 text-blue-800';
+        case 'done': return 'bg-green-100 text-green-800';
+        case 'error': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function setupStrategySelector() {
+    const select = document.getElementById('strategySelect');
+    select.addEventListener('change', updateStrategyParams);
+    updateStrategyParams();
+}
+
+function updateStrategyParams() {
+    const strategy = document.getElementById('strategySelect').value;
+    const paramsDiv = document.getElementById('strategyParams');
+    const params = strategyParams[strategy];
+    
+    let html = '<h4 class="font-medium text-gray-700 mb-2">Strategy Parameters</h4>';
+    
+    for (const [key, config] of Object.entries(params)) {
+        if (config.type === 'checkbox') {
+            html += `
+                <div class="mb-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="param_${key}" ${config.default ? 'checked' : ''} 
+                               class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-gray-700">${config.label}</span>
+                    </label>
+                </div>
+            `;
+        } else if (config.options) {
+            html += `
+                <div class="mb-2">
+                    <label class="block text-sm text-gray-700">${config.label}</label>
+                    <select id="param_${key}" class="w-full px-2 py-1 border border-gray-300 rounded-md text-sm">
+                        ${config.options.map(opt => 
+                            `<option value="${opt}" ${opt === config.default ? 'selected' : ''}>${opt}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+            `;
+        } else {
+            html += `
+                <div class="mb-2">
+                    <label class="block text-sm text-gray-700">${config.label}</label>
+                    <input type="number" id="param_${key}" value="${config.default}" 
+                           min="${config.min}" max="${config.max}" step="${config.step || 1}"
+                           class="w-full px-2 py-1 border border-gray-300 rounded-md text-sm">
+                </div>
+            `;
+        }
+    }
+    
+    paramsDiv.innerHTML = html;
+}
+
+function showNewBacktestModal() {
+    document.getElementById('newBacktestModal').classList.remove('hidden');
+}
+
+function hideNewBacktestModal() {
+    document.getElementById('newBacktestModal').classList.add('hidden');
+}
+
+function showOptimizationModal() {
+    document.getElementById('optimizationModal').classList.remove('hidden');
+}
+
+function hideOptimizationModal() {
+    document.getElementById('optimizationModal').classList.add('hidden');
+}
+
+function runBacktest() {
+    const strategy = document.getElementById('strategySelect').value;
+    const symbol = document.getElementById('symbolInput').value;
+    const timeframe = document.getElementById('timeframeSelect').value;
+    
+    // Collect parameters
+    const params = {};
+    const strategyConfig = strategyParams[strategy];
+    
+    for (const key in strategyConfig) {
+        const elem = document.getElementById(`param_${key}`);
+        if (elem) {
+            if (elem.type === 'checkbox') {
+                params[key] = elem.checked;
+            } else if (elem.type === 'number') {
+                params[key] = parseFloat(elem.value);
+            } else {
+                params[key] = elem.value;
+            }
+        }
+    }
+    
+    // Submit backtest
+    fetch('/backtests/run', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            strategy: strategy,
+            params: params,
+            symbol: symbol,
+            timeframe: timeframe,
+            limit: 1000
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(`Backtest job #${data.job_id} submitted successfully!`);
+        hideNewBacktestModal();
+        loadBacktests();
+    })
+    .catch(error => {
+        alert('Error submitting backtest: ' + error);
+    });
+}
+
+function runOptimization() {
+    // TODO: Implement optimization submission
+    alert('Optimization feature coming soon!');
+    hideOptimizationModal();
+}
+
+function viewReport(jobId) {
+    window.open(`/outputs/reports/${jobId}_report.html`, '_blank');
+}
+
+function checkStatus(jobId) {
+    fetch(`/backtests/${jobId}/status`)
+        .then(response => response.json())
+        .then(data => {
+            let message = `Job #${jobId}\nStatus: ${data.status}`;
+            if (data.eta_seconds) {
+                message += `\nEstimated time: ${data.eta_seconds} seconds`;
+            }
+            if (data.error_message) {
+                message += `\nError: ${data.error_message}`;
+            }
+            alert(message);
+        })
+        .catch(error => {
+            alert('Error checking status: ' + error);
+        });
+}
+</script>
+{% endblock %}

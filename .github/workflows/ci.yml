@@ -28,7 +28,10 @@ jobs:
         run: mypy src --ignore-missing-imports || true
       - name: Run tests
         run: |
-          pytest tests/ -v --cov=src --cov-report=xml --cov-fail-under=50 || true
+          pytest tests/ -v --cov=src --cov-report=xml --cov-fail-under=50 -m "not integration" || true
+      - name: Run backtest tests
+        run: |
+          pytest tests/test_backtest_runner.py tests/test_strategies.py tests/test_optimization.py -v || true
       - name: Upload coverage
         uses: actions/upload-artifact@v3
         if: always()

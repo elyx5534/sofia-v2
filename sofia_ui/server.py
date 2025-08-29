@@ -1066,6 +1066,16 @@ async def backtest_page(request: Request, symbol: str = None, strategy: str = No
     return templates.TemplateResponse("backtest.html", context)
 
 
+@app.get("/backtests", response_class=HTMLResponse)
+async def backtests_page(request: Request):
+    """Backtests page"""
+    context = {
+        "request": request,
+        "page_title": "Backtests - Sofia V2",
+        "current_page": "backtests",
+    }
+    return templates.TemplateResponse("backtests.html", context)
+
 @app.get("/strategies", response_class=HTMLResponse)
 async def strategies_page(request: Request):
     """Stratejiler sayfası - UI planında belirtilen"""
