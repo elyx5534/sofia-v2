@@ -25,7 +25,7 @@ from src.sofia.config import SYMBOLS, STALE_TTL_SEC
 from src.sofia.symbols import to_ui
 
 # Import API routers
-from src.api import market_endpoints, portfolio_endpoints, ai_local_endpoints
+from src.api import market_endpoints, portfolio_endpoints, ai_local_endpoints, paper_trading, equity_endpoints
 
 # Configure logging
 logging.basicConfig(
@@ -75,6 +75,8 @@ app.add_middleware(
 app.include_router(market_endpoints.router)
 app.include_router(portfolio_endpoints.router)
 app.include_router(ai_local_endpoints.router)
+app.include_router(paper_trading.router)
+app.include_router(equity_endpoints.router)
 
 @app.on_event("startup")
 async def startup_event():

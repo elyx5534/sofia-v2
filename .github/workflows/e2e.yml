@@ -31,7 +31,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install fastapi uvicorn requests pydantic python-dotenv
+          pip install fastapi uvicorn requests pydantic python-dotenv yfinance
           pip install pytest playwright pytest-playwright
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       
@@ -92,30 +92,51 @@ jobs:
             echo "FRONTEND_URL=http://127.0.0.1:8004" >> $GITHUB_ENV
           fi
       
-      - name: Wait for services
+      - name: Wait for services with health check
         run: |
           echo "Waiting for API to be ready..."
+          API_READY=false
           for i in {1..60}; do
             if curl -f http://127.0.0.1:8023/health 2>/dev/null; then
-              echo "API is ready"
+              echo "✅ API health check passed"
+              API_READY=true
               break
             fi
-            echo "Attempt $i/60: API not ready yet..."
-            sleep 1
+            echo "⏳ Attempt $i/60: API not ready yet..."
+            sleep 2
           done
+          
+          if [ "$API_READY" = "false" ]; then
+            echo "❌ API failed to start after 120 seconds"
+            if [ -f api.log ]; then
+              echo "API logs:"
+              tail -50 api.log
+            fi
+            exit 1
+          fi
           
           if [ "${{ steps.check_frontend.outputs.frontend_exists }}" == "true" ]; then
             echo "Waiting for frontend to be ready..."
-            FRONTEND_PORT=${FRONTEND_URL##*:}
+            FRONTEND_READY=false
             
             for i in {1..60}; do
               if curl -f $FRONTEND_URL 2>/dev/null; then
-                echo "Frontend is ready on $FRONTEND_URL"
+                echo "✅ Frontend is ready on $FRONTEND_URL"
+                FRONTEND_READY=true
                 break
               fi
-              echo "Attempt $i/60: Frontend not ready yet..."
-              sleep 1
+              echo "⏳ Attempt $i/60: Frontend not ready yet..."
+              sleep 2
             done
+            
+            if [ "$FRONTEND_READY" = "false" ]; then
+              echo "❌ Frontend failed to start after 120 seconds"
+              if [ -f frontend.log ]; then
+                echo "Frontend logs:"
+                tail -50 frontend.log
+              fi
+              exit 1
+            fi
           fi
       
       - name: Run API smoke tests
@@ -170,12 +191,23 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: ${{ env.FRONTEND_URL }}
         run: |
+          # Run paper trading tests
+          if [ -f "tests/e2e/test_paper_trading.py" ]; then
+            echo "Running paper trading E2E tests..."
+            python -m pytest tests/e2e/test_paper_trading.py -v --tb=short || true
+          fi
+          
+          # Run UI reset tests
           if [ -f "tests/e2e/test_ui_reset_e2e.py" ]; then
+            echo "Running UI reset E2E tests..."
             python -m pytest tests/e2e/test_ui_reset_e2e.py -v --tb=short || true
           fi
           
           # Run comprehensive audit
-          python tests/e2e/ui_audit.py || true
+          if [ -f "tests/e2e/ui_audit.py" ]; then
+            echo "Running UI audit..."
+            python tests/e2e/ui_audit.py || true
+          fi
       
       - name: Upload test results
         if: always()

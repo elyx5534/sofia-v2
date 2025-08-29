@@ -153,6 +153,23 @@
                 </h3>
                 
                 <div class="space-y-4">
+                    <!-- Paper Trading Toggle -->
+                    <div class="flex items-center justify-between p-3 bg-blue-900/30 rounded-lg">
+                        <div>
+                            <label class="text-white font-medium">Paper Trading Mode</label>
+                            <p class="text-sm text-gray-400">Trade with simulated funds</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" x-model="paperTradingEnabled" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div x-show="paperTradingEnabled" class="p-3 bg-green-900/30 text-green-400 rounded-lg">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Paper trading active. Your trades won't affect real funds.
+                    </div>
+                    
                     <div>
                         <label class="block text-sm text-gray-400 mb-2">Base Currency</label>
                         <select 
@@ -308,6 +325,7 @@
                 baseCurrency: localStorage.getItem('baseCurrency') || 'USD',
                 leverage: localStorage.getItem('leverage') || '1',
                 riskLimit: localStorage.getItem('riskLimit') || '2',
+                paperTradingEnabled: localStorage.getItem('paperTradingEnabled') === 'true' || true,
                 
                 // Exchange Settings
                 exchange: localStorage.getItem('exchange') || 'paper',
@@ -361,6 +379,7 @@
                     localStorage.setItem('baseCurrency', this.baseCurrency);
                     localStorage.setItem('leverage', this.leverage);
                     localStorage.setItem('riskLimit', this.riskLimit);
+                    localStorage.setItem('paperTradingEnabled', this.paperTradingEnabled);
                     
                     this.showNotification('Trading settings saved');
                 },
