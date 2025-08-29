@@ -102,7 +102,6 @@
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950" x-data="{
-    sidebarOpen: false,
     activeTab: 'overview',
     prices: {},
     portfolio: {
@@ -166,115 +165,8 @@
     </div>
 
     <div class="relative flex h-screen pt-20">
-        <!-- Sidebar -->
-        <aside class="fixed lg:relative w-64 h-full glass border-r border-slate-800 z-50 transform transition-transform duration-300 lg:translate-x-0"
-               :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}"
-               @click.away="sidebarOpen = false">
-            <div class="p-6 border-b border-slate-800">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                        <i class="fas fa-chart-line text-white text-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-white">Sofia V2</h1>
-                        <p class="text-xs text-slate-400">AI Trading Platform</p>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="p-4 space-y-2">
-                <a href="/" class="flex items-center px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 text-blue-400">
-                    <i class="fas fa-th-large w-5"></i>
-                    <span class="ml-3">Dashboard</span>
-                    <span class="ml-auto w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                </a>
-                <a href="/portfolio" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-briefcase w-5"></i>
-                    <span class="ml-3">Portfolio</span>
-                </a>
-                <a href="/markets" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-coins w-5"></i>
-                    <span class="ml-3">Markets</span>
-                    <span class="ml-auto text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Live</span>
-                </a>
-                <a href="/trading" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-chart-line w-5"></i>
-                    <span class="ml-3">AI Trading</span>
-                    <span class="ml-auto text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">AI</span>
-                </a>
-                <a href="/backtest" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-flask w-5"></i>
-                    <span class="ml-3">Backtest</span>
-                </a>
-                <a href="/manual-trading" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-hand-paper w-5"></i>
-                    <span class="ml-3">Manuel Al/Sat</span>
-                    <span class="ml-auto text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Manual</span>
-                </a>
-                <a href="/strategies" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-robot w-5"></i>
-                    <span class="ml-3">AI Strategies</span>
-                    <span class="ml-auto text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">5 Active</span>
-                </a>
-                <a href="/reliability" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-shield-alt w-5"></i>
-                    <span class="ml-3">Güvenilirlik</span>
-                    <span class="ml-auto text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">%95</span>
-                </a>
-            </nav>
-
-            <!-- AI Assistant -->
-            <div class="absolute bottom-0 left-0 right-0 p-4">
-                <div class="glass rounded-lg p-4 border border-purple-500/30">
-                    <div class="flex items-center space-x-3 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                            <i class="fas fa-brain text-white text-xs"></i>
-                        </div>
-                        <span class="text-sm text-white font-medium">AI Assistant</span>
-                    </div>
-                    <p class="text-xs text-slate-400">Market sentiment: <span class="text-green-400">Bullish</span></p>
-                    <p class="text-xs text-slate-400">Next signal in: <span class="text-blue-400">5 min</span></p>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
+        <!-- Main Content (No Sidebar) -->
         <div class="flex-1 flex flex-col">
-            <!-- Header -->
-            <header class="glass border-b border-slate-800 px-6 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <button @click="sidebarOpen = !sidebarOpen" class="text-slate-400 hover:text-white">
-                            <i class="fas fa-bars"></i>
-                        </button>
-                        <h2 class="text-xl font-semibold text-white">Trading Dashboard</h2>
-                        <span class="text-xs text-slate-500 hidden sm:inline">Last update: <span class="text-blue-400">2 seconds ago</span></span>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <a href="/manual-trading" class="text-slate-400 hover:text-white transition-colors flex items-center">
-                            <i class="fas fa-hand-paper mr-1"></i> Manuel Al/Sat
-                            <span class="ml-2 text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Manual</span>
-                        </a>
-                        <a href="/reliability" class="text-slate-400 hover:text-white transition-colors flex items-center">
-                            <i class="fas fa-shield-alt mr-1"></i> Güvenilirlik
-                            <span class="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">%95</span>
-                        </a>
-                        <a href="/pricing" class="text-slate-400 hover:text-white transition-colors">
-                            <i class="fas fa-crown mr-1"></i> Pricing
-                        </a>
-                        <button class="relative p-2 text-slate-400 hover:text-white">
-                            <i class="fas fa-bell"></i>
-                            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-                        </button>
-                        <button class="p-2 text-slate-400 hover:text-white">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <a href="/login" class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center hover:opacity-90 transition-all">
-                            <i class="fas fa-user text-white text-sm"></i>
-                        </a>
-                    </div>
-                </div>
-            </header>
 
             <!-- Main Dashboard Content -->
             <main class="flex-1 overflow-y-auto p-6">
@@ -285,10 +177,11 @@
                             <span class="text-xs text-slate-400">Total Balance</span>
                             <i class="fas fa-wallet text-blue-400"></i>
                         </div>
-                        <div class="text-2xl font-bold text-white mb-1">${{ "{:,.2f}".format(total_balance) }}</div>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs text-green-400">+12.4%</span>
-                            <span class="text-xs text-slate-500">24h</span>
+                        <div id="total-balance" class="text-2xl font-bold text-white mb-1" data-testid="total-balance">
+                            <span class="animate-pulse">Loading...</span>
+                        </div>
+                        <div id="total-balance-change" class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-400">--</span>
                         </div>
                     </div>
 
@@ -297,22 +190,24 @@
                             <span class="text-xs text-slate-400">Today's P&L</span>
                             <i class="fas fa-chart-line text-green-400"></i>
                         </div>
-                        <div class="text-2xl font-bold text-green-400 mb-1">+$8,432.12</div>
+                        <div id="todays-pnl" class="text-2xl font-bold text-gray-400 mb-1">
+                            <span class="animate-pulse">Loading...</span>
+                        </div>
                         <div class="flex items-center space-x-2">
-                            <span class="text-xs text-slate-400">Win rate:</span>
-                            <span class="text-xs text-green-400">74.2%</span>
+                            <span class="text-xs text-slate-400">Change:</span>
+                            <span id="todays-pnl-percent" class="text-xs text-gray-400">--</span>
                         </div>
                     </div>
 
                     <div class="gradient-border p-5 glass-hover transition-all">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-slate-400">Active Trades</span>
+                            <span class="text-xs text-slate-400">Active Positions</span>
                             <i class="fas fa-exchange-alt text-purple-400"></i>
                         </div>
-                        <div class="text-2xl font-bold text-white mb-1">24</div>
+                        <div id="positions-count" class="text-2xl font-bold text-white mb-1">0</div>
                         <div class="flex items-center space-x-3">
-                            <span class="text-xs text-green-400">18 Long</span>
-                            <span class="text-xs text-red-400">6 Short</span>
+                            <span class="text-xs text-slate-400">Cash:</span>
+                            <span id="cash-balance" class="text-xs text-blue-400">$0.00</span>
                         </div>
                     </div>
 
@@ -1084,5 +979,8 @@
         }
     });
     </script>
+    
+    <!-- Portfolio Service Script -->
+    <script src="/static/js/portfolio.js"></script>
 </body>
 </html>
