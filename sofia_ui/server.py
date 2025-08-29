@@ -16,6 +16,10 @@ import os
 import sys
 from sofia_ui.live_data import live_data_service
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Import template resolver
+from src.web.templates import render, get_templates_instance, get_resolution_report
+
 from src.api.paper_trading import router as paper_trading_router
 from src.api.canary_trading import router as canary_trading_router
 from src.api.live_trading import router as live_trading_router
@@ -37,7 +41,7 @@ static_path = Path(__file__).parent / "static"
 template_path = Path(__file__).parent / "templates"
 
 app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
-templates = Jinja2Templates(directory=str(template_path))
+templates = get_templates_instance()  # Use canonical template resolver
 
 
 # Mock data functions
@@ -154,7 +158,7 @@ async def homepage(request: Request):
         "featured_strategies": get_mock_strategies()[:2],
         "latest_news": get_mock_news()[:3]
     }
-    return templates.TemplateResponse("homepage.html", context)
+    return render(request, "homepage.html", context)
 
 
 @app.get("/showcase/{symbol}", response_class=HTMLResponse)
@@ -180,7 +184,7 @@ async def showcase(request: Request, symbol: str):
             "bollinger_lower": 65200.0
         }
     }
-    return templates.TemplateResponse("showcase.html", context)
+    return render(request, "showcase.html", context)
 
 
 @app.get("/cards", response_class=HTMLResponse)
@@ -191,7 +195,7 @@ async def strategy_cards(request: Request):
         "page_title": "Strategy Cards",
         "strategies": get_mock_strategies()
     }
-    return templates.TemplateResponse("cards.html", context)
+    return render(request, "cards.html", context)
 
 
 @app.get("/analysis/{symbol}", response_class=HTMLResponse)
@@ -228,7 +232,7 @@ async def analysis(request: Request, symbol: str):
             "target_1m": 75000
         }
     }
-    return templates.TemplateResponse("analysis.html", context)
+    return render(request, "analysis.html", context)
 
 
 # API Endpoints
@@ -478,7 +482,7 @@ async def assets_detail(request: Request, symbol: str):
             "fear_greed_index": 72
         }
     }
-    return templates.TemplateResponse("assets_detail.html", context)
+    return render(request, "assets_detail.html", context)
 
 
 @app.get("/backtest", response_class=HTMLResponse)
@@ -490,7 +494,7 @@ async def backtest_page(request: Request, symbol: str = None, strategy: str = No
         "preselected_symbol": symbol,
         "preselected_strategy": strategy
     }
-    return templates.TemplateResponse("backtest.html", context)
+    return render(request, "backtest.html", context)
 
 
 @app.get("/strategies", response_class=HTMLResponse)
@@ -500,7 +504,7 @@ async def strategies_page(request: Request):
         "request": request,
         "page_title": "Trading Strategies"
     }
-    return templates.TemplateResponse("strategies.html", context)
+    return render(request, "strategies.html", context)
 
 
 @app.get("/settings", response_class=HTMLResponse)
@@ -510,7 +514,7 @@ async def settings_page(request: Request):
         "request": request,
         "page_title": "Settings - Paper Trading Control"
     }
-    return templates.TemplateResponse("settings.html", context)
+    return render(request, "settings.html", context)
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -520,7 +524,7 @@ async def dashboard_page(request: Request):
         "request": request,
         "page_title": "Paper Trading Dashboard"
     }
-    return templates.TemplateResponse("dashboard.html", context)
+    return render(request, "dashboard.html", context)
 
 
 @app.get("/live", response_class=HTMLResponse)
@@ -530,7 +534,7 @@ async def live_trading_grid(request: Request):
         "request": request,
         "page_title": "Live Trading Grid"
     }
-    return templates.TemplateResponse("live.html", context)
+    return render(request, "live.html", context)
 
 
 # Backtest API endpoint - arkadaşının kullanacağı
@@ -556,6 +560,12 @@ async def run_backtest(request: Request):
             "equity_curve": [{"date": "2023-01-01", "value": 10000}] # Placeholder
         }
     }
+
+
+@app.get("/api/template-resolution")
+async def get_template_resolution():
+    """Get template resolution report for debugging"""
+    return get_resolution_report()
 
 
 if __name__ == "__main__":
