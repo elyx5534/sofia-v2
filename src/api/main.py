@@ -62,9 +62,13 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8000",
         "http://localhost:8002",
+        "http://localhost:8003",
+        "http://localhost:8004",
         "http://localhost:8010",
         "http://127.0.0.1:8000",
         "http://127.0.0.1:8002",
+        "http://127.0.0.1:8003",
+        "http://127.0.0.1:8004",
         "http://127.0.0.1:8010",
         "*"  # Allow all origins for development
     ],
@@ -76,6 +80,14 @@ app.add_middleware(
 # Include routers
 app.include_router(ai_endpoints.router)
 app.include_router(trade_endpoints.router)
+
+# Import and include portfolio router
+from src.api import portfolio_endpoints
+app.include_router(portfolio_endpoints.router)
+
+# Import and include paper trading router
+from src.api import paper_trading
+app.include_router(paper_trading.router)
 
 
 @app.on_event("startup")
