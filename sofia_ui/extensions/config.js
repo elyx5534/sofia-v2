@@ -6,8 +6,8 @@
 
 window.SofiaConfig = {
     // API Configuration - sync with .env
-    API_BASE: 'http://127.0.0.1:8015',
-    WS_URL: 'ws://127.0.0.1:8015/ws',
+    API_BASE: 'http://127.0.0.1:8020',
+    WS_URL: 'ws://127.0.0.1:8020/ws',
     
     // Timing Configuration
     HEALTH_PING_INTERVAL: 30000, // 30 seconds
