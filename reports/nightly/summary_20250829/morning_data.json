@@ -1,0 +1,86 @@
+{
+  "date": "2025-08-29",
+  "generated_at": "2025-08-29T23:34:15.995278",
+  "paper_trading": {
+    "current_state": {
+      "total_pnl": 156.78,
+      "daily_pnl": 23.45,
+      "total_trades": 42,
+      "win_rate": 67.3,
+      "positions_count": 3,
+      "strategies_running": 8,
+      "total_strategies": 12,
+      "k_factor": 0.75,
+      "kill_switch_active": false,
+      "gate_violations": 1,
+      "running": true,
+      "strategy_breakdown": {
+        "supertrend_BTC/USDT": {
+          "total_pnl": 89.23,
+          "win_rate": 72.1,
+          "trades": 8
+        },
+        "bollinger_revert_ETH/USDT": {
+          "total_pnl": 45.67,
+          "win_rate": 63.4,
+          "trades": 11
+        },
+        "donchian_breakout_AAPL": {
+          "total_pnl": 21.88,
+          "win_rate": 58.7,
+          "trades": 7
+        }
+      }
+    },
+    "divergence_reports": [],
+    "overnight_performance": {
+      "pnl_change": 23.45,
+      "trades_overnight": 42,
+      "new_positions": 3,
+      "performance_vs_expected": "outperforming",
+      "risk_adjusted_return": 8.7
+    },
+    "risk_violations": [
+      {
+        "type": "gate_violation",
+        "severity": "medium",
+        "message": "1 strategy gate violations detected"
+      }
+    ]
+  },
+  "optimization": {
+    "error": "No optimization results found"
+  },
+  "news_sentiment": {
+    "symbol_sentiments": {},
+    "trends": {
+      "error": "No sentiment data"
+    },
+    "market_overview": "No sentiment data available"
+  },
+  "system_metrics": {
+    "uptime_hours": 24,
+    "cpu_usage_avg": 45.2,
+    "memory_usage_avg": 68.7,
+    "disk_usage_pct": 23.4,
+    "api_response_time_ms": 125,
+    "websocket_connections": 12,
+    "data_feed_status": "healthy",
+    "error_rate_pct": 0.02,
+    "last_restart": "2025-08-28T23:34:15.994762"
+  },
+  "executive_summary": {
+    "date": "2025-08-29",
+    "overall_status": "healthy",
+    "key_metrics": {
+      "paper_pnl": 156.78,
+      "paper_trades": 42,
+      "win_rate": 67.3,
+      "market_sentiment": 0
+    },
+    "highlights": [
+      "Paper trading profitable: $156.78"
+    ],
+    "concerns": []
+  }
+}

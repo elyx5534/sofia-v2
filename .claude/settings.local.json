@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start reports/paper/quickcheck.html)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

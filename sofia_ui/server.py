@@ -12,7 +12,11 @@ import asyncio
 from pathlib import Path
 import random
 from datetime import datetime
+import os
+import sys
 from sofia_ui.live_data import live_data_service
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.api.paper_trading import router as paper_trading_router
 
 # FastAPI uygulaması
 app = FastAPI(
@@ -20,6 +24,9 @@ app = FastAPI(
     description="Akıllı trading stratejileri ve backtest platformu",
     version="2.0.0"
 )
+
+# Include paper trading routes
+app.include_router(paper_trading_router)
 
 # Static dosyalar ve template'ler
 static_path = Path(__file__).parent / "static"
@@ -363,6 +370,82 @@ async def get_fear_greed():
         return {"value": 72, "value_classification": "Greed"}
 
 
+@app.get("/ai/news/sentiment")
+async def get_news_sentiment(symbol: str = "BTC/USDT"):
+    """Get news sentiment for symbol"""
+    try:
+        # Import here to avoid circular dependencies
+        from src.ai.news_sentiment import NewsSentimentAnalyzer
+        
+        analyzer = NewsSentimentAnalyzer()
+        if not analyzer.enabled:
+            return {"error": "News sentiment analysis disabled"}
+        
+        # Get sentiment summary
+        sentiment_data = await analyzer.get_sentiment_summary(symbol)
+        
+        if sentiment_data:
+            return sentiment_data
+        else:
+            return {
+                "symbol": symbol,
+                "sentiment_1h": 0.0,
+                "sentiment_24h": 0.0,
+                "volume_1h": 0,
+                "volume_24h": 0,
+                "confidence_1h": 0.0,
+                "confidence_24h": 0.0,
+                "last_update": datetime.now().isoformat(),
+                "strategy_overlay": {
+                    "k_factor_adjustment": 0.0,
+                    "strategy_bias": "neutral"
+                },
+                "recent_news": []
+            }
+    except Exception as e:
+        logger.error(f"News sentiment API error: {e}")
+        return {"error": "Failed to get news sentiment"}
+
+
+@app.get("/ai/news/features")
+async def get_news_features(symbol: str = "BTC/USDT"):
+    """Get news features for symbol"""
+    try:
+        from src.ai.news_sentiment import NewsSentimentAnalyzer
+        from src.ai.news_features import NewsFeatureEngine
+        
+        analyzer = NewsSentimentAnalyzer()
+        feature_engine = NewsFeatureEngine()
+        
+        if not analyzer.enabled:
+            return {"error": "News analysis disabled"}
+        
+        # Update sentiment first
+        await analyzer.update_news_sentiment([symbol])
+        
+        # Get news items and sentiment
+        news_items = analyzer.news_cache.get(symbol, [])
+        sentiment_score = analyzer.sentiment_cache.get(symbol)
+        
+        # Extract features
+        features = feature_engine.extract_features(symbol, news_items, sentiment_score)
+        
+        # Get trading signals
+        signals = feature_engine.get_trading_signals(features)
+        
+        return {
+            "symbol": symbol,
+            "features": features,
+            "trading_signals": signals,
+            "news_count": len(news_items),
+            "last_update": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"News features API error: {e}")
+        return {"error": "Failed to get news features"}
+
+
 @app.get("/assets/{symbol}", response_class=HTMLResponse)
 async def assets_detail(request: Request, symbol: str):
     """Asset detay sayfası - UI planında belirtilen"""
@@ -414,6 +497,26 @@ async def strategies_page(request: Request):
         "page_title": "Trading Strategies"
     }
     return templates.TemplateResponse("strategies.html", context)
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """Settings page with paper trading control"""
+    context = {
+        "request": request,
+        "page_title": "Settings - Paper Trading Control"
+    }
+    return templates.TemplateResponse("settings.html", context)
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page(request: Request):
+    """Paper trading dashboard with live metrics"""
+    context = {
+        "request": request,
+        "page_title": "Paper Trading Dashboard"
+    }
+    return templates.TemplateResponse("dashboard.html", context)
 
 
 # Backtest API endpoint - arkadaşının kullanacağı

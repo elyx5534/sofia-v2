@@ -1,0 +1,179 @@
+version: '3.8'
+
+services:
+  # Ray head node for distributed optimization
+  rayhead:
+    image: rayproject/ray:2.8.0-py311
+    ports:
+      - "8265:8265"  # Ray dashboard
+      - "10001:10001"  # Ray client
+    command: ray start --head --dashboard-host=0.0.0.0 --dashboard-port=8265 --port=6379 --redis-password=ray-cluster
+    volumes:
+      - ./data:/tmp/ray
+    environment:
+      - RAY_REDIS_PASSWORD=ray-cluster
+    networks:
+      - sofia-cloud
+    restart: on-failure:3
+
+  # API service
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/cloud/Dockerfile.api
+    ports:
+      - "8023:8023"
+    volumes:
+      - ../../data:/app/data
+      - ../../reports:/app/reports
+      - ../../.env.paper:/app/.env
+    environment:
+      - API_PORT=8023
+      - MODE=paper
+      - RAY_ADDRESS=ray://rayhead:10001
+    depends_on:
+      - rayhead
+    networks:
+      - sofia-cloud
+    restart: on-failure:3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Paper trading runner
+  paper_runner:
+    build:
+      context: ../..
+      dockerfile: infra/cloud/Dockerfile.worker
+    volumes:
+      - ../../data:/app/data
+      - ../../reports:/app/reports
+      - ../../.env.paper:/app/.env
+    environment:
+      - MODE=paper
+      - RAY_ADDRESS=ray://rayhead:10001
+      - PAPER_RUNNER_ID=main
+    depends_on:
+      - rayhead
+    networks:
+      - sofia-cloud
+    restart: on-failure:3
+    command: python -m src.paper.runner
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optimizer service
+  optimizer:
+    build:
+      context: ../..
+      dockerfile: infra/cloud/Dockerfile.optimizer
+    volumes:
+      - ../../data:/app/data
+      - ../../reports:/app/reports
+      - ../../.env.paper:/app/.env
+    environment:
+      - RAY_ADDRESS=ray://rayhead:10001
+      - OPTUNA_DB=sqlite:///data/optuna.db
+    depends_on:
+      - rayhead
+    networks:
+      - sofia-cloud
+    restart: "no"  # Only run on schedule
+    profiles:
+      - optimizer
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # UI service
+  ui:
+    build:
+      context: ../..
+      dockerfile: infra/cloud/Dockerfile.ui
+    ports:
+      - "4173:4173"
+    volumes:
+      - ../../reports:/app/reports
+      - ../../.env.paper:/app/.env
+    environment:
+      - UI_PORT=4173
+      - API_URL=http://api:8023
+    networks:
+      - sofia-cloud
+    restart: on-failure:3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - sofia-cloud
+    restart: on-failure:3
+
+  # Node exporter for system metrics
+  node_exporter:
+    image: prom/node-exporter:v1.6.1
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - sofia-cloud
+    restart: on-failure:3
+
+  # Scheduler service for cron jobs
+  scheduler:
+    image: alpine:3.18
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../../scripts:/scripts
+    environment:
+      - TZ=UTC
+    command: |
+      sh -c "
+        apk add --no-cache docker-cli dcron tzdata &&
+        echo '0 21 * * * cd /scripts && docker-compose -f ../infra/cloud/docker-compose.cloud.yml run --rm optimizer' > /etc/crontabs/root &&
+        echo '30 22 * * * cd /scripts && docker-compose -f ../infra/cloud/docker-compose.cloud.yml restart paper_runner' >> /etc/crontabs/root &&
+        echo '0 7 * * * cd /scripts && python generate_morning_report.py' >> /etc/crontabs/root &&
+        crond -f -l 2
+      "
+    networks:
+      - sofia-cloud
+    restart: on-failure:3
+
+volumes:
+  prometheus_data:
+
+networks:
+  sofia-cloud:
+    driver: bridge

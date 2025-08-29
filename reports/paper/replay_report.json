@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-08-29T23:08:45.051417",
+  "simulation": {
+    "type": "replay",
+    "hours": 1,
+    "start_time": "2025-08-29T22:08:45.051422",
+    "end_time": "2025-08-29T23:08:45.051428"
+  },
+  "results": {
+    "trades_executed": 5,
+    "winning_trades": 1,
+    "win_rate": 20.0,
+    "total_pnl": -1.220928757314962,
+    "total_fees": 4.8036873842695735,
+    "final_balance": 8998.099777004447,
+    "return_pct": -0.01220928757314962,
+    "open_positions": 1
+  },
+  "profitability": {
+    "is_profitable": false,
+    "expected_daily_pnl": -29.30229017555909,
+    "expected_monthly_return": -8.790687052667726,
+    "break_even_trades": 480
+  },
+  "risk_metrics": {
+    "win_rate": 20.0,
+    "avg_trade_pnl": -0.24418575146299243,
+    "fee_impact_pct": 0.04803687384269573
+  }
+}
