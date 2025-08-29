@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Trading Grid - Sofia V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .grid-container { height: calc(100vh - 200px); overflow: auto; }
+        .virtualized-table { display: table; width: 100%; }
+        .table-header { position: sticky; top: 0; background: #1f2937; z-index: 10; }
+        .table-row { display: table-row; }
+        .table-cell { 
+            display: table-cell; 
+            padding: 8px 12px; 
+            border-bottom: 1px solid #374151;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+        .positive { color: #10b981; }
+        .negative { color: #ef4444; }
+        .neutral { color: #6b7280; }
+        .badge { 
+            display: inline-block; 
+            padding: 2px 6px; 
+            border-radius: 10px; 
+            font-size: 10px; 
+            font-weight: bold;
+        }
+        .news-up { background: #dcfce7; color: #166534; }
+        .news-down { background: #fef2f2; color: #991b1b; }
+        .news-event { background: #fef3c7; color: #92400e; }
+        .gate-pass { background: #dcfce7; color: #166534; }
+        .gate-fail { background: #fef2f2; color: #991b1b; }
+        .tier1 { border-left: 3px solid #3b82f6; }
+        .tier2 { border-left: 3px solid #8b5cf6; }
+        .action-btn {
+            padding: 4px 8px;
+            margin: 1px;
+            border: none;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .buy-btn { background: #10b981; color: white; }
+        .sell-btn { background: #ef4444; color: white; }
+        .pause-btn { background: #f59e0b; color: white; }
+        .kill-btn { background: #7f1d1d; color: white; }
+        .filters { background: #111827; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .filter-group { display: inline-block; margin-right: 20px; }
+        .blotter { 
+            position: fixed; 
+            right: 20px; 
+            top: 100px; 
+            width: 300px; 
+            height: 400px; 
+            background: #1f2937; 
+            border-radius: 8px; 
+            padding: 15px;
+            overflow-y: auto;
+            z-index: 20;
+            transition: transform 0.3s ease;
+        }
+        .blotter.hidden { transform: translateX(320px); }
+        .attribution { 
+            position: fixed; 
+            right: 20px; 
+            bottom: 20px; 
+            width: 300px; 
+            height: 200px; 
+            background: #1f2937; 
+            border-radius: 8px; 
+            padding: 15px;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <div class="bg-gray-800 p-4">
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold">🔴 Live Trading Grid</h1>
+            
+            <div class="flex items-center space-x-4">
+                <div id="universe-stats" class="text-sm text-gray-400"></div>
+                <div id="connection-status" class="text-sm">
+                    <span id="status-indicator" class="w-2 h-2 bg-green-500 rounded-full inline-block animate-pulse"></span>
+                    <span>Live</span>
+                </div>
+                <button id="toggle-blotter" class="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-sm">
+                    <i class="fas fa-list"></i> Blotter
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <div class="filter-group">
+            <label class="text-sm text-gray-400">Market:</label>
+            <select id="filter-market" class="bg-gray-700 text-white p-1 rounded ml-2">
+                <option value="all">All</option>
+                <option value="crypto">Crypto</option>
+                <option value="equity">Equity</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label class="text-sm text-gray-400">Tier:</label>
+            <select id="filter-tier" class="bg-gray-700 text-white p-1 rounded ml-2">
+                <option value="all">All</option>
+                <option value="T1">Tier 1</option>
+                <option value="T2">Tier 2</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label class="text-sm text-gray-400">Gates:</label>
+            <select id="filter-gates" class="bg-gray-700 text-white p-1 rounded ml-2">
+                <option value="all">All</option>
+                <option value="pass">Passing</option>
+                <option value="fail">Failing</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label class="text-sm text-gray-400">News:</label>
+            <select id="filter-news" class="bg-gray-700 text-white p-1 rounded ml-2">
+                <option value="all">All</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="event">Events</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <input id="filter-search" type="text" placeholder="Search symbols..." 
+                   class="bg-gray-700 text-white p-1 rounded w-32">
+        </div>
+        
+        <div class="filter-group">
+            <button id="clear-filters" class="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">
+                Clear
+            </button>
+        </div>
+    </div>
+    
+    <!-- Trading Grid -->
+    <div class="grid-container" data-testid="live-trading-grid">
+        <div class="virtualized-table">
+            <!-- Header -->
+            <div class="table-header">
+                <div class="table-row bg-gray-800">
+                    <div class="table-cell font-semibold">Symbol</div>
+                    <div class="table-cell font-semibold">Price</div>
+                    <div class="table-cell font-semibold">24h %</div>
+                    <div class="table-cell font-semibold">Vol(1h)</div>
+                    <div class="table-cell font-semibold">Spread</div>
+                    <div class="table-cell font-semibold">Strategy</div>
+                    <div class="table-cell font-semibold">Pos/QTY</div>
+                    <div class="table-cell font-semibold">PnL(d/u)</div>
+                    <div class="table-cell font-semibold">K-Factor</div>
+                    <div class="table-cell font-semibold">Gates</div>
+                    <div class="table-cell font-semibold">News</div>
+                    <div class="table-cell font-semibold">Exec KPIs</div>
+                    <div class="table-cell font-semibold">Actions</div>
+                </div>
+            </div>
+            
+            <!-- Data rows (populated by JavaScript) -->
+            <div id="grid-body">
+                <!-- Virtualized rows will be inserted here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Trade Blotter (collapsible) -->
+    <div id="blotter" class="blotter hidden">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-semibold">Trade Blotter</h3>
+            <button id="close-blotter" class="text-gray-400 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div id="blotter-content" class="space-y-2">
+            <!-- Trade entries will be populated here -->
+        </div>
+        
+        <div class="mt-4 pt-3 border-t border-gray-600">
+            <button id="export-blotter" class="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm w-full">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+        </div>
+    </div>
+    
+    <!-- Strategy Attribution Panel -->
+    <div class="attribution">
+        <h3 class="font-semibold mb-2">Strategy Attribution</h3>
+        <div id="attribution-content" class="text-xs">
+            <div class="mb-2">
+                <span class="text-gray-400">Total P&L:</span>
+                <span id="attr-total-pnl" class="font-semibold">$0.00</span>
+            </div>
+            <div class="mb-2">
+                <span class="text-gray-400">Top Strategy:</span>
+                <span id="attr-top-strategy" class="font-semibold">-</span>
+            </div>
+            <div class="mb-2">
+                <span class="text-gray-400">Worst Strategy:</span>
+                <span id="attr-worst-strategy" class="font-semibold">-</span>
+            </div>
+            <div class="mb-2">
+                <span class="text-gray-400">Active Positions:</span>
+                <span id="attr-positions" class="font-semibold">0</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global state
+        let gridData = [];
+        let filteredData = [];
+        let virtualizedRows = [];
+        let currentFilters = {};
+        let wsConnection = null;
+        let isWebSocketConnected = false;
+        
+        // Virtualization settings
+        const ROW_HEIGHT = 40;
+        const VISIBLE_ROWS = Math.floor(window.innerHeight / ROW_HEIGHT) + 5;
+        const BUFFER_ROWS = 10;
+        
+        // Initialize grid
+        async function initializeGrid() {
+            console.log('Initializing live trading grid...');
+            
+            // Load initial data
+            await updateGridData();
+            
+            // Setup WebSocket connection
+            setupWebSocket();
+            
+            // Setup filters
+            setupFilters();
+            
+            // Setup auto-refresh
+            if (!isWebSocketConnected) {
+                setInterval(updateGridData, 10000); // 10 second fallback
+            }
+            
+            // Setup blotter
+            setupBlotter();
+            
+            console.log('Live grid initialized');
+        }
+        
+        // WebSocket setup
+        function setupWebSocket() {
+            try {
+                wsConnection = new WebSocket(`ws://localhost:8023/ws/trading-grid`);
+                
+                wsConnection.onopen = () => {
+                    isWebSocketConnected = true;
+                    updateConnectionStatus('connected');
+                    console.log('WebSocket connected');
+                };
+                
+                wsConnection.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketUpdate(data);
+                };
+                
+                wsConnection.onclose = () => {
+                    isWebSocketConnected = false;
+                    updateConnectionStatus('disconnected');
+                    console.log('WebSocket disconnected, falling back to polling');
+                    
+                    // Fallback to polling
+                    setTimeout(() => {
+                        if (!isWebSocketConnected) {
+                            setInterval(updateGridData, 5000);
+                        }
+                    }, 1000);
+                };
+                
+                wsConnection.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    updateConnectionStatus('error');
+                };
+                
+            } catch (error) {
+                console.error('Failed to setup WebSocket:', error);
+                updateConnectionStatus('error');
+            }
+        }
+        
+        // Load grid data
+        async function updateGridData() {
+            try {
+                const response = await fetch('/api/live/universe');
+                const data = await response.json();
+                
+                // Transform data for grid
+                gridData = transformUniverseData(data);
+                
+                // Apply current filters
+                applyFilters();
+                
+                // Update virtualized grid
+                updateVirtualizedGrid();
+                
+                // Update universe stats
+                updateUniverseStats(data.universe_stats);
+                
+                // Update attribution
+                updateAttribution();
+                
+            } catch (error) {
+                console.error('Failed to update grid data:', error);
+                updateConnectionStatus('error');
+            }
+        }
+        
+        // Transform universe data for grid display
+        function transformUniverseData(universeData) {
+            const rows = [];
+            
+            // Process T1 symbols
+            for (const [symbol, metrics] of Object.entries(universeData.tier1.metrics)) {
+                rows.push(createGridRow(symbol, metrics, 'T1'));
+            }
+            
+            // Process T2 symbols
+            for (const [symbol, metrics] of Object.entries(universeData.tier2.metrics)) {
+                rows.push(createGridRow(symbol, metrics, 'T2'));
+            }
+            
+            return rows;
+        }
+        
+        // Create individual grid row
+        function createGridRow(symbol, metrics, tier) {
+            // Mock additional data - in production would come from trading state
+            const mockData = {
+                position: Math.random() > 0.7 ? (Math.random() > 0.5 ? 'LONG' : 'SHORT') : '',
+                quantity: Math.random() > 0.7 ? (Math.random() * 1000).toFixed(2) : '',
+                pnl_daily: (Math.random() - 0.5) * 200,
+                pnl_unrealized: (Math.random() - 0.5) * 100,
+                k_factor: 0.25 + Math.random() * 0.5,
+                gates: {
+                    pnl: Math.random() > 0.3,
+                    maxdd: Math.random() > 0.2,
+                    error: Math.random() > 0.1,
+                    slip: Math.random() > 0.15
+                },
+                strategy: Math.random() > 0.5 ? 'SuperTrend' : Math.random() > 0.5 ? 'Bollinger' : 'SMA',
+                exec_kpis: {
+                    slip_p95: Math.random() * 50,
+                    fill_ratio: 0.85 + Math.random() * 0.14,
+                    eff_spread: Math.random() * 15
+                },
+                news: {
+                    score_1h: (Math.random() - 0.5) * 1.5,
+                    score_24h: (Math.random() - 0.5) * 1.2,
+                    volume: Math.floor(Math.random() * 20)
+                }
+            };
+            
+            return {
+                symbol: symbol,
+                price: metrics.price.toFixed(metrics.price < 10 ? 4 : 2),
+                change_24h: ((Math.random() - 0.5) * 10).toFixed(2),
+                volume_1h: formatVolume(metrics.volume_1h),
+                spread_bps: metrics.spread_bps.toFixed(1),
+                tier: tier,
+                ...mockData,
+                last_update: metrics.last_update,
+                combined_score: metrics.combined_score
+            };
+        }
+        
+        // Apply filters to grid data
+        function applyFilters() {
+            filteredData = gridData.filter(row => {
+                // Market filter
+                if (currentFilters.market && currentFilters.market !== 'all') {
+                    const isCrypto = row.symbol.includes('/USDT');
+                    if (currentFilters.market === 'crypto' && !isCrypto) return false;
+                    if (currentFilters.market === 'equity' && isCrypto) return false;
+                }
+                
+                // Tier filter
+                if (currentFilters.tier && currentFilters.tier !== 'all') {
+                    if (row.tier !== currentFilters.tier) return false;
+                }
+                
+                // Gates filter
+                if (currentFilters.gates && currentFilters.gates !== 'all') {
+                    const gatesPassing = Object.values(row.gates).every(g => g);
+                    if (currentFilters.gates === 'pass' && !gatesPassing) return false;
+                    if (currentFilters.gates === 'fail' && gatesPassing) return false;
+                }
+                
+                // News filter
+                if (currentFilters.news && currentFilters.news !== 'all') {
+                    const newsScore = row.news.score_1h;
+                    if (currentFilters.news === 'positive' && newsScore <= 0.2) return false;
+                    if (currentFilters.news === 'negative' && newsScore >= -0.2) return false;
+                    if (currentFilters.news === 'event' && row.news.volume < 5) return false;
+                }
+                
+                // Search filter
+                if (currentFilters.search) {
+                    const searchTerm = currentFilters.search.toLowerCase();
+                    if (!row.symbol.toLowerCase().includes(searchTerm)) return false;
+                }
+                
+                return true;
+            });
+            
+            // Sort by combined score (best opportunities first)
+            filteredData.sort((a, b) => b.combined_score - a.combined_score);
+        }
+        
+        // Update virtualized grid
+        function updateVirtualizedGrid() {
+            const gridBody = document.getElementById('grid-body');
+            gridBody.innerHTML = '';
+            
+            // Calculate visible range
+            const scrollTop = document.querySelector('.grid-container').scrollTop;
+            const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER_ROWS);
+            const endIndex = Math.min(filteredData.length, startIndex + VISIBLE_ROWS + BUFFER_ROWS * 2);
+            
+            // Create spacer for virtual scrolling
+            if (startIndex > 0) {
+                const spacer = document.createElement('div');
+                spacer.style.height = `${startIndex * ROW_HEIGHT}px`;
+                gridBody.appendChild(spacer);
+            }
+            
+            // Render visible rows
+            for (let i = startIndex; i < endIndex; i++) {
+                const row = filteredData[i];
+                if (row) {
+                    const rowElement = createRowElement(row);
+                    gridBody.appendChild(rowElement);
+                }
+            }
+            
+            // Bottom spacer
+            if (endIndex < filteredData.length) {
+                const spacer = document.createElement('div');
+                spacer.style.height = `${(filteredData.length - endIndex) * ROW_HEIGHT}px`;
+                gridBody.appendChild(spacer);
+            }
+            
+            // Update row count
+            document.getElementById('universe-stats').textContent = 
+                `${filteredData.length} symbols | ${gridData.filter(r => r.position).length} positions`;
+        }
+        
+        // Create individual row element
+        function createRowElement(rowData) {
+            const row = document.createElement('div');
+            row.className = `table-row hover:bg-gray-800 ${rowData.tier === 'T1' ? 'tier1' : 'tier2'}`;
+            
+            // News badges
+            let newsBadges = '';
+            if (rowData.news.score_1h > 0.3) {
+                newsBadges += '<span class="badge news-up">NEWS↑</span>';
+            } else if (rowData.news.score_1h < -0.3) {
+                newsBadges += '<span class="badge news-down">NEWS↓</span>';
+            }
+            if (rowData.news.volume > 8) {
+                newsBadges += '<span class="badge news-event">EVENT!</span>';
+            }
+            
+            // Gates status
+            const gatesPassing = Object.values(rowData.gates).every(g => g);
+            const gatesClass = gatesPassing ? 'gate-pass' : 'gate-fail';
+            const gatesText = gatesPassing ? '✓' : Object.keys(rowData.gates).filter(k => !rowData.gates[k]).join(',');
+            
+            // P&L coloring
+            const pnlDailyClass = rowData.pnl_daily >= 0 ? 'positive' : 'negative';
+            const pnlUnrealizedClass = rowData.pnl_unrealized >= 0 ? 'positive' : 'negative';
+            
+            row.innerHTML = `
+                <div class="table-cell">
+                    <div class="font-mono font-semibold">${rowData.symbol}</div>
+                    <div class="text-xs text-gray-400">${rowData.tier}</div>
+                </div>
+                <div class="table-cell">
+                    <div class="font-mono">${rowData.price}</div>
+                </div>
+                <div class="table-cell ${parseFloat(rowData.change_24h) >= 0 ? 'positive' : 'negative'}">
+                    ${rowData.change_24h}%
+                </div>
+                <div class="table-cell">
+                    ${rowData.volume_1h}
+                </div>
+                <div class="table-cell">
+                    ${rowData.spread_bps}bps
+                </div>
+                <div class="table-cell">
+                    <div class="text-xs">${rowData.strategy}</div>
+                </div>
+                <div class="table-cell">
+                    <div class="text-xs">${rowData.position}</div>
+                    <div class="text-xs text-gray-400">${rowData.quantity}</div>
+                </div>
+                <div class="table-cell">
+                    <div class="text-xs ${pnlDailyClass}">D: $${rowData.pnl_daily.toFixed(2)}</div>
+                    <div class="text-xs ${pnlUnrealizedClass}">U: $${rowData.pnl_unrealized.toFixed(2)}</div>
+                </div>
+                <div class="table-cell">
+                    ${rowData.k_factor.toFixed(2)}
+                </div>
+                <div class="table-cell">
+                    <span class="badge ${gatesClass}">${gatesText}</span>
+                </div>
+                <div class="table-cell">
+                    ${newsBadges}
+                    <div class="text-xs text-gray-400">${rowData.news.score_1h.toFixed(2)}</div>
+                </div>
+                <div class="table-cell">
+                    <div class="text-xs">S: ${rowData.exec_kpis.slip_p95.toFixed(1)}bps</div>
+                    <div class="text-xs">F: ${(rowData.exec_kpis.fill_ratio * 100).toFixed(0)}%</div>
+                </div>
+                <div class="table-cell">
+                    <div class="flex space-x-1">
+                        <button class="action-btn buy-btn" onclick="executeTrade('${rowData.symbol}', 'buy')" data-testid="buy-${rowData.symbol}">B</button>
+                        <button class="action-btn sell-btn" onclick="executeTrade('${rowData.symbol}', 'sell')" data-testid="sell-${rowData.symbol}">S</button>
+                        <button class="action-btn pause-btn" onclick="pauseSymbol('${rowData.symbol}')" data-testid="pause-${rowData.symbol}">P</button>
+                        <button class="action-btn kill-btn" onclick="killSymbol('${rowData.symbol}')" data-testid="kill-${rowData.symbol}">K</button>
+                    </div>
+                </div>
+            `;
+            
+            return row;
+        }
+        
+        // Setup filters
+        function setupFilters() {
+            const filterElements = {
+                market: document.getElementById('filter-market'),
+                tier: document.getElementById('filter-tier'),
+                gates: document.getElementById('filter-gates'),
+                news: document.getElementById('filter-news'),
+                search: document.getElementById('filter-search')
+            };
+            
+            // Add event listeners
+            Object.entries(filterElements).forEach(([key, element]) => {
+                element.addEventListener('change', () => {
+                    currentFilters[key] = element.value;
+                    applyFilters();
+                    updateVirtualizedGrid();
+                });
+                
+                if (key === 'search') {
+                    element.addEventListener('input', () => {
+                        currentFilters[key] = element.value;
+                        applyFilters();
+                        updateVirtualizedGrid();
+                    });
+                }
+            });
+            
+            // Clear filters button
+            document.getElementById('clear-filters').addEventListener('click', () => {
+                Object.values(filterElements).forEach(el => {
+                    if (el.tagName === 'SELECT') {
+                        el.value = 'all';
+                    } else {
+                        el.value = '';
+                    }
+                });
+                currentFilters = {};
+                applyFilters();
+                updateVirtualizedGrid();
+            });
+        }
+        
+        // Setup blotter
+        function setupBlotter() {
+            const toggleBtn = document.getElementById('toggle-blotter');
+            const closeBtn = document.getElementById('close-blotter');
+            const blotter = document.getElementById('blotter');
+            
+            toggleBtn.addEventListener('click', () => {
+                blotter.classList.toggle('hidden');
+            });
+            
+            closeBtn.addEventListener('click', () => {
+                blotter.classList.add('hidden');
+            });
+            
+            // Export functionality
+            document.getElementById('export-blotter').addEventListener('click', exportBlotter);
+        }
+        
+        // Trading actions
+        async function executeTrade(symbol, side) {
+            try {
+                const quantity = prompt(`Enter quantity for ${side} ${symbol}:`);
+                if (!quantity) return;
+                
+                const response = await fetch('/api/live/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        symbol: symbol,
+                        side: side,
+                        quantity: parseFloat(quantity),
+                        mode: 'paper' // or 'live' based on current mode
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    addToBlotter(symbol, side, quantity, result);
+                    showNotification(`${side.toUpperCase()} order submitted for ${symbol}`, 'success');
+                } else {
+                    showNotification(`Failed to submit ${side} order: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Trade execution error:', error);
+                showNotification('Trade execution failed', 'error');
+            }
+        }
+        
+        async function pauseSymbol(symbol) {
+            try {
+                const response = await fetch(`/api/live/symbol/${symbol}/pause`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                showNotification(`${symbol} paused`, 'warning');
+                
+            } catch (error) {
+                console.error('Pause symbol error:', error);
+            }
+        }
+        
+        async function killSymbol(symbol) {
+            if (!confirm(`Kill all positions and strategies for ${symbol}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/live/symbol/${symbol}/kill`, {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                showNotification(`${symbol} killed`, 'error');
+                
+            } catch (error) {
+                console.error('Kill symbol error:', error);
+            }
+        }
+        
+        // Blotter management
+        function addToBlotter(symbol, side, quantity, result) {
+            const blotterContent = document.getElementById('blotter-content');
+            
+            const entry = document.createElement('div');
+            entry.className = 'bg-gray-800 p-2 rounded text-xs';
+            entry.innerHTML = `
+                <div class="flex justify-between">
+                    <span class="font-mono">${symbol}</span>
+                    <span class="${side === 'buy' ? 'text-green-400' : 'text-red-400'}">${side.toUpperCase()}</span>
+                </div>
+                <div class="text-gray-400">
+                    QTY: ${quantity} | Time: ${new Date().toLocaleTimeString()}
+                </div>
+                <div class="text-gray-400">
+                    ${result.execution_style || 'paper'} | ${result.slippage_bps ? result.slippage_bps.toFixed(1) + 'bps' : 'sim'}
+                </div>
+            `;
+            
+            blotterContent.insertBefore(entry, blotterContent.firstChild);
+            
+            // Keep only last 50 entries
+            while (blotterContent.children.length > 50) {
+                blotterContent.removeChild(blotterContent.lastChild);
+            }
+        }
+        
+        function exportBlotter() {
+            // Create CSV data
+            const blotterEntries = Array.from(document.getElementById('blotter-content').children);
+            let csvContent = 'timestamp,symbol,side,quantity,execution_style,slippage_bps\\n';
+            
+            blotterEntries.forEach(entry => {
+                // Parse entry data and add to CSV
+                const timestamp = new Date().toISOString();
+                csvContent += `${timestamp},mock_data\\n`; // Simplified for demo
+            });
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `trade_blotter_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            
+            showNotification('Blotter exported', 'success');
+        }
+        
+        // Utility functions
+        function formatVolume(volume) {
+            if (volume > 1000000000) {
+                return (volume / 1000000000).toFixed(1) + 'B';
+            } else if (volume > 1000000) {
+                return (volume / 1000000).toFixed(1) + 'M';
+            } else if (volume > 1000) {
+                return (volume / 1000).toFixed(1) + 'K';
+            }
+            return volume.toFixed(0);
+        }
+        
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('status-indicator');
+            const statusText = indicator.nextElementSibling;
+            
+            if (status === 'connected') {
+                indicator.className = 'w-2 h-2 bg-green-500 rounded-full inline-block animate-pulse';
+                statusText.textContent = 'Live';
+            } else if (status === 'disconnected') {
+                indicator.className = 'w-2 h-2 bg-yellow-500 rounded-full inline-block';
+                statusText.textContent = 'Polling';
+            } else {
+                indicator.className = 'w-2 h-2 bg-red-500 rounded-full inline-block';
+                statusText.textContent = 'Error';
+            }
+        }
+        
+        function updateUniverseStats(stats) {
+            const statsElement = document.getElementById('universe-stats');
+            statsElement.textContent = `${stats.active_symbols} active | ${stats.parked_symbols} parked | Vol: ${formatVolume(stats.total_volume_24h)}`;
+        }
+        
+        function updateAttribution() {
+            // Calculate attribution from current positions
+            const positions = gridData.filter(row => row.position);
+            
+            if (positions.length === 0) {
+                document.getElementById('attr-total-pnl').textContent = '$0.00';
+                document.getElementById('attr-top-strategy').textContent = '-';
+                document.getElementById('attr-worst-strategy').textContent = '-';
+                document.getElementById('attr-positions').textContent = '0';
+                return;
+            }
+            
+            const totalPnl = positions.reduce((sum, pos) => sum + pos.pnl_daily + pos.pnl_unrealized, 0);
+            
+            // Strategy attribution
+            const strategyPnl = {};
+            positions.forEach(pos => {
+                const pnl = pos.pnl_daily + pos.pnl_unrealized;
+                strategyPnl[pos.strategy] = (strategyPnl[pos.strategy] || 0) + pnl;
+            });
+            
+            const sortedStrategies = Object.entries(strategyPnl).sort((a, b) => b[1] - a[1]);
+            
+            document.getElementById('attr-total-pnl').textContent = `$${totalPnl.toFixed(2)}`;
+            document.getElementById('attr-total-pnl').className = totalPnl >= 0 ? 'font-semibold positive' : 'font-semibold negative';
+            
+            if (sortedStrategies.length > 0) {
+                document.getElementById('attr-top-strategy').textContent = 
+                    `${sortedStrategies[0][0]} ($${sortedStrategies[0][1].toFixed(2)})`;
+                document.getElementById('attr-worst-strategy').textContent = 
+                    `${sortedStrategies[sortedStrategies.length-1][0]} ($${sortedStrategies[sortedStrategies.length-1][1].toFixed(2)})`;
+            }
+            
+            document.getElementById('attr-positions').textContent = positions.length;
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-3 rounded shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-600' :
+                type === 'error' ? 'bg-red-600' :
+                type === 'warning' ? 'bg-yellow-600' :
+                'bg-blue-600'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Handle WebSocket updates
+        function handleWebSocketUpdate(data) {
+            if (data.type === 'price_update') {
+                // Update specific symbol price
+                const row = gridData.find(r => r.symbol === data.symbol);
+                if (row) {
+                    row.price = data.price;
+                    row.last_update = data.timestamp;
+                }
+            } else if (data.type === 'universe_update') {
+                // Full universe refresh
+                gridData = transformUniverseData(data.universe);
+                applyFilters();
+                updateVirtualizedGrid();
+            }
+        }
+        
+        // Scroll event for virtualization
+        document.querySelector('.grid-container').addEventListener('scroll', () => {
+            updateVirtualizedGrid();
+        });
+        
+        // Initialize on load
+        initializeGrid();
+    </script>
+</body>
+</html>

@@ -18,6 +18,7 @@ from sofia_ui.live_data import live_data_service
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.api.paper_trading import router as paper_trading_router
 from src.api.canary_trading import router as canary_trading_router
+from src.api.live_trading import router as live_trading_router
 
 # FastAPI uygulaması
 app = FastAPI(
@@ -29,6 +30,7 @@ app = FastAPI(
 # Include trading routes
 app.include_router(paper_trading_router)
 app.include_router(canary_trading_router)
+app.include_router(live_trading_router)
 
 # Static dosyalar ve template'ler
 static_path = Path(__file__).parent / "static"
@@ -519,6 +521,16 @@ async def dashboard_page(request: Request):
         "page_title": "Paper Trading Dashboard"
     }
     return templates.TemplateResponse("dashboard.html", context)
+
+
+@app.get("/live", response_class=HTMLResponse)
+async def live_trading_grid(request: Request):
+    """Live trading grid with 200+ assets"""
+    context = {
+        "request": request,
+        "page_title": "Live Trading Grid"
+    }
+    return templates.TemplateResponse("live.html", context)
 
 
 # Backtest API endpoint - arkadaşının kullanacağı

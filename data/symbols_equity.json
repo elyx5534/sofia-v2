@@ -1,0 +1,29 @@
+{
+  "tier1": [
+    "AAPL", "MSFT", "AMZN", "GOOGL", "GOOG", "META", "TSLA", "NVDA", "BRK.B", "UNH",
+    "JNJ", "XOM", "JPM", "V", "PG", "MA", "HD", "CVX", "LLY", "ABBV",
+    "PFE", "AVGO", "KO", "TMO", "COST", "MRK", "PEP", "WMT", "BAC", "ASML",
+    "ORCL", "ACN", "NKE", "DHR", "VZ", "ADBE", "TXN", "NEE", "CRM", "PM",
+    "ABT", "NFLX", "CMCSA", "INTC", "WFC", "AMD", "DIS", "T", "QCOM", "IBM"
+  ],
+  "tier2": [
+    "BIST.IS", "AKBNK.IS", "GARAN.IS", "ISCTR.IS", "VAKBN.IS", "THYAO.IS", "TUPRS.IS", "SAHOL.IS", "KCHOL.IS", "ARCLK.IS",
+    "TCELL.IS", "KOZAL.IS", "PETKM.IS", "SISE.IS", "EREGL.IS", "OTKAR.IS", "TOASO.IS", "TAVHL.IS", "KOZAA.IS", "PGSUS.IS",
+    "COP", "LMT", "UPS", "HON", "UNP", "CAT", "ADP", "LOW", "INTU", "GILD",
+    "AMT", "ISRG", "BKNG", "AMGN", "SYK", "TJX", "MDLZ", "CI", "BLK", "AXP",
+    "VRTX", "LRCX", "ADI", "MMC", "TMUS", "ZTS", "PLD", "CB", "DE", "SHW",
+    "ITW", "GE", "NOW", "CME", "TGT", "MU", "USB", "HUM", "APD", "CCI",
+    "KLAC", "REGN", "NSC", "SLB", "AON", "ICE", "DUK", "PNC", "BSX", "CL",
+    "ETN", "FDX", "EMR", "NOC", "EQIX", "EL", "GD", "CSX", "PSA", "F",
+    "WELL", "CARR", "GM", "WM", "MCO", "OTIS", "D", "MCHP", "KMB", "SO",
+    "ECL", "KDP", "PAYX", "ROK", "YUM", "CTSH", "CDNS", "FAST", "CMG", "EA"
+  ],
+  "metadata": {
+    "last_updated": "2025-08-29",
+    "total_symbols": 100,
+    "tier1_count": 50,
+    "tier2_count": 50,
+    "includes": ["SP500_top50", "BIST30"],
+    "min_market_cap_usd": 1000000000
+  }
+}
