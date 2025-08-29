@@ -13,7 +13,7 @@ ps aux | grep uvicorn
 ./scripts/emergency_restart.sh
 
 # 3. Verify health
-curl http://localhost:8009/health
+curl http://localhost:8013/health
 curl http://localhost:8000/metrics
 
 # 4. Check logs
@@ -108,12 +108,12 @@ python alerts/whale_trade.py &
 echo $! > pids/whale.pid
 
 # 7. Start API (last)
-uvicorn src.api.main:app --port 8009 &
+uvicorn src.api.main:app --port 8013 &
 echo $! > pids/api.pid
 
 # 8. Verify all running
 sleep 10
-curl http://localhost:8009/health
+curl http://localhost:8013/health
 ```
 
 ### Stopping Services
@@ -207,7 +207,7 @@ cp -r /tmp/restore/models/ .
 ./scripts/start_all.sh
 
 # 8. Verify
-curl http://localhost:8009/health
+curl http://localhost:8013/health
 ```
 
 ## 🔍 Debugging Procedures

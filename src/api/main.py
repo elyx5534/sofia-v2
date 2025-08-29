@@ -24,6 +24,9 @@ from src.sofia.data.realtime import ReliabilityFeed
 from src.sofia.config import SYMBOLS, STALE_TTL_SEC
 from src.sofia.symbols import to_ui
 
+# Import routers
+from src.api import ai_endpoints, trade_endpoints
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -57,13 +60,20 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8000",
         "http://localhost:8002",
+        "http://localhost:8010",
         "http://127.0.0.1:8000",
-        "http://127.0.0.1:8002"
+        "http://127.0.0.1:8002",
+        "http://127.0.0.1:8010",
+        "*"  # Allow all origins for development
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(ai_endpoints.router)
+app.include_router(trade_endpoints.router)
 
 
 @app.on_event("startup")
@@ -95,7 +105,10 @@ async def health_check() -> Dict[str, Any]:
 @app.get("/metrics")
 async def get_metrics() -> Dict[str, Any]:
     """System metrics endpoint"""
-    metrics = price_service.get_metrics()
+    try:
+        metrics = price_service.get_metrics()
+    except:
+        metrics = {}
     
     # Extract freshness per symbol
     freshness = {}

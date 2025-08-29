@@ -2,9 +2,9 @@ import os, sys, time, json, socket
 import http.client as httplib
 from urllib.parse import urlparse
 
-API=os.getenv("SOFIA_API_BASE","http://127.0.0.1:8012")
+API=os.getenv("SOFIA_API_BASE","http://127.0.0.1:8013")
 TRADE=os.getenv("SOFIA_TRADE_BASE",API)
-METRICS=os.getenv("SOFIA_METRICS","http://127.0.0.1:8012")
+METRICS=os.getenv("SOFIA_METRICS","http://127.0.0.1:8013")
 SYMBOL=os.getenv("SOFIA_TEST_SYMBOL","BTCUSDT")
 WS_URL=os.getenv("SOFIA_WS_URL","ws://127.0.0.1:8009/ws")
 
