@@ -20,7 +20,8 @@
       "Bash(gh pr create:*)",
       "Bash(git tag:*)",
       "Bash(tasklist)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(copy .env.testnet .env)"
     ],
     "deny": [],
     "ask": []

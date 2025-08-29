@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-08-29T21:53:13.692414",
+  "passed": 6,
+  "failed": 2,
+  "warnings": [],
+  "checks_passed": [
+    {
+      "name": "Exchange Connection",
+      "message": "Exchange connected: 2087 markets available",
+      "timestamp": "2025-08-29T21:53:13.570901"
+    },
+    {
+      "name": "Risk Engine",
+      "message": "Risk engine configured: max_loss=$200",
+      "timestamp": "2025-08-29T21:53:13.571579"
+    },
+    {
+      "name": "Kill Switch",
+      "message": "Kill switch state: OFF",
+      "timestamp": "2025-08-29T21:53:13.571827"
+    },
+    {
+      "name": "Observability",
+      "message": "Observability: Sentry=False, Prometheus=True",
+      "timestamp": "2025-08-29T21:53:13.677717"
+    },
+    {
+      "name": "API Health",
+      "message": "API healthy: healthy",
+      "timestamp": "2025-08-29T21:53:13.692155"
+    },
+    {
+      "name": "Disk Space",
+      "message": "Disk space available: 97.03GB",
+      "timestamp": "2025-08-29T21:53:13.692380"
+    }
+  ],
+  "checks_failed": [
+    {
+      "name": "Environment",
+      "message": "Missing environment variables: MODE, EXCHANGE, API_KEY, API_SECRET, MAX_DAILY_LOSS, MAX_POSITION_USD, KILL_SWITCH",
+      "timestamp": "2025-08-29T21:53:04.697415"
+    },
+    {
+      "name": "Database",
+      "message": "Database check failed: No module named 'src.models.backtest'",
+      "timestamp": "2025-08-29T21:53:13.677603"
+    }
+  ],
+  "ready_for_deployment": false
+}

@@ -1,0 +1,208 @@
+# Prometheus Alert Rules for Sofia Trading System
+groups:
+  - name: trading_alerts
+    interval: 30s
+    rules:
+      # Latency Alerts
+      - alert: HighOrderLatency
+        expr: histogram_quantile(0.95, rate(order_latency_seconds_bucket[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          component: trading
+        annotations:
+          summary: "High order execution latency"
+          description: "P95 latency {{ $value }}s exceeds 500ms threshold"
+          
+      - alert: CriticalOrderLatency
+        expr: histogram_quantile(0.99, rate(order_latency_seconds_bucket[5m])) > 2
+        for: 1m
+        labels:
+          severity: critical
+          component: trading
+        annotations:
+          summary: "Critical order execution latency"
+          description: "P99 latency {{ $value }}s exceeds 2s - KILL SWITCH RISK"
+          
+      # Error Rate Alerts
+      - alert: HighErrorRate
+        expr: rate(trading_errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          component: trading
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate {{ $value | humanizePercentage }} exceeds 5%"
+          
+      - alert: CriticalErrorRate
+        expr: rate(trading_errors_total[2m]) > 0.1
+        for: 30s
+        labels:
+          severity: critical
+          component: trading
+        annotations:
+          summary: "Critical error rate - trading at risk"
+          description: "Error rate {{ $value | humanizePercentage }} exceeds 10% - AUTO HALT IMMINENT"
+          
+      # Slippage Alerts
+      - alert: HighSlippage
+        expr: avg(trading_slippage_bps) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: execution
+        annotations:
+          summary: "High slippage detected"
+          description: "Average slippage {{ $value }}bps exceeds 100bps"
+          
+      - alert: ExtremeSlippage
+        expr: max(trading_slippage_bps) > 500
+        for: 1m
+        labels:
+          severity: critical
+          component: execution
+        annotations:
+          summary: "Extreme slippage event"
+          description: "Max slippage {{ $value }}bps - CHECK MARKET CONDITIONS"
+          
+      # WebSocket Monitoring
+      - alert: WebSocketDisconnected
+        expr: websocket_downtime_seconds > 10
+        for: 10s
+        labels:
+          severity: warning
+          component: connectivity
+        annotations:
+          summary: "WebSocket disconnected"
+          description: "WebSocket down for {{ $value }}s"
+          
+      - alert: WebSocketReconnectStorm
+        expr: increase(websocket_reconnect_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          component: connectivity
+        annotations:
+          summary: "WebSocket reconnection storm"
+          description: "{{ $value }} reconnections in 5 minutes - NETWORK UNSTABLE"
+          
+      # Kill Switch Monitoring
+      - alert: KillSwitchActivated
+        expr: kill_switch_activations_total > 0
+        for: 0s
+        labels:
+          severity: critical
+          component: risk
+        annotations:
+          summary: "KILL SWITCH ACTIVATED"
+          description: "Trading halted - trigger: {{ $labels.trigger }}"
+          
+      - alert: KillSwitchAutoTriggerImminent
+        expr: trading_pnl_usd < -150 and trading_pnl_usd > -200
+        for: 30s
+        labels:
+          severity: warning
+          component: risk
+        annotations:
+          summary: "Approaching kill switch threshold"
+          description: "P&L at ${{ $value }} - auto halt at -$200"
+          
+      # Daily Loss Monitoring
+      - alert: DailyLoss50Percent
+        expr: (trading_pnl_usd / -200) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+          component: risk
+        annotations:
+          summary: "50% of daily loss limit reached"
+          description: "Current loss: ${{ $value }}"
+          
+      - alert: DailyLoss80Percent
+        expr: (trading_pnl_usd / -200) > 0.8
+        for: 30s
+        labels:
+          severity: critical
+          component: risk
+        annotations:
+          summary: "80% of daily loss limit reached"
+          description: "Current loss: ${{ $value }} - REDUCE EXPOSURE"
+          
+      # Reconciliation Drift
+      - alert: ReconciliationDrift
+        expr: abs(reconciliation_position_drift_usd) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: reconciliation
+        annotations:
+          summary: "Position reconciliation drift detected"
+          description: "Drift of ${{ $value }} between internal and exchange"
+          
+      - alert: ReconciliationFailed
+        expr: increase(reconciliation_failures_total[1h]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: reconciliation
+        annotations:
+          summary: "Reconciliation failed"
+          description: "Reconciliation failures in last hour - MANUAL CHECK REQUIRED"
+          
+      # Order Flow Monitoring
+      - alert: NoOrdersExecuted
+        expr: rate(trading_orders_total[15m]) == 0 and hour() >= 9 and hour() <= 16
+        for: 15m
+        labels:
+          severity: warning
+          component: trading
+        annotations:
+          summary: "No orders executed in 15 minutes during market hours"
+          description: "Check if trading is intentionally paused"
+          
+      - alert: OrderRejectionRate
+        expr: rate(trading_orders_total{status="rejected"}[5m]) / rate(trading_orders_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          component: trading
+        annotations:
+          summary: "High order rejection rate"
+          description: "{{ $value | humanizePercentage }} of orders rejected"
+
+  - name: slo_alerts
+    interval: 1m
+    rules:
+      # SLO: 99.9% availability
+      - alert: SLOAvailabilityBreach
+        expr: (1 - rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) < 0.999
+        for: 5m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "SLO breach: Availability below 99.9%"
+          description: "Current availability: {{ $value | humanizePercentage }}"
+          
+      # SLO: P95 latency < 100ms
+      - alert: SLOLatencyBreach
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "SLO breach: P95 latency > 100ms"
+          description: "Current P95: {{ $value }}s"
+          
+      # SLO: Error rate < 1%
+      - alert: SLOErrorRateBreach
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          slo: error_rate
+        annotations:
+          summary: "SLO breach: Error rate > 1%"
+          description: "Current error rate: {{ $value | humanizePercentage }}"

@@ -1,0 +1,351 @@
+# Canary Deployment Plan
+# Gradual rollout configuration for Sofia Trading System
+
+metadata:
+  name: sofia-canary-deployment
+  version: 1.0
+  created: 2025-08-29
+  owner: trading-ops
+
+# Global configuration
+config:
+  initial_mode: shadow
+  target_mode: live
+  rollback_on_failure: true
+  notification_channels:
+    - slack: "#trading-deployments"
+    - email: "trading-ops@company.com"
+  
+# Deployment phases
+phases:
+  - name: shadow_baseline
+    percentage: 0
+    duration_minutes: 30
+    description: "Establish baseline metrics in shadow mode"
+    health_checks:
+      - metric: error_rate
+        threshold: 0.01
+        operator: less_than
+      - metric: latency_p95_ms
+        threshold: 100
+        operator: less_than
+    success_criteria:
+      min_orders: 50
+      min_duration_minutes: 30
+    
+  - name: canary_10
+    percentage: 10
+    duration_minutes: 60
+    description: "Initial canary with 10% of traffic"
+    health_checks:
+      - metric: error_rate
+        threshold: 0.05
+        operator: less_than
+      - metric: success_rate
+        threshold: 0.95
+        operator: greater_than
+      - metric: latency_p95_ms
+        threshold: 200
+        operator: less_than
+      - metric: daily_pnl
+        threshold: -50
+        operator: greater_than
+    success_criteria:
+      min_orders: 10
+      min_success_rate: 0.95
+      max_errors: 5
+    rollback_triggers:
+      - condition: error_rate > 0.1
+        action: immediate
+      - condition: daily_pnl < -100
+        action: immediate
+      - condition: kill_switch = ON
+        action: immediate
+    
+  - name: canary_25
+    percentage: 25
+    duration_minutes: 120
+    description: "Increase to 25% of traffic"
+    health_checks:
+      - metric: error_rate
+        threshold: 0.03
+        operator: less_than
+      - metric: success_rate
+        threshold: 0.97
+        operator: greater_than
+      - metric: latency_p95_ms
+        threshold: 150
+        operator: less_than
+      - metric: daily_pnl
+        threshold: -100
+        operator: greater_than
+      - metric: position_drift_usd
+        threshold: 50
+        operator: less_than
+    success_criteria:
+      min_orders: 50
+      min_success_rate: 0.97
+      max_errors: 10
+      min_duration_minutes: 120
+    rollback_triggers:
+      - condition: error_rate > 0.05
+        action: immediate
+      - condition: daily_pnl < -150
+        action: immediate
+      - condition: position_drift_usd > 100
+        action: after_reconciliation
+    
+  - name: canary_50
+    percentage: 50
+    duration_minutes: 240
+    description: "Half of traffic on new version"
+    health_checks:
+      - metric: error_rate
+        threshold: 0.02
+        operator: less_than
+      - metric: success_rate
+        threshold: 0.98
+        operator: greater_than
+      - metric: latency_p95_ms
+        threshold: 100
+        operator: less_than
+      - metric: latency_p99_ms
+        threshold: 500
+        operator: less_than
+      - metric: daily_pnl
+        threshold: -150
+        operator: greater_than
+      - metric: position_drift_usd
+        threshold: 25
+        operator: less_than
+      - metric: reconciliation_success
+        threshold: true
+        operator: equals
+    success_criteria:
+      min_orders: 200
+      min_success_rate: 0.98
+      max_errors: 20
+      min_duration_minutes: 240
+      reconciliation_passed: true
+    rollback_triggers:
+      - condition: error_rate > 0.03
+        action: gradual
+        reduce_to_percentage: 25
+      - condition: daily_pnl < -200
+        action: immediate
+      - condition: reconciliation_failed
+        action: immediate
+      - condition: ws_disconnections > 5
+        action: gradual
+    
+  - name: canary_75
+    percentage: 75
+    duration_minutes: 480
+    description: "Majority traffic on new version"
+    health_checks:
+      - metric: error_rate
+        threshold: 0.01
+        operator: less_than
+      - metric: success_rate
+        threshold: 0.99
+        operator: greater_than
+      - metric: latency_p95_ms
+        threshold: 100
+        operator: less_than
+      - metric: latency_p99_ms
+        threshold: 300
+        operator: less_than
+      - metric: daily_pnl
+        threshold: -180
+        operator: greater_than
+      - metric: all_slos_met
+        threshold: true
+        operator: equals
+    success_criteria:
+      min_orders: 500
+      min_success_rate: 0.99
+      max_errors: 25
+      min_duration_minutes: 480
+      all_health_checks_passed: true
+      slo_compliance: 0.999
+    rollback_triggers:
+      - condition: slo_breach
+        action: gradual
+        reduce_to_percentage: 50
+      - condition: critical_error
+        action: immediate
+    
+  - name: production_100
+    percentage: 100
+    duration_minutes: 1440  # 24 hours
+    description: "Full production deployment"
+    health_checks:
+      - metric: error_rate
+        threshold: 0.01
+        operator: less_than
+      - metric: success_rate
+        threshold: 0.995
+        operator: greater_than
+      - metric: latency_p95_ms
+        threshold: 100
+        operator: less_than
+      - metric: latency_p99_ms
+        threshold: 200
+        operator: less_than
+      - metric: availability
+        threshold: 0.999
+        operator: greater_than
+    success_criteria:
+      min_orders: 1000
+      min_success_rate: 0.995
+      min_duration_minutes: 1440
+      all_slos_met: true
+      no_critical_alerts: true
+    monitoring:
+      enhanced: true
+      alert_channels:
+        - pagerduty
+        - slack
+        - email
+
+# Rollback strategy
+rollback:
+  automatic_triggers:
+    - kill_switch_activated
+    - daily_loss_exceeded
+    - critical_error_rate
+    - slo_violation
+  manual_approval_required: false
+  preserve_state: true
+  notification_required: true
+  post_rollback_actions:
+    - generate_incident_report
+    - schedule_postmortem
+    - notify_stakeholders
+
+# Promotion gates between phases
+gates:
+  - from: shadow_baseline
+    to: canary_10
+    requirements:
+      - manual_approval: false
+      - automated_checks:
+        - preflight_passed
+        - no_open_incidents
+        - market_hours: true
+  
+  - from: canary_10
+    to: canary_25
+    requirements:
+      - manual_approval: false
+      - automated_checks:
+        - previous_phase_success
+        - metrics_within_threshold
+        - no_anomalies_detected
+  
+  - from: canary_25
+    to: canary_50
+    requirements:
+      - manual_approval: true
+      - approvers:
+        - trading_desk
+        - risk_management
+      - automated_checks:
+        - reconciliation_passed
+        - pnl_positive_or_acceptable
+  
+  - from: canary_50
+    to: canary_75
+    requirements:
+      - manual_approval: true
+      - approvers:
+        - trading_desk
+        - risk_management
+        - cto
+      - automated_checks:
+        - all_health_checks_passed
+        - slo_compliance_met
+  
+  - from: canary_75
+    to: production_100
+    requirements:
+      - manual_approval: true
+      - approvers:
+        - trading_desk
+        - risk_management
+        - cto
+        - ceo
+      - automated_checks:
+        - 24h_stability
+        - full_reconciliation_passed
+        - all_slos_green
+
+# Metrics collection
+metrics:
+  sources:
+    - prometheus: "http://prometheus:9090"
+    - sentry: "${SENTRY_DSN}"
+    - custom: "http://localhost:8023/metrics"
+  
+  collection_interval_seconds: 10
+  
+  aggregation_windows:
+    - 1m
+    - 5m
+    - 15m
+    - 1h
+  
+  key_metrics:
+    - name: error_rate
+      query: "rate(trading_errors_total[5m])"
+      unit: ratio
+    
+    - name: success_rate
+      query: "rate(trading_orders_total{status='success'}[5m]) / rate(trading_orders_total[5m])"
+      unit: ratio
+    
+    - name: latency_p95_ms
+      query: "histogram_quantile(0.95, rate(order_latency_seconds_bucket[5m])) * 1000"
+      unit: milliseconds
+    
+    - name: latency_p99_ms
+      query: "histogram_quantile(0.99, rate(order_latency_seconds_bucket[5m])) * 1000"
+      unit: milliseconds
+    
+    - name: daily_pnl
+      query: "trading_pnl_usd"
+      unit: usd
+    
+    - name: position_drift_usd
+      query: "abs(reconciliation_position_drift_usd)"
+      unit: usd
+    
+    - name: ws_disconnections
+      query: "increase(websocket_reconnect_total[1h])"
+      unit: count
+
+# Reporting
+reporting:
+  real_time_dashboard: "https://grafana.company.com/d/canary"
+  
+  phase_reports:
+    format: json
+    destination: "reports/canary/"
+    include:
+      - metrics_summary
+      - error_logs
+      - rollback_events
+      - approval_history
+  
+  final_report:
+    format: html
+    template: "canary_report_template.html"
+    recipients:
+      - trading-ops@company.com
+      - management@company.com
+    
+  incident_reports:
+    auto_generate: true
+    template: incident_template.md
+    jira_project: TRADING
+    priority: P1
