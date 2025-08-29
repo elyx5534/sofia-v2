@@ -1,0 +1,85 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "name": "Home",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/dashboard",
+      "name": "Dashboard",
+      "expectedElements": ["header", "main", "[data-testid='total-balance']"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/strategies",
+      "name": "Strategies",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/backtests",
+      "name": "Backtests",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/signals",
+      "name": "Signals",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/markets",
+      "name": "Markets",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "minimumRows": 100,
+      "expectedStatus": 200
+    },
+    {
+      "path": "/settings",
+      "name": "Settings",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/status",
+      "name": "Status",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/assets/BTC-USD",
+      "name": "Asset Detail",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    },
+    {
+      "path": "/reports/1",
+      "name": "Report Detail",
+      "expectedElements": ["header", "main"],
+      "forbiddenElements": ["aside", "[class*='sidebar']", "[data-sidebar]"],
+      "expectedStatus": 200
+    }
+  ],
+  "globalChecks": {
+    "maxConsoleErrors": 0,
+    "maxNetworkErrors": 0,
+    "forbiddenStatusCodes": [400, 401, 403, 404, 500, 502, 503],
+    "requiredMetaTags": ["viewport", "description"],
+    "accessibility": {
+      "maxCriticalViolations": 0,
+      "maxSeriousViolations": 2
+    }
+  }
+}
