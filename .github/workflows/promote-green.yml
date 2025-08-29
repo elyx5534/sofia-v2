@@ -1,0 +1,250 @@
+name: Promote Green Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "PROMOTE" to confirm'
+        required: true
+      drain_timeout:
+        description: 'Connection drain timeout (seconds)'
+        required: false
+        default: '60'
+
+env:
+  BLUE_URL: https://blue.sofia-trading.com
+  GREEN_URL: https://green.sofia-trading.com
+  PROD_URL: https://sofia-trading.com
+
+jobs:
+  validation:
+    name: Validate Promotion
+    runs-on: ubuntu-latest
+    outputs:
+      can_promote: ${{ steps.validate.outputs.can_promote }}
+      
+    steps:
+      - name: Confirm Promotion
+        if: inputs.confirm != 'PROMOTE'
+        run: |
+          echo "❌ Promotion not confirmed. Type PROMOTE to proceed."
+          exit 1
+      
+      - name: Validate Blue Health
+        id: validate
+        run: |
+          echo "Validating blue environment before promotion..."
+          
+          # Check blue health
+          BLUE_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BLUE_URL/health)
+          
+          if [[ "$BLUE_STATUS" != "200" ]]; then
+            echo "❌ Blue environment not healthy"
+            echo "::set-output name=can_promote::false"
+            exit 1
+          fi
+          
+          # Check metrics
+          ERROR_RATE=$(curl -s $BLUE_URL/metrics | grep error_rate | awk '{print $2}')
+          
+          if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
+            echo "❌ Blue error rate too high: ${ERROR_RATE}"
+            echo "::set-output name=can_promote::false"
+            exit 1
+          fi
+          
+          # Check reconciliation
+          RECON_STATUS=$(curl -s $BLUE_URL/api/reconciliation/status | jq -r '.status')
+          
+          if [[ "$RECON_STATUS" != "success" ]]; then
+            echo "⚠️ Reconciliation not successful"
+          fi
+          
+          echo "::set-output name=can_promote::true"
+
+  drain-green:
+    name: Drain Green Connections
+    needs: validation
+    if: needs.validation.outputs.can_promote == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Enable Connection Draining
+        run: |
+          echo "Starting connection drain on green environment..."
+          
+          # Enable drain mode
+          curl -X POST $GREEN_URL/api/admin/drain \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"enabled": true, "timeout": ${{ inputs.drain_timeout }}}'
+          
+          # Wait for drain
+          echo "Waiting ${{ inputs.drain_timeout }} seconds for connections to drain..."
+          sleep ${{ inputs.drain_timeout }}
+          
+          # Check active connections
+          ACTIVE_CONNS=$(curl -s $GREEN_URL/api/admin/connections | jq '.active')
+          
+          if [[ "$ACTIVE_CONNS" -gt 0 ]]; then
+            echo "⚠️ Still $ACTIVE_CONNS active connections"
+          fi
+
+  switch-traffic:
+    name: Switch Traffic to Blue
+    needs: drain-green
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Update Load Balancer
+        run: |
+          echo "Switching production traffic to blue..."
+          
+          # Update Route53
+          cat > change-batch.json << EOF
+          {
+            "Changes": [{
+              "Action": "UPSERT",
+              "ResourceRecordSet": {
+                "Name": "sofia-trading.com",
+                "Type": "A",
+                "AliasTarget": {
+                  "HostedZoneId": "${{ secrets.BLUE_ALB_ZONE_ID }}",
+                  "DNSName": "${{ secrets.BLUE_ALB_DNS }}",
+                  "EvaluateTargetHealth": true
+                }
+              }
+            }]
+          }
+          EOF
+          
+          aws route53 change-resource-record-sets \
+            --hosted-zone-id ${{ secrets.HOSTED_ZONE_ID }} \
+            --change-batch file://change-batch.json
+          
+          # Update ALB target groups
+          aws elbv2 modify-rule \
+            --rule-arn ${{ secrets.PROD_ALB_RULE_ARN }} \
+            --actions Type=forward,TargetGroupArn=${{ secrets.BLUE_TARGET_GROUP_ARN }}
+      
+      - name: Verify Traffic Switch
+        run: |
+          echo "Waiting for DNS propagation..."
+          sleep 30
+          
+          # Check production endpoint
+          PROD_VERSION=$(curl -s $PROD_URL/api/version | jq -r '.version')
+          BLUE_VERSION=$(curl -s $BLUE_URL/api/version | jq -r '.version')
+          
+          if [[ "$PROD_VERSION" == "$BLUE_VERSION" ]]; then
+            echo "✅ Traffic successfully switched to blue"
+          else
+            echo "⚠️ Version mismatch: prod=$PROD_VERSION, blue=$BLUE_VERSION"
+          fi
+
+  post-promotion:
+    name: Post-Promotion Tasks
+    needs: switch-traffic
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Update Green Environment
+        run: |
+          echo "Updating green environment to match blue..."
+          
+          # Get blue version
+          BLUE_VERSION=$(curl -s $BLUE_URL/api/version | jq -r '.version')
+          
+          # Trigger green deployment with blue version
+          gh workflow run deploy-green.yml \
+            -f version=$BLUE_VERSION \
+            -f environment=production
+      
+      - name: Health Monitoring
+        run: |
+          echo "Monitoring production health post-promotion..."
+          
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" $PROD_URL/health)
+            ERROR_RATE=$(curl -s $PROD_URL/metrics | grep error_rate | awk '{print $2}')
+            
+            if [[ "$STATUS" != "200" ]]; then
+              echo "❌ Production unhealthy!"
+              exit 1
+            fi
+            
+            if (( $(echo "$ERROR_RATE > 0.05" | bc -l) )); then
+              echo "⚠️ Elevated error rate: ${ERROR_RATE}"
+            fi
+            
+            echo "Check $i/10: Status=$STATUS, ErrorRate=$ERROR_RATE"
+            sleep 30
+          done
+      
+      - name: Update Documentation
+        run: |
+          # Record promotion
+          cat >> promotion_log.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "from": "green",
+            "to": "blue",
+            "version": "$BLUE_VERSION",
+            "status": "success"
+          }
+          EOF
+
+  rollback-option:
+    name: Rollback Option
+    needs: post-promotion
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Quick Rollback
+        run: |
+          echo "🔄 Quick rollback to green available..."
+          
+          # Switch back to green
+          aws elbv2 modify-rule \
+            --rule-arn ${{ secrets.PROD_ALB_RULE_ARN }} \
+            --actions Type=forward,TargetGroupArn=${{ secrets.GREEN_TARGET_GROUP_ARN }}
+          
+          # Notify
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d '{"text": "⚠️ Rolled back to green environment"}'
+
+  notify:
+    name: Notify Promotion Status
+    needs: [switch-traffic, post-promotion]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send Notification
+        run: |
+          if [[ "${{ needs.post-promotion.result }}" == "success" ]]; then
+            STATUS="✅ SUCCESS"
+            COLOR="good"
+            MESSAGE="Production successfully promoted to blue"
+          else
+            STATUS="❌ FAILED"
+            COLOR="danger"
+            MESSAGE="Promotion failed, rollback may be needed"
+          fi
+          
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"Production Promotion $STATUS\",
+                \"text\": \"$MESSAGE\",
+                \"fields\": [
+                  {\"title\": \"From\", \"value\": \"Green\", \"short\": true},
+                  {\"title\": \"To\", \"value\": \"Blue\", \"short\": true},
+                  {\"title\": \"Time\", \"value\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\", \"short\": false}
+                ]
+              }]
+            }"

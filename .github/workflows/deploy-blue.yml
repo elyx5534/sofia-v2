@@ -1,0 +1,306 @@
+name: Deploy Blue Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy'
+        required: true
+        default: 'latest'
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  BLUE_URL: https://blue.sofia-trading.com
+  GREEN_URL: https://green.sofia-trading.com
+  HEALTH_CHECK_TIMEOUT: 300
+  ROLLBACK_ON_FAILURE: true
+
+jobs:
+  pre-deployment:
+    name: Pre-Deployment Checks
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.checks.outputs.proceed }}
+      
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Verify Version
+        id: version
+        run: |
+          if [[ "${{ inputs.version }}" == "latest" ]]; then
+            VERSION=$(git describe --tags --abbrev=0)
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "::set-output name=version::$VERSION"
+      
+      - name: Pre-Deployment Checks
+        id: checks
+        run: |
+          # Check if green is healthy
+          GREEN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $GREEN_URL/health || echo "000")
+          
+          if [[ "$GREEN_STATUS" != "200" ]]; then
+            echo "⚠️ Green environment not healthy, proceeding with caution"
+          fi
+          
+          # Check kill switch state
+          KILL_SWITCH=$(curl -s $GREEN_URL/api/kill-switch/status | jq -r '.state' || echo "UNKNOWN")
+          
+          if [[ "$KILL_SWITCH" == "ON" ]]; then
+            echo "❌ Kill switch is ON, deployment blocked"
+            echo "::set-output name=proceed::false"
+            exit 1
+          fi
+          
+          echo "::set-output name=proceed::true"
+
+  deploy-blue:
+    name: Deploy to Blue
+    needs: pre-deployment
+    if: needs.pre-deployment.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.version }}
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      
+      - name: Build Docker Image
+        run: |
+          docker build -t sofia-trading:${{ env.VERSION }} .
+          docker tag sofia-trading:${{ env.VERSION }} ${{ secrets.ECR_REGISTRY }}/sofia-trading:${{ env.VERSION }}
+      
+      - name: Push to ECR
+        run: |
+          aws ecr get-login-password | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+          docker push ${{ secrets.ECR_REGISTRY }}/sofia-trading:${{ env.VERSION }}
+      
+      - name: Deploy to Blue ECS
+        run: |
+          # Update task definition
+          aws ecs register-task-definition \
+            --family sofia-trading-blue \
+            --container-definitions "[{
+              \"name\": \"sofia-trading\",
+              \"image\": \"${{ secrets.ECR_REGISTRY }}/sofia-trading:${{ env.VERSION }}\",
+              \"memory\": 2048,
+              \"cpu\": 1024,
+              \"environment\": [
+                {\"name\": \"ENVIRONMENT\", \"value\": \"${{ inputs.environment }}\"},
+                {\"name\": \"DEPLOYMENT\", \"value\": \"blue\"},
+                {\"name\": \"VERSION\", \"value\": \"${{ env.VERSION }}\"}
+              ],
+              \"secrets\": [
+                {\"name\": \"API_KEY\", \"valueFrom\": \"arn:aws:secretsmanager:us-east-1:xxx:secret:sofia/api-key\"},
+                {\"name\": \"API_SECRET\", \"valueFrom\": \"arn:aws:secretsmanager:us-east-1:xxx:secret:sofia/api-secret\"}
+              ],
+              \"healthCheck\": {
+                \"command\": [\"CMD-SHELL\", \"curl -f http://localhost:8023/health || exit 1\"],
+                \"interval\": 30,
+                \"timeout\": 5,
+                \"retries\": 3
+              }
+            }]"
+          
+          # Update service
+          aws ecs update-service \
+            --cluster sofia-cluster \
+            --service sofia-trading-blue \
+            --force-new-deployment \
+            --desired-count 3
+      
+      - name: Wait for Deployment
+        run: |
+          echo "Waiting for blue deployment to stabilize..."
+          aws ecs wait services-stable \
+            --cluster sofia-cluster \
+            --services sofia-trading-blue \
+            --timeout ${{ env.HEALTH_CHECK_TIMEOUT }}
+
+  health-check:
+    name: Health Check Blue
+    needs: deploy-blue
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Initial Health Check
+        id: health
+        run: |
+          echo "Performing health checks on blue environment..."
+          
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" $BLUE_URL/health)
+            
+            if [[ "$STATUS" == "200" ]]; then
+              echo "✅ Blue environment healthy"
+              
+              # Check detailed health
+              HEALTH=$(curl -s $BLUE_URL/health)
+              echo "Health response: $HEALTH"
+              
+              # Verify critical components
+              DB_STATUS=$(echo $HEALTH | jq -r '.database')
+              WS_STATUS=$(echo $HEALTH | jq -r '.websocket')
+              
+              if [[ "$DB_STATUS" == "healthy" && "$WS_STATUS" == "connected" ]]; then
+                echo "::set-output name=healthy::true"
+                exit 0
+              fi
+            fi
+            
+            echo "Attempt $i/10 failed, waiting..."
+            sleep 30
+          done
+          
+          echo "::set-output name=healthy::false"
+          exit 1
+      
+      - name: Performance Check
+        if: steps.health.outputs.healthy == 'true'
+        run: |
+          # Check latency
+          LATENCY=$(curl -w "%{time_total}" -o /dev/null -s $BLUE_URL/api/ping)
+          
+          if (( $(echo "$LATENCY > 0.5" | bc -l) )); then
+            echo "⚠️ High latency detected: ${LATENCY}s"
+          fi
+          
+          # Check error rate
+          ERROR_RATE=$(curl -s $BLUE_URL/metrics | grep error_rate | awk '{print $2}')
+          
+          if (( $(echo "$ERROR_RATE > 0.01" | bc -l) )); then
+            echo "⚠️ High error rate: ${ERROR_RATE}"
+          fi
+
+  smoke-tests:
+    name: Smoke Tests
+    needs: health-check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Dependencies
+        run: |
+          pip install requests pytest
+      
+      - name: Run Smoke Tests
+        run: |
+          cat > smoke_test.py << 'EOF'
+          import requests
+          import sys
+          
+          BLUE_URL = "https://blue.sofia-trading.com"
+          
+          def test_health():
+              r = requests.get(f"{BLUE_URL}/health")
+              assert r.status_code == 200
+              assert r.json()["status"] == "healthy"
+          
+          def test_api_endpoints():
+              endpoints = ["/api/markets", "/api/orders", "/api/positions"]
+              for endpoint in endpoints:
+                  r = requests.get(f"{BLUE_URL}{endpoint}")
+                  assert r.status_code in [200, 401]  # OK or auth required
+          
+          def test_websocket():
+              r = requests.get(f"{BLUE_URL}/api/ws/status")
+              assert r.status_code == 200
+              assert r.json()["connected"] == True
+          
+          if __name__ == "__main__":
+              try:
+                  test_health()
+                  test_api_endpoints()
+                  test_websocket()
+                  print("✅ All smoke tests passed")
+                  sys.exit(0)
+              except Exception as e:
+                  print(f"❌ Smoke test failed: {e}")
+                  sys.exit(1)
+          EOF
+          
+          python smoke_test.py
+
+  rollback:
+    name: Rollback if Failed
+    needs: [health-check, smoke-tests]
+    if: failure() && env.ROLLBACK_ON_FAILURE == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Rollback
+        run: |
+          echo "🔄 Initiating rollback..."
+          
+          # Get previous version
+          PREV_VERSION=$(aws ecs describe-services \
+            --cluster sofia-cluster \
+            --services sofia-trading-blue \
+            --query 'services[0].taskDefinition' \
+            --output text | rev | cut -d: -f1 | rev)
+          
+          # Rollback to previous version
+          aws ecs update-service \
+            --cluster sofia-cluster \
+            --service sofia-trading-blue \
+            --task-definition sofia-trading-blue:$((PREV_VERSION-1)) \
+            --force-new-deployment
+          
+          # Notify
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d "{\"text\": \"⚠️ Blue deployment rolled back from ${{ env.VERSION }}\"}"
+
+  notify:
+    name: Notify Status
+    needs: [deploy-blue, health-check, smoke-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send Notification
+        run: |
+          if [[ "${{ needs.smoke-tests.result }}" == "success" ]]; then
+            STATUS="✅ SUCCESS"
+            COLOR="good"
+          else
+            STATUS="❌ FAILED"
+            COLOR="danger"
+          fi
+          
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"Blue Deployment $STATUS\",
+                \"fields\": [
+                  {\"title\": \"Version\", \"value\": \"${{ env.VERSION }}\", \"short\": true},
+                  {\"title\": \"Environment\", \"value\": \"${{ inputs.environment }}\", \"short\": true},
+                  {\"title\": \"URL\", \"value\": \"$BLUE_URL\", \"short\": false}
+                ]
+              }]
+            }"
