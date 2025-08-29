@@ -1,15 +1,23 @@
 <!DOCTYPE html>
-<html lang="tr" class="h-full">
+<html lang="tr" class="dark h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ page_title }}{% endblock %}</title>
     
-    <!-- Sofia V2 Styles -->
-    <link rel="stylesheet" href="/static/styles/index.css">
+    <!-- Sofia V2 Static CSS (Lock-in) -->
+    <link rel="stylesheet" href="{{ url_for('static', path='styles/app.css') }}">
     
-    <!-- Tailwind CSS CDN (fallback) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS CDN (fallback only) -->
+    <script>
+        // Only load Tailwind CDN if static CSS fails
+        const staticCSS = document.querySelector('link[href*="app.css"]');
+        staticCSS.onerror = () => {
+            const fallbackCSS = document.createElement('script');
+            fallbackCSS.src = 'https://cdn.tailwindcss.com';
+            document.head.appendChild(fallbackCSS);
+        };
+    </script>
     
     <!-- Chart.js for beautiful charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -42,19 +50,22 @@
                         <a href="/" class="text-gray-900 dark:text-white hover:text-blue-600 px-3 py-2 text-sm font-medium">
                             <i class="fas fa-home mr-1"></i> Ana Sayfa
                         </a>
-                        <a href="/dashboard" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                        <a href="/dashboard" class="text-gray-300 hover:text-brand-400 px-3 py-2 text-sm font-medium transition-colors">
                             <i class="fas fa-chart-pie mr-1"></i> Dashboard
                         </a>
-                        <a href="/markets" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                        <a href="/markets" class="text-gray-300 hover:text-brand-400 px-3 py-2 text-sm font-medium transition-colors">
                             <i class="fas fa-chart-bar mr-1"></i> Markets
                         </a>
-                        <a href="/live" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                        <a href="/trade/manual" class="text-gray-300 hover:text-brand-400 px-3 py-2 text-sm font-medium transition-colors">
+                            <i class="fas fa-hand-pointer mr-1"></i> Manual
+                        </a>
+                        <a href="/trade/ai" class="text-gray-300 hover:text-brand-400 px-3 py-2 text-sm font-medium transition-colors">
+                            <i class="fas fa-robot mr-1"></i> AI
+                        </a>
+                        <a href="/live" class="text-gray-300 hover:text-brand-400 px-3 py-2 text-sm font-medium transition-colors">
                             <i class="fas fa-table mr-1"></i> Live
                         </a>
-                        <a href="/showcase/BTC" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fab fa-bitcoin mr-1"></i> Showcase
-                        </a>
-                        <a href="/settings" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
+                        <a href="/settings" class="text-gray-300 hover:text-brand-400 px-3 py-2 text-sm font-medium transition-colors">
                             <i class="fas fa-cog mr-1"></i> Settings
                         </a>
                     </div>

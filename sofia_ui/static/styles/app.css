@@ -1,0 +1,223 @@
+/* Sofia V2 - Compiled CSS with Purple Theme */
+
+/* Import Tailwind CSS from CDN as base */
+@import url('https://cdn.tailwindcss.com');
+
+/* Sofia V2 Design Tokens */
+:root {
+  /* Purple Brand Colors (Mor Tema) */
+  --brand-50: #faf5ff;
+  --brand-100: #f3e8ff;
+  --brand-200: #e9d5ff;
+  --brand-300: #d8b4fe;
+  --brand-400: #c084fc;
+  --brand-500: #a855f7;
+  --brand-600: #9333ea;
+  --brand-700: #7c3aed;
+  --brand-800: #6b21a8;
+  --brand-900: #581c87;
+  
+  /* Surface Colors */
+  --surface: #ffffff;
+  --surface-card: #f9fafb;
+  --surface-border: #e5e7eb;
+  
+  /* Semantic Colors */
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  
+  /* Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  
+  /* Trading Colors */
+  --price-up: #10b981;
+  --price-down: #ef4444;
+  --price-neutral: #6b7280;
+}
+
+/* Dark Mode Tokens (Purple Theme) */
+.dark {
+  --surface: #0f0b1a;         /* Deep purple-black */
+  --surface-card: #1a1426;    /* Purple-gray cards */
+  --surface-border: #2d1b45;  /* Purple borders */
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #a0aec0;
+  
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+  
+  /* Purple accent adjustments for dark mode */
+  --brand-600: #a855f7;
+  --brand-700: #9333ea;
+}
+
+/* Sidebar Killer - Guarantee no sidebars */
+[class*="sidebar"], 
+[id*="sidebar"],
+.sidebar,
+#sidebar,
+[class*="drawer"],
+[class*="side-panel"] {
+  display: none !important;
+}
+
+/* AppShell Layout */
+.app-shell {
+  min-height: 100dvh;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-navbar {
+  height: 64px;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--surface-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.app-main {
+  flex: 1;
+  background: var(--surface);
+}
+
+.app-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .app-container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-container {
+    padding: 0 2rem;
+  }
+}
+
+/* Brand Color Utilities */
+.bg-brand-50 { background-color: var(--brand-50); }
+.bg-brand-100 { background-color: var(--brand-100); }
+.bg-brand-200 { background-color: var(--brand-200); }
+.bg-brand-300 { background-color: var(--brand-300); }
+.bg-brand-400 { background-color: var(--brand-400); }
+.bg-brand-500 { background-color: var(--brand-500); }
+.bg-brand-600 { background-color: var(--brand-600); }
+.bg-brand-700 { background-color: var(--brand-700); }
+.bg-brand-800 { background-color: var(--brand-800); }
+.bg-brand-900 { background-color: var(--brand-900); }
+
+.text-brand-50 { color: var(--brand-50); }
+.text-brand-100 { color: var(--brand-100); }
+.text-brand-200 { color: var(--brand-200); }
+.text-brand-300 { color: var(--brand-300); }
+.text-brand-400 { color: var(--brand-400); }
+.text-brand-500 { color: var(--brand-500); }
+.text-brand-600 { color: var(--brand-600); }
+.text-brand-700 { color: var(--brand-700); }
+.text-brand-800 { color: var(--brand-800); }
+.text-brand-900 { color: var(--brand-900); }
+
+.border-brand-400 { border-color: var(--brand-400); }
+.border-brand-500 { border-color: var(--brand-500); }
+.border-brand-600 { border-color: var(--brand-600); }
+
+.hover\:bg-brand-500:hover { background-color: var(--brand-500); }
+.hover\:bg-brand-600:hover { background-color: var(--brand-600); }
+.hover\:bg-brand-700:hover { background-color: var(--brand-700); }
+
+.hover\:text-brand-300:hover { color: var(--brand-300); }
+.hover\:text-brand-400:hover { color: var(--brand-400); }
+.hover\:text-brand-500:hover { color: var(--brand-500); }
+
+.focus\:ring-brand-400:focus { 
+  --tw-ring-color: var(--brand-400);
+  box-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+}
+
+.focus\:ring-brand-500:focus { 
+  --tw-ring-color: var(--brand-500);
+  box-shadow: var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+}
+
+.focus\:border-brand-500:focus { border-color: var(--brand-500); }
+
+/* Trading Color Utilities */
+.text-price-up { color: var(--price-up); }
+.text-price-down { color: var(--price-down); }
+.text-price-neutral { color: var(--price-neutral); }
+
+.bg-price-up { background-color: var(--price-up); }
+.bg-price-down { background-color: var(--price-down); }
+
+/* Component Styles */
+.card {
+  background: var(--surface-card);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--surface-border);
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 150ms ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--brand-600);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--brand-700);
+}
+
+/* Ensure proper dark mode styling */
+.dark {
+  background-color: var(--surface);
+  color: var(--text-primary);
+}
+
+.dark .app-navbar {
+  background-color: var(--surface-card);
+  border-bottom-color: var(--surface-border);
+}
+
+/* Override any sidebar patterns */
+.dark [class*="sidebar"],
+.dark [id*="sidebar"] {
+  display: none !important;
+}
+
+/* Trading Grid Styles */
+.trading-grid .grid-header {
+  position: sticky;
+  top: 0;
+  background: var(--surface-card);
+  z-index: 10;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0 0.75rem;
+  }
+}

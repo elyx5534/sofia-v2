@@ -537,6 +537,26 @@ async def live_trading_grid(request: Request):
     return render(request, "live.html", context)
 
 
+@app.get("/trade/manual", response_class=HTMLResponse)
+async def trade_manual(request: Request):
+    """Manual trading interface"""
+    context = {
+        "request": request,
+        "page_title": "Manual Trading - Sofia V2"
+    }
+    return render(request, "trade_manual.html", context)
+
+
+@app.get("/trade/ai", response_class=HTMLResponse)
+async def trade_ai(request: Request):
+    """AI trading interface"""
+    context = {
+        "request": request,
+        "page_title": "AI Trading - Sofia V2"
+    }
+    return render(request, "trade_ai.html", context)
+
+
 # Backtest API endpoint - arkadaşının kullanacağı
 @app.post("/api/backtest")
 async def run_backtest(request: Request):

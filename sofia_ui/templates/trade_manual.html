@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}Manual Trading - Sofia V2{% endblock %}
+
+{% block content %}
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">
+                    <i class="fas fa-hand-pointer mr-3 text-brand-400"></i>
+                    Manual Trading
+                </h1>
+                <p class="text-gray-300">Direct order execution with full control</p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <div class="bg-brand-900 px-3 py-1 rounded-full">
+                    <span class="text-brand-200 text-sm font-medium">PAPER MODE</span>
+                </div>
+                <button class="bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded text-white transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <!-- Order Ticket -->
+        <div class="xl:col-span-1">
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h2 class="text-xl font-semibold text-white mb-6">
+                    <i class="fas fa-ticket-alt mr-2 text-brand-400"></i>
+                    Order Ticket
+                </h2>
+                
+                <!-- Symbol Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Symbol</label>
+                    <select class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" data-testid="ticket-symbol">
+                        <option value="BTC/USDT">BTC/USDT</option>
+                        <option value="ETH/USDT">ETH/USDT</option>
+                        <option value="AAPL">AAPL</option>
+                        <option value="MSFT">MSFT</option>
+                    </select>
+                </div>
+                
+                <!-- Side Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Side</label>
+                    <div class="flex space-x-2" data-testid="ticket-side">
+                        <button id="side-buy" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-arrow-up mr-1"></i> BUY
+                        </button>
+                        <button id="side-sell" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-arrow-down mr-1"></i> SELL
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quantity -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
+                    <input type="number" step="0.000001" placeholder="0.001" 
+                           class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                           data-testid="ticket-qty">
+                </div>
+                
+                <!-- Order Type -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Order Type</label>
+                    <select class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" data-testid="ticket-type">
+                        <option value="market">Market</option>
+                        <option value="limit">Limit</option>
+                        <option value="stop">Stop Loss</option>
+                        <option value="stop_limit">Stop Limit</option>
+                    </select>
+                </div>
+                
+                <!-- Price (for limit orders) -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Price</label>
+                    <input type="number" step="0.01" placeholder="Market price"
+                           class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                           data-testid="ticket-price">
+                </div>
+                
+                <!-- Submit Buttons -->
+                <div class="space-y-3">
+                    <button class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+                            data-testid="ticket-submit-buy">
+                        <i class="fas fa-arrow-up mr-2"></i> Submit Buy Order
+                    </button>
+                    <button class="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+                            data-testid="ticket-submit-sell">
+                        <i class="fas fa-arrow-down mr-2"></i> Submit Sell Order
+                    </button>
+                </div>
+                
+                <!-- Keyboard Shortcuts -->
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <p class="text-xs text-gray-400 text-center">
+                        Shortcuts: <kbd class="bg-gray-700 px-1 rounded">B</kbd> Buy, 
+                        <kbd class="bg-gray-700 px-1 rounded">S</kbd> Sell
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Trading Area -->
+        <div class="xl:col-span-2 space-y-6">
+            <!-- Current Price & Chart -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white">BTC/USDT</h3>
+                    <div class="text-right">
+                        <div class="text-2xl font-mono font-bold text-white">$67,845.32</div>
+                        <div class="text-green-400 text-sm">+2.45% (+$1,247.89)</div>
+                    </div>
+                </div>
+                
+                <!-- Chart Placeholder -->
+                <div class="h-[360px] md:h-[420px] bg-gray-800 rounded-lg flex items-center justify-center">
+                    <div class="text-center text-gray-400">
+                        <i class="fas fa-chart-line text-4xl mb-2"></i>
+                        <p>TradingView Chart</p>
+                        <p class="text-sm">Real-time price action</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Positions Table -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-briefcase mr-2 text-brand-400"></i>
+                    Open Positions
+                </h3>
+                
+                <div class="overflow-x-auto" data-testid="pos-table">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-left text-gray-300 text-sm border-b border-gray-700">
+                                <th class="pb-3">Symbol</th>
+                                <th class="pb-3">Side</th>
+                                <th class="pb-3">Size</th>
+                                <th class="pb-3">Entry Price</th>
+                                <th class="pb-3">Mark Price</th>
+                                <th class="pb-3">PnL</th>
+                                <th class="pb-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <tr class="border-b border-gray-800">
+                                <td class="py-3 font-mono">BTC/USDT</td>
+                                <td class="py-3"><span class="bg-green-600 px-2 py-1 rounded text-xs">LONG</span></td>
+                                <td class="py-3 font-mono">0.1000</td>
+                                <td class="py-3 font-mono">$66,234.56</td>
+                                <td class="py-3 font-mono">$67,845.32</td>
+                                <td class="py-3 text-green-400 font-medium">+$161.08 (+2.43%)</td>
+                                <td class="py-3">
+                                    <button class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">Close</button>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-gray-800">
+                                <td class="py-3 font-mono">ETH/USDT</td>
+                                <td class="py-3"><span class="bg-red-600 px-2 py-1 rounded text-xs">SHORT</span></td>
+                                <td class="py-3 font-mono">2.5000</td>
+                                <td class="py-3 font-mono">$3,567.89</td>
+                                <td class="py-3 font-mono">$3,456.78</td>
+                                <td class="py-3 text-green-400 font-medium">+$277.78 (+3.11%)</td>
+                                <td class="py-3">
+                                    <button class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-xs">Close</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Recent Trades -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-history mr-2 text-brand-400"></i>
+                    Recent Trades
+                </h3>
+                
+                <div class="overflow-x-auto" data-testid="trades-table">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="text-left text-gray-300 text-sm border-b border-gray-700">
+                                <th class="pb-3">Time</th>
+                                <th class="pb-3">Symbol</th>
+                                <th class="pb-3">Side</th>
+                                <th class="pb-3">Quantity</th>
+                                <th class="pb-3">Price</th>
+                                <th class="pb-3">Total</th>
+                                <th class="pb-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            <tr class="border-b border-gray-800">
+                                <td class="py-3 text-gray-400">14:32:15</td>
+                                <td class="py-3 font-mono">BTC/USDT</td>
+                                <td class="py-3 text-green-400">BUY</td>
+                                <td class="py-3 font-mono">0.0500</td>
+                                <td class="py-3 font-mono">$67,234.56</td>
+                                <td class="py-3 font-mono">$3,361.73</td>
+                                <td class="py-3"><span class="bg-green-600 px-2 py-1 rounded text-xs">FILLED</span></td>
+                            </tr>
+                            <tr class="border-b border-gray-800">
+                                <td class="py-3 text-gray-400">14:28:42</td>
+                                <td class="py-3 font-mono">ETH/USDT</td>
+                                <td class="py-3 text-red-400">SELL</td>
+                                <td class="py-3 font-mono">1.2500</td>
+                                <td class="py-3 font-mono">$3,456.78</td>
+                                <td class="py-3 font-mono">$4,320.98</td>
+                                <td class="py-3"><span class="bg-green-600 px-2 py-1 rounded text-xs">FILLED</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Manual Trading functionality
+    let selectedSide = 'buy';
+    let currentSymbol = 'BTC/USDT';
+    
+    // Initialize manual trading
+    function initManualTrading() {
+        // Side selection
+        document.getElementById('side-buy').addEventListener('click', () => {
+            selectedSide = 'buy';
+            updateSideSelection();
+        });
+        
+        document.getElementById('side-sell').addEventListener('click', () => {
+            selectedSide = 'sell';
+            updateSideSelection();
+        });
+        
+        // Submit buttons
+        document.querySelector('[data-testid="ticket-submit-buy"]').addEventListener('click', () => {
+            submitOrder('buy');
+        });
+        
+        document.querySelector('[data-testid="ticket-submit-sell"]').addEventListener('click', () => {
+            submitOrder('sell');
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            
+            if (e.key.toLowerCase() === 'b') {
+                selectedSide = 'buy';
+                updateSideSelection();
+            } else if (e.key.toLowerCase() === 's') {
+                selectedSide = 'sell';
+                updateSideSelection();
+            }
+        });
+        
+        // Symbol change
+        document.querySelector('[data-testid="ticket-symbol"]').addEventListener('change', (e) => {
+            currentSymbol = e.target.value;
+            updatePriceDisplay();
+        });
+        
+        // Order type change
+        document.querySelector('[data-testid="ticket-type"]').addEventListener('change', (e) => {
+            const priceField = document.querySelector('[data-testid="ticket-price"]');
+            if (e.target.value === 'market') {
+                priceField.disabled = true;
+                priceField.placeholder = 'Market price';
+            } else {
+                priceField.disabled = false;
+                priceField.placeholder = 'Enter price';
+            }
+        });
+        
+        // Initialize
+        updateSideSelection();
+        updatePriceDisplay();
+    }
+    
+    function updateSideSelection() {
+        const buyBtn = document.getElementById('side-buy');
+        const sellBtn = document.getElementById('side-sell');
+        
+        if (selectedSide === 'buy') {
+            buyBtn.className = 'flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium transition-colors ring-2 ring-green-400';
+            sellBtn.className = 'flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors';
+        } else {
+            sellBtn.className = 'flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors ring-2 ring-red-400';
+            buyBtn.className = 'flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 py-2 px-4 rounded-lg font-medium transition-colors';
+        }
+    }
+    
+    function updatePriceDisplay() {
+        // Mock price update - in production would fetch real prices
+        const prices = {
+            'BTC/USDT': 67845.32,
+            'ETH/USDT': 3456.78,
+            'AAPL': 186.25,
+            'MSFT': 422.18
+        };
+        
+        const price = prices[currentSymbol] || 100.00;
+        const priceField = document.querySelector('[data-testid="ticket-price"]');
+        priceField.placeholder = `Market: $${price.toFixed(2)}`;
+    }
+    
+    async function submitOrder(side) {
+        const symbol = document.querySelector('[data-testid="ticket-symbol"]').value;
+        const quantity = document.querySelector('[data-testid="ticket-qty"]').value;
+        const orderType = document.querySelector('[data-testid="ticket-type"]').value;
+        const price = document.querySelector('[data-testid="ticket-price"]').value;
+        
+        if (!quantity || parseFloat(quantity) <= 0) {
+            showNotification('Please enter a valid quantity', 'error');
+            return;
+        }
+        
+        try {
+            // In production, would submit to /api/paper/orders or /api/live/orders
+            const orderData = {
+                symbol: symbol,
+                side: side,
+                quantity: parseFloat(quantity),
+                type: orderType,
+                price: price ? parseFloat(price) : null,
+                mode: 'paper' // or 'live' based on current mode
+            };
+            
+            // Mock API call
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            showNotification(`${side.toUpperCase()} order submitted for ${quantity} ${symbol}`, 'success');
+            
+            // Clear form
+            document.querySelector('[data-testid="ticket-qty"]').value = '';
+            document.querySelector('[data-testid="ticket-price"]').value = '';
+            
+            // Update positions and trades tables (mock)
+            updatePositionsTable();
+            updateTradesTable();
+            
+        } catch (error) {
+            console.error('Order submission failed:', error);
+            showNotification('Order submission failed', 'error');
+        }
+    }
+    
+    function updatePositionsTable() {
+        // Mock position update - in production would fetch from API
+        console.log('Updating positions table...');
+    }
+    
+    function updateTradesTable() {
+        // Mock trades update - in production would fetch from API
+        const tradesTable = document.querySelector('[data-testid="trades-table"] tbody');
+        
+        // Add new trade row at top
+        const newRow = document.createElement('tr');
+        newRow.className = 'border-b border-gray-800';
+        newRow.innerHTML = `
+            <td class="py-3 text-gray-400">${new Date().toLocaleTimeString()}</td>
+            <td class="py-3 font-mono">${currentSymbol}</td>
+            <td class="py-3 text-${selectedSide === 'buy' ? 'green' : 'red'}-400">${selectedSide.toUpperCase()}</td>
+            <td class="py-3 font-mono">0.1000</td>
+            <td class="py-3 font-mono">$67,845.32</td>
+            <td class="py-3 font-mono">$6,784.53</td>
+            <td class="py-3"><span class="bg-yellow-600 px-2 py-1 rounded text-xs">PENDING</span></td>
+        `;
+        
+        tradesTable.insertBefore(newRow, tradesTable.firstChild);
+        
+        // Remove old rows if too many
+        while (tradesTable.children.length > 10) {
+            tradesTable.removeChild(tradesTable.lastChild);
+        }
+    }
+    
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-600' :
+            type === 'error' ? 'bg-red-600' :
+            'bg-brand-600'
+        } text-white`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initManualTrading);
+    } else {
+        initManualTrading();
+    }
+</script>
+{% endblock %}

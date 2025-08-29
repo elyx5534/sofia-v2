@@ -35,7 +35,17 @@ CANON_MAP = {
     'backtest_page.html': 'backtest.html',
     'strategies_list.html': 'strategies.html',
     
+    # Trading templates
+    'manual_trading.html': 'trade_manual.html',
+    'trading_manual.html': 'trade_manual.html', 
+    'manual.html': 'trade_manual.html',
+    'ai_trading.html': 'trade_ai.html',
+    'trading_ai.html': 'trade_ai.html',
+    'ai.html': 'trade_ai.html',
+    
     # Canonical names (map to themselves)
+    'trade_manual.html': 'trade_manual.html',
+    'trade_ai.html': 'trade_ai.html',
     'dashboard.html': 'dashboard.html',
     'markets.html': 'markets.html', 
     'settings.html': 'settings.html',

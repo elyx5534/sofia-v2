@@ -1,0 +1,23 @@
+{
+  "name": "sofia_ui",
+  "version": "1.0.0",
+  "description": "",
+  "main": "tailwind.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "build:css": "npx tailwindcss -c tailwind.config.js -i static/styles/index.css -o static/styles/app.css --minify",
+    "dev:css": "npx tailwindcss -c tailwind.config.js -i static/styles/index.css -o static/styles/app.css --watch",
+    "test": "playwright test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.12"
+  }
+}

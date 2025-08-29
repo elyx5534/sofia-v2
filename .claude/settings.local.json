@@ -9,7 +9,8 @@
       "Bash(pnpm install:*)",
       "Bash(lsof:*)",
       "Bash(playwright install:*)",
-      "Bash(playwright test:*)"
+      "Bash(playwright test:*)",
+      "Bash(npm init:*)"
     ],
     "deny": [],
     "ask": []
