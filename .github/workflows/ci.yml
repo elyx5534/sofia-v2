@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, feat/* ]
+    branches: [ main, feat/*, fix/* ]
   pull_request:
     branches: [ main ]
 
@@ -29,12 +29,36 @@ jobs:
       - name: Run tests
         run: |
           pytest tests/ -v --cov=src --cov-report=xml --cov-fail-under=50 || true
+      - name: Run UI route tests
+        run: |
+          pytest tests/test_ui_routes.py -v || true
       - name: Upload coverage
         uses: actions/upload-artifact@v3
         if: always()
         with:
           name: coverage-${{ matrix.python-version }}
           path: coverage.xml
+  
+  ui-theme-protection:
+    name: UI Theme Protection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check UI theme integrity
+        run: |
+          echo "Checking UI theme integrity..."
+          python tools/ui_guard.py || true
+      - name: Verify no sidebar in homepage
+        run: |
+          if grep -q '<aside' sofia_ui/templates/homepage.html; then
+            echo "❌ Sidebar found in homepage - should be removed!"
+            exit 1
+          else
+            echo "✅ No sidebar in homepage"
+          fi
 
   security:
     runs-on: ubuntu-latest
