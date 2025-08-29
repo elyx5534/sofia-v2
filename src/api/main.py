@@ -27,6 +27,14 @@ from src.sofia.symbols import to_ui
 # Import API routers
 from src.api import market_endpoints, ai_local_endpoints, trade_endpoints
 
+# Import new endpoints
+try:
+    from src.api import backtest_endpoints, news_endpoints, ml_endpoints, data_endpoints
+    EXTENDED_ENDPOINTS = True
+except ImportError as e:
+    logger.warning(f"Some endpoints not available: {e}")
+    EXTENDED_ENDPOINTS = False
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -78,6 +86,14 @@ app.add_middleware(
 app.include_router(market_endpoints.router)
 app.include_router(trade_endpoints.router)
 app.include_router(ai_local_endpoints.router)
+
+# Include extended endpoints if available
+if EXTENDED_ENDPOINTS:
+    app.include_router(backtest_endpoints.router)
+    app.include_router(news_endpoints.router)
+    app.include_router(ml_endpoints.router)
+    app.include_router(data_endpoints.router)
+    logger.info("Extended endpoints loaded")
 
 @app.on_event("startup")
 async def startup_event():
