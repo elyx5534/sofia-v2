@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis - {{ symbol_data.symbol }} - Sofia V2{% endblock %}
+
+{% block content %}
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                    <i class="fas fa-chart-area mr-3 text-blue-500"></i>
+                    {{ symbol_data.symbol }} Analysis
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">Comprehensive technical and fundamental analysis</p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <span class="text-sm text-gray-500">Last updated: {{ symbol_data.last_updated }}</span>
+                <button class="btn btn-primary">
+                    <i class="fas fa-sync-alt mr-2"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price Overview -->
+    <div class="card mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="text-center md:text-left">
+                <div class="text-sm text-gray-500 mb-1">Current Price</div>
+                <div class="text-3xl font-mono font-bold text-gray-900 dark:text-white">
+                    ${{ "%.2f"|format(symbol_data.price) }}
+                </div>
+            </div>
+            
+            <div class="text-center md:text-left">
+                <div class="text-sm text-gray-500 mb-1">24h Change</div>
+                <div class="text-xl font-semibold {% if symbol_data.change >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ "%.2f"|format(symbol_data.change) }} ({{ "%.2f"|format(symbol_data.change_percent) }}%)
+                </div>
+            </div>
+            
+            <div class="text-center md:text-left">
+                <div class="text-sm text-gray-500 mb-1">24h High</div>
+                <div class="text-xl font-mono text-gray-900 dark:text-white">
+                    ${{ "%.2f"|format(symbol_data.high_24h) }}
+                </div>
+            </div>
+            
+            <div class="text-center md:text-left">
+                <div class="text-sm text-gray-500 mb-1">24h Low</div>
+                <div class="text-xl font-mono text-gray-900 dark:text-white">
+                    ${{ "%.2f"|format(symbol_data.low_24h) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technical Indicators -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div class="card">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-chart-line mr-2 text-purple-500"></i>
+                Technical Indicators
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">RSI (14)</span>
+                    <span class="font-mono text-gray-900 dark:text-white">{{ "%.1f"|format(technical_indicators.rsi) }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">SMA (20)</span>
+                    <span class="font-mono text-gray-900 dark:text-white">${{ "%.2f"|format(technical_indicators.sma_20) }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">SMA (50)</span>
+                    <span class="font-mono text-gray-900 dark:text-white">${{ "%.2f"|format(technical_indicators.sma_50) }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Bollinger Upper</span>
+                    <span class="font-mono text-gray-900 dark:text-white">${{ "%.2f"|format(technical_indicators.bollinger_upper) }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Bollinger Lower</span>
+                    <span class="font-mono text-gray-900 dark:text-white">${{ "%.2f"|format(technical_indicators.bollinger_lower) }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-building mr-2 text-green-500"></i>
+                Fundamental Data
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Market Cap</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ fundamental_data.market_cap }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">24h Volume</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ fundamental_data.volume_24h }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Circulating Supply</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ fundamental_data.circulating_supply }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Max Supply</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ fundamental_data.max_supply }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">Fear & Greed</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ fundamental_data.fear_greed_index }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Prediction -->
+    <div class="card mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            <i class="fas fa-brain mr-2 text-purple-500"></i>
+            AI Prediction
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <div class="text-sm text-gray-500 mb-2">Direction</div>
+                <div class="text-2xl font-bold {% if prediction.direction == 'up' %}text-success{% else %}text-danger{% endif %}">
+                    <i class="fas fa-arrow-{% if prediction.direction == 'up' %}up{% else %}down{% endif %} mr-2"></i>
+                    {{ prediction.direction.upper() }}
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-sm text-gray-500 mb-2">Confidence</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                    {{ "%.1f"|format(prediction.confidence * 100) }}%
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <div class="text-sm text-gray-500 mb-2">1-Week Target</div>
+                <div class="text-2xl font-mono font-bold text-gray-900 dark:text-white">
+                    ${{ "{:,}"|format(prediction.target_1w) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest News -->
+    <div class="card">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            <i class="fas fa-newspaper mr-2 text-red-500"></i>
+            Latest News
+        </h2>
+        
+        <div class="space-y-4">
+            {% for article in news %}
+            <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <h3 class="font-semibold text-gray-900 dark:text-white mb-2">
+                    <a href="{{ article.url }}" target="_blank" class="hover:text-blue-600 transition-colors">
+                        {{ article.title }}
+                    </a>
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">{{ article.summary }}</p>
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span>{{ article.source }}</span>
+                    <span>{{ article.time }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+{% endblock %}

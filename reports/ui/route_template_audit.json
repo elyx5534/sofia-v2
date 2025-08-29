@@ -1,0 +1,115 @@
+{
+  "audit_timestamp": "2025-08-30T22:10:00Z",
+  "audit_scope": "Sofia V2 Route-Template Mapping",
+  "canonical_mappings": {
+    "/": "homepage.html",
+    "/dashboard": "dashboard.html", 
+    "/markets": "markets.html",
+    "/live": "live.html",
+    "/showcase/{symbol}": "showcase.html",
+    "/settings": "settings.html",
+    "/cards": "cards.html",
+    "/backtest": "backtest.html",
+    "/strategies": "strategies.html",
+    "/assets/{symbol}": "assets_detail.html",
+    "/analysis/{symbol}": "analysis.html"
+  },
+  "current_mappings": {
+    "/": {
+      "template": "homepage.html",
+      "status": "✅ CANONICAL",
+      "route_function": "homepage"
+    },
+    "/dashboard": {
+      "template": "dashboard.html", 
+      "status": "✅ CANONICAL",
+      "route_function": "dashboard_page"
+    },
+    "/markets": {
+      "template": "markets.html",
+      "status": "⚠️ MISSING TEMPLATE",
+      "route_function": "markets_page",
+      "note": "Route exists in code but template may be missing"
+    },
+    "/live": {
+      "template": "live.html",
+      "status": "✅ CANONICAL", 
+      "route_function": "live_trading_grid"
+    },
+    "/showcase/{symbol}": {
+      "template": "showcase.html",
+      "status": "✅ CANONICAL",
+      "route_function": "showcase"
+    },
+    "/settings": {
+      "template": "settings.html",
+      "status": "✅ CANONICAL",
+      "route_function": "settings_page"
+    },
+    "/cards": {
+      "template": "cards.html", 
+      "status": "✅ CANONICAL",
+      "route_function": "strategy_cards"
+    },
+    "/backtest": {
+      "template": "backtest.html",
+      "status": "✅ CANONICAL", 
+      "route_function": "backtest_page"
+    },
+    "/strategies": {
+      "template": "strategies.html",
+      "status": "✅ CANONICAL",
+      "route_function": "strategies_page"
+    },
+    "/assets/{symbol}": {
+      "template": "assets_detail.html",
+      "status": "✅ CANONICAL",
+      "route_function": "assets_detail"
+    },
+    "/analysis/{symbol}": {
+      "template": "analysis.html", 
+      "status": "⚠️ MISSING TEMPLATE",
+      "route_function": "analysis",
+      "note": "Route exists but template may be missing"
+    }
+  },
+  "template_inventory": {
+    "existing_templates": [
+      "base.html",
+      "homepage.html", 
+      "dashboard.html",
+      "live.html",
+      "settings.html",
+      "showcase.html",
+      "cards.html",
+      "backtest.html",
+      "strategies.html",
+      "assets_detail.html"
+    ],
+    "missing_templates": [
+      "markets.html",
+      "analysis.html"
+    ],
+    "total_templates": 10,
+    "canonical_compliance": "8/10 (80%)"
+  },
+  "recommendations": [
+    "Create missing markets.html template",
+    "Create missing analysis.html template or redirect to showcase",
+    "Ensure all templates extend base.html for AppShell compliance",
+    "Add data-testid attributes for testing",
+    "Implement anti-blank fallback strategies"
+  ],
+  "priority_fixes": [
+    {
+      "issue": "Missing markets.html template",
+      "impact": "500 error on /markets route",
+      "fix": "Create markets.html extending base.html"
+    },
+    {
+      "issue": "Dashboard template compatibility", 
+      "impact": "Some dashboard routes may fail",
+      "fix": "Verify dashboard.html matches all route expectations"
+    }
+  ]
+}
