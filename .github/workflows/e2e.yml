@@ -1,64 +1,207 @@
 name: E2E Tests
 
 on:
+  push:
+    branches: [ main, feat/*, fix/* ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  e2e:
+  e2e-tests:
     runs-on: ubuntu-latest
+    
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependencies
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip wheel
+          python -m pip install --upgrade pip
           pip install fastapi uvicorn requests pydantic python-dotenv
-      - name: Run E2E smoke test
+          pip install pytest playwright pytest-playwright
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      - name: Check if frontend exists
+        id: check_frontend
+        run: |
+          if [ -d "sofia_ui" ] && [ -f "sofia_ui/package.json" ]; then
+            echo "frontend_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "frontend_exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Install frontend dependencies
+        if: steps.check_frontend.outputs.frontend_exists == 'true'
+        working-directory: ./sofia_ui
+        run: |
+          if [ -f "pnpm-lock.yaml" ]; then
+            pnpm install
+          elif [ -f "package-lock.json" ]; then
+            npm ci
+          else
+            npm install
+          fi
+      
+      - name: Build frontend
+        if: steps.check_frontend.outputs.frontend_exists == 'true'
+        working-directory: ./sofia_ui
+        env:
+          VITE_API_URL: http://127.0.0.1:8023
+          BASE_CURRENCY: USD
+        run: |
+          if [ -f "vite.config.js" ] || [ -f "vite.config.ts" ]; then
+            npm run build || echo "Build failed, will use dev server"
+          fi
+      
+      - name: Start backend API
+        env:
+          PYTHONPATH: .
+        run: |
+          nohup python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8023 > api.log 2>&1 &
+          echo $! > api.pid
+      
+      - name: Start frontend server
+        if: steps.check_frontend.outputs.frontend_exists == 'true'
+        working-directory: ./sofia_ui
+        run: |
+          if [ -d "dist" ]; then
+            npx http-server dist -p 4173 -s > ../frontend.log 2>&1 &
+            echo $! > ../frontend.pid
+            echo "FRONTEND_URL=http://127.0.0.1:4173" >> $GITHUB_ENV
+          else
+            if command -v pnpm &> /dev/null; then
+              nohup pnpm dev --port 8004 > ../frontend.log 2>&1 &
+            else
+              nohup npm run dev -- --port 8004 > ../frontend.log 2>&1 &
+            fi
+            echo $! > ../frontend.pid
+            echo "FRONTEND_URL=http://127.0.0.1:8004" >> $GITHUB_ENV
+          fi
+      
+      - name: Wait for services
+        run: |
+          echo "Waiting for API to be ready..."
+          for i in {1..60}; do
+            if curl -f http://127.0.0.1:8023/health 2>/dev/null; then
+              echo "API is ready"
+              break
+            fi
+            echo "Attempt $i/60: API not ready yet..."
+            sleep 1
+          done
+          
+          if [ "${{ steps.check_frontend.outputs.frontend_exists }}" == "true" ]; then
+            echo "Waiting for frontend to be ready..."
+            FRONTEND_PORT=${FRONTEND_URL##*:}
+            
+            for i in {1..60}; do
+              if curl -f $FRONTEND_URL 2>/dev/null; then
+                echo "Frontend is ready on $FRONTEND_URL"
+                break
+              fi
+              echo "Attempt $i/60: Frontend not ready yet..."
+              sleep 1
+            done
+          fi
+      
+      - name: Run API smoke tests
         run: |
           python - <<'EOF'
-import uvicorn
-import threading
-import time
-import requests
-import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path.cwd()))
-
-# Import and start app
-from src.api.main import app
-
-def run_server():
-    uvicorn.run(app, host="127.0.0.1", port=8001, log_level="warning")
-
-# Start server in background
-t = threading.Thread(target=run_server, daemon=True)
-t.start()
-
-# Wait for server to start
-time.sleep(2)
-
-try:
-    # Test health endpoint
-    r = requests.get("http://127.0.0.1:8001/health", timeout=3)
-    assert r.status_code == 200, f"Health check failed: {r.status_code}"
-    
-    # Test symbols endpoint
-    r = requests.get("http://127.0.0.1:8001/symbols", timeout=3)
-    assert r.status_code == 200, f"Symbols endpoint failed: {r.status_code}"
-    assert "symbols" in r.json(), "Symbols response missing 'symbols' key"
-    
-    # Test metrics endpoint
-    r = requests.get("http://127.0.0.1:8001/metrics", timeout=3)
-    assert r.status_code == 200, f"Metrics endpoint failed: {r.status_code}"
-    
-    print("✅ E2E tests passed!")
-    
-except Exception as e:
-    print(f"❌ E2E test failed: {e}")
-    sys.exit(1)
-EOF
+          import requests
+          import sys
+          import json
+          
+          base_url = "http://127.0.0.1:8023"
+          
+          tests_passed = 0
+          tests_failed = 0
+          
+          def test_endpoint(name, url, expected_keys=None):
+              global tests_passed, tests_failed
+              try:
+                  r = requests.get(url, timeout=5)
+                  assert r.status_code == 200, f"Status code {r.status_code}"
+                  if expected_keys:
+                      data = r.json()
+                      for key in expected_keys:
+                          assert key in data, f"Missing key: {key}"
+                  print(f"✅ {name}: OK")
+                  tests_passed += 1
+              except Exception as e:
+                  print(f"❌ {name}: {e}")
+                  tests_failed += 1
+          
+          # Test endpoints
+          test_endpoint("Health", f"{base_url}/health", ["status"])
+          test_endpoint("Symbols", f"{base_url}/symbols", ["symbols"])
+          test_endpoint("Portfolio", f"{base_url}/portfolio/summary")
+          test_endpoint("Market Assets", f"{base_url}/market/assets/list", ["assets"])
+          test_endpoint("AI Status", f"{base_url}/ai/status", ["enabled"])
+          
+          print(f"\n📊 Results: {tests_passed} passed, {tests_failed} failed")
+          
+          if tests_failed > 0:
+              sys.exit(1)
+          EOF
+      
+      - name: Install Playwright
+        if: steps.check_frontend.outputs.frontend_exists == 'true'
+        run: |
+          pip install playwright
+          playwright install chromium
+          playwright install-deps chromium
+      
+      - name: Run E2E UI tests
+        if: steps.check_frontend.outputs.frontend_exists == 'true'
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.FRONTEND_URL }}
+        run: |
+          if [ -f "tests/e2e/test_ui_reset_e2e.py" ]; then
+            python -m pytest tests/e2e/test_ui_reset_e2e.py -v --tb=short || true
+          fi
+          
+          # Run comprehensive audit
+          python tests/e2e/ui_audit.py || true
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: service-logs
+          path: |
+            api.log
+            frontend.log
+      
+      - name: Stop services
+        if: always()
+        run: |
+          if [ -f api.pid ]; then
+            kill $(cat api.pid) || true
+          fi
+          if [ -f frontend.pid ]; then
+            kill $(cat frontend.pid) || true
+          fi

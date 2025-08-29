@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Sofia V2</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .glass {
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
+    <!-- Top Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="/" class="text-xl font-bold text-white">
+                        <i class="fas fa-robot text-blue-400 mr-2"></i>
+                        Sofia V2
+                    </a>
+                </div>
+                
+                <!-- Nav Links -->
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="/dashboard" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/strategies" class="text-gray-300 hover:text-white">Strategies</a>
+                    <a href="/backtests" class="text-gray-300 hover:text-white">Backtests</a>
+                    <a href="/signals" class="text-gray-300 hover:text-white">Signals</a>
+                    <a href="/markets" class="text-gray-300 hover:text-white">Markets</a>
+                    <a href="/settings" class="text-white font-semibold">Settings</a>
+                    <a href="/status" class="text-gray-300 hover:text-white">Status</a>
+                </div>
+                
+                <!-- Right Actions -->
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-300 hover:text-white">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="text-gray-300 hover:text-white">
+                        <i class="fas fa-user-circle text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="pt-20 px-6 py-6 max-w-7xl mx-auto" x-data="settingsApp()">
+        <!-- Page Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-white mb-2">
+                <i class="fas fa-cog mr-3 text-blue-400"></i>
+                Settings
+            </h1>
+            <p class="text-gray-400">Configure your trading environment</p>
+        </div>
+        
+        <!-- Settings Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- API Configuration -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-plug text-green-400 mr-2"></i>
+                    API Configuration
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">API URL</label>
+                        <input 
+                            type="text" 
+                            x-model="apiUrl"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="http://127.0.0.1:8023"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">API Key (Optional)</label>
+                        <input 
+                            type="password" 
+                            x-model="apiKey"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter API key if required"
+                        />
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button 
+                            @click="testConnection()"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            :disabled="testing"
+                        >
+                            <i class="fas fa-vial mr-2"></i>
+                            <span x-text="testing ? 'Testing...' : 'Test Connection'"></span>
+                        </button>
+                        
+                        <button 
+                            @click="saveApiSettings()"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                            <i class="fas fa-save mr-2"></i>
+                            Save
+                        </button>
+                    </div>
+                    
+                    <!-- Connection Status -->
+                    <div x-show="connectionStatus" x-transition>
+                        <div 
+                            class="p-3 rounded-lg"
+                            :class="connectionSuccess ? 'bg-green-900/50 text-green-400' : 'bg-red-900/50 text-red-400'"
+                        >
+                            <i :class="connectionSuccess ? 'fas fa-check-circle' : 'fas fa-times-circle'" class="mr-2"></i>
+                            <span x-text="connectionMessage"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Trading Configuration -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-chart-line text-purple-400 mr-2"></i>
+                    Trading Configuration
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Base Currency</label>
+                        <select 
+                            x-model="baseCurrency"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="GBP">GBP</option>
+                            <option value="TRY">TRY</option>
+                            <option value="USDT">USDT</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Default Leverage</label>
+                        <input 
+                            type="number" 
+                            x-model="leverage"
+                            min="1" max="20"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Risk Limit (%)</label>
+                        <input 
+                            type="number" 
+                            x-model="riskLimit"
+                            min="1" max="100"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    
+                    <button 
+                        @click="saveTradingSettings()"
+                        class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        <i class="fas fa-save mr-2"></i>
+                        Save Trading Settings
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Exchange Configuration -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-exchange-alt text-yellow-400 mr-2"></i>
+                    Exchange Configuration
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Exchange</label>
+                        <select 
+                            x-model="exchange"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="binance">Binance</option>
+                            <option value="coinbase">Coinbase</option>
+                            <option value="kraken">Kraken</option>
+                            <option value="paper">Paper Trading</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">API Key</label>
+                        <input 
+                            type="password" 
+                            x-model="exchangeApiKey"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Exchange API key"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">API Secret</label>
+                        <input 
+                            type="password" 
+                            x-model="exchangeApiSecret"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Exchange API secret"
+                        />
+                    </div>
+                    
+                    <button 
+                        @click="saveExchangeSettings()"
+                        class="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                    >
+                        <i class="fas fa-save mr-2"></i>
+                        Save Exchange Settings
+                    </button>
+                </div>
+            </div>
+            
+            <!-- AI Configuration -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-brain text-red-400 mr-2"></i>
+                    AI Configuration
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">AI Model</label>
+                        <select 
+                            x-model="aiModel"
+                            class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled
+                        >
+                            <option value="none">None (Disabled)</option>
+                            <option value="llama2">Llama 2 7B</option>
+                            <option value="mistral">Mistral 7B</option>
+                            <option value="phi2">Phi-2</option>
+                        </select>
+                    </div>
+                    
+                    <div class="p-3 bg-yellow-900/30 text-yellow-400 rounded-lg">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Local AI integration coming soon. See 
+                        <a href="/docs/ai-local.md" class="underline">documentation</a>
+                        for more info.
+                    </div>
+                    
+                    <button 
+                        class="w-full px-4 py-2 bg-gray-600 text-gray-400 rounded-lg cursor-not-allowed"
+                        disabled
+                    >
+                        <i class="fas fa-robot mr-2"></i>
+                        Configure AI (Coming Soon)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Portfolio Service -->
+    <script src="/static/js/portfolio-service.js"></script>
+    
+    <!-- Settings App -->
+    <script>
+        function settingsApp() {
+            return {
+                // API Settings
+                apiUrl: localStorage.getItem('apiUrl') || 'http://127.0.0.1:8023',
+                apiKey: localStorage.getItem('apiKey') || '',
+                testing: false,
+                connectionStatus: false,
+                connectionSuccess: false,
+                connectionMessage: '',
+                
+                // Trading Settings
+                baseCurrency: localStorage.getItem('baseCurrency') || 'USD',
+                leverage: localStorage.getItem('leverage') || '1',
+                riskLimit: localStorage.getItem('riskLimit') || '2',
+                
+                // Exchange Settings
+                exchange: localStorage.getItem('exchange') || 'paper',
+                exchangeApiKey: '',
+                exchangeApiSecret: '',
+                
+                // AI Settings
+                aiModel: 'none',
+                
+                async testConnection() {
+                    this.testing = true;
+                    this.connectionStatus = false;
+                    
+                    try {
+                        const response = await fetch(`${this.apiUrl}/health`, {
+                            method: 'GET',
+                            headers: this.apiKey ? { 'X-API-Key': this.apiKey } : {},
+                            signal: AbortSignal.timeout(5000)
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.connectionSuccess = true;
+                            this.connectionMessage = `Connected successfully! API Version: ${data.version || 'Unknown'}`;
+                        } else {
+                            this.connectionSuccess = false;
+                            this.connectionMessage = `Connection failed: HTTP ${response.status}`;
+                        }
+                    } catch (error) {
+                        this.connectionSuccess = false;
+                        this.connectionMessage = `Connection failed: ${error.message}`;
+                    } finally {
+                        this.testing = false;
+                        this.connectionStatus = true;
+                    }
+                },
+                
+                saveApiSettings() {
+                    localStorage.setItem('apiUrl', this.apiUrl);
+                    localStorage.setItem('apiKey', this.apiKey);
+                    
+                    // Update portfolio service
+                    if (window.portfolioService) {
+                        window.portfolioService.apiUrl = this.apiUrl;
+                    }
+                    
+                    this.showNotification('API settings saved');
+                },
+                
+                saveTradingSettings() {
+                    localStorage.setItem('baseCurrency', this.baseCurrency);
+                    localStorage.setItem('leverage', this.leverage);
+                    localStorage.setItem('riskLimit', this.riskLimit);
+                    
+                    this.showNotification('Trading settings saved');
+                },
+                
+                saveExchangeSettings() {
+                    localStorage.setItem('exchange', this.exchange);
+                    // Note: In production, exchange credentials should be stored securely on backend
+                    
+                    this.showNotification('Exchange settings saved');
+                },
+                
+                showNotification(message) {
+                    // Simple notification
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                    notification.textContent = message;
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 3000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

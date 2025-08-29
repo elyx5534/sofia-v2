@@ -1,0 +1,115 @@
+{
+  "routes": [
+    {
+      "path": "/",
+      "name": "Homepage",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/dashboard",
+      "name": "Dashboard",
+      "test_requirements": ["navbar", "no_sidebar", "total_balance", "responsive"]
+    },
+    {
+      "path": "/strategies",
+      "name": "Strategies",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/backtests",
+      "name": "Backtests",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/signals",
+      "name": "Signals",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/markets",
+      "name": "Markets",
+      "test_requirements": ["navbar", "no_sidebar", "markets_table", "search", "watchlist", "responsive"]
+    },
+    {
+      "path": "/portfolio",
+      "name": "Portfolio",
+      "test_requirements": ["navbar", "no_sidebar", "positions", "responsive"]
+    },
+    {
+      "path": "/settings",
+      "name": "Settings",
+      "test_requirements": ["navbar", "no_sidebar", "test_connection", "responsive"]
+    },
+    {
+      "path": "/status",
+      "name": "Status",
+      "test_requirements": ["navbar", "no_sidebar", "health_check", "responsive"]
+    },
+    {
+      "path": "/login",
+      "name": "Login",
+      "test_requirements": ["responsive"]
+    },
+    {
+      "path": "/pricing",
+      "name": "Pricing",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/manual-trading",
+      "name": "Manual Trading",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/bist-markets",
+      "name": "BIST Markets",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/bist-analysis",
+      "name": "BIST Analysis",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/data-collection",
+      "name": "Data Collection",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/showcase",
+      "name": "Showcase",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "path": "/welcome",
+      "name": "Welcome",
+      "test_requirements": ["responsive"]
+    }
+  ],
+  "dynamic_routes": [
+    {
+      "pattern": "/asset/:symbol",
+      "example": "/asset/BTCUSDT",
+      "name": "Asset Detail",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    },
+    {
+      "pattern": "/reports/:id",
+      "example": "/reports/123",
+      "name": "Report Detail",
+      "test_requirements": ["navbar", "no_sidebar", "responsive"]
+    }
+  ],
+  "test_requirements": {
+    "navbar": "Top navigation bar must be visible",
+    "no_sidebar": "No sidebar, sidenav, or drawer elements should exist",
+    "total_balance": "Total Balance card must load within 5 seconds",
+    "markets_table": "Markets table must render with at least 100 rows",
+    "search": "Search functionality must filter results",
+    "watchlist": "Watchlist add/remove must work",
+    "positions": "Portfolio positions must load",
+    "test_connection": "Test Connection button must call /health endpoint",
+    "health_check": "Health status indicators must show",
+    "responsive": "Page must work on mobile, tablet, and desktop viewports"
+  }
+}

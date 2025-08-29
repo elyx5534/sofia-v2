@@ -16,11 +16,13 @@ const Decimal = window.Decimal || function(val) {
 
 class PortfolioService {
     constructor() {
-        this.apiUrl = window.API_URL || 'http://127.0.0.1:8023';
+        this.apiUrl = window.API_URL || window.VITE_API_URL || 'http://127.0.0.1:8023';
         this.cache = null;
         this.lastFetch = null;
         this.cacheTimeout = 30000; // 30 seconds
         this.listeners = [];
+        this.retryCount = 2;
+        this.retryDelay = 1000;
     }
 
     /**
@@ -105,6 +107,35 @@ class PortfolioService {
     }
 
     /**
+     * Fetch with retry logic
+     */
+    async fetchWithRetry(url, options, retries = 2) {
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                
+                const response = await fetch(url, {
+                    ...options,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok && i < retries) {
+                    await new Promise(resolve => setTimeout(resolve, this.retryDelay * (i + 1)));
+                    continue;
+                }
+                
+                return response;
+            } catch (error) {
+                if (i === retries) throw error;
+                await new Promise(resolve => setTimeout(resolve, this.retryDelay * (i + 1)));
+            }
+        }
+    }
+
+    /**
      * Fetch portfolio summary from API
      */
     async fetchPortfolioSummary(force = false) {
@@ -117,13 +148,16 @@ class PortfolioService {
         }
 
         try {
-            const response = await fetch(`${this.apiUrl}/portfolio/summary`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
+            const response = await this.fetchWithRetry(
+                `${this.apiUrl}/portfolio/summary`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 },
-                signal: AbortSignal.timeout(6000) // 6 second timeout
-            });
+                this.retryCount
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -141,9 +175,15 @@ class PortfolioService {
             // Notify listeners
             this.notifyListeners(data);
             
+            // Show online if was offline
+            this.showOfflineBanner(false);
+            
             return data;
         } catch (error) {
             console.error('Error fetching portfolio summary:', error);
+            
+            // Show offline banner
+            this.showOfflineBanner(true);
             
             // Return cached data if available
             if (this.cache) {
@@ -238,6 +278,34 @@ class PortfolioService {
         if (this.refreshInterval) {
             clearInterval(this.refreshInterval);
             this.refreshInterval = null;
+        }
+    }
+
+    /**
+     * Show/hide offline banner
+     */
+    showOfflineBanner(show) {
+        const existingBanner = document.getElementById('offline-banner');
+        
+        if (show && !existingBanner) {
+            const banner = document.createElement('div');
+            banner.id = 'offline-banner';
+            banner.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: #f59e0b;
+                color: #000;
+                padding: 10px;
+                text-align: center;
+                z-index: 9999;
+                font-weight: bold;
+            `;
+            banner.textContent = '⚠️ Connection lost. Working offline with cached data.';
+            document.body.prepend(banner);
+        } else if (!show && existingBanner) {
+            existingBanner.remove();
         }
     }
 }
