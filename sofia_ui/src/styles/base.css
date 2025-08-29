@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  a {
+    @apply underline-offset-2;
+  }
+
+  /* Remove all global fixed positioning that might create sidebars */
+  [class*="sidebar"],
+  [class*="sidenav"],
+  [class*="drawer"],
+  [class*="left-menu"],
+  [id*="sidebar"],
+  [id*="sidenav"],
+  [data-sidebar],
+  aside {
+    display: none !important;
+  }
+
+  /* Ensure no global overflow hidden that blocks scrolling */
+  html {
+    overflow-y: auto !important;
+  }
+
+  body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  /* Reset any fixed positioning that might interfere */
+  .fixed-sidebar,
+  .sticky-sidebar {
+    position: static !important;
+  }
+
+  /* Ensure main content takes full width */
+  main {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600;
+  }
+}
+
+@layer components {
+  /* Glass morphism effect */
+  .glass {
+    background: rgba(15, 23, 42, 0.3);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  /* Container with consistent max-width */
+  .container {
+    @apply mx-auto px-4;
+    max-width: 1200px;
+  }
+
+  /* Button base styles */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary/90;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary text-white hover:bg-secondary/90;
+  }
+
+  /* Card component */
+  .card {
+    @apply bg-gray-800/50 rounded-lg p-6 border border-gray-700;
+  }
+
+  /* Form elements */
+  .input {
+    @apply w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg 
+           border border-gray-700 focus:outline-none focus:ring-2 
+           focus:ring-primary focus:border-transparent;
+  }
+
+  .select {
+    @apply input;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-400 mb-2;
+  }
+
+  /* Loading skeleton */
+  .skeleton {
+    @apply animate-pulse bg-gray-700 rounded;
+  }
+
+  /* Status indicators */
+  .status-online {
+    @apply w-2 h-2 bg-green-500 rounded-full;
+  }
+
+  .status-offline {
+    @apply w-2 h-2 bg-red-500 rounded-full;
+  }
+
+  /* Alert styles */
+  .alert {
+    @apply p-4 rounded-lg border;
+  }
+
+  .alert-success {
+    @apply alert bg-green-900/20 border-green-700 text-green-400;
+  }
+
+  .alert-error {
+    @apply alert bg-red-900/20 border-red-700 text-red-400;
+  }
+
+  .alert-warning {
+    @apply alert bg-yellow-900/20 border-yellow-700 text-yellow-400;
+  }
+
+  .alert-info {
+    @apply alert bg-blue-900/20 border-blue-700 text-blue-400;
+  }
+}
+
+@layer utilities {
+  /* Text truncation */
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Disable sidebar animations globally */
+  [class*="sidebar-transition"],
+  [class*="drawer-transition"] {
+    transition: none !important;
+    animation: none !important;
+  }
+}
