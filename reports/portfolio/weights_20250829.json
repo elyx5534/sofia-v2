@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-08-29T23:54:28.343165",
+  "method": "hrp",
+  "weights": {
+    "sma_cross_BTC/USDT": 0.055321974331762794,
+    "sma_cross_ETH/USDT": 0.021642535118766612,
+    "sma_cross_AAPL": 0.13903585066581484,
+    "sma_cross_MSFT": 0.0776934549587475,
+    "supertrend_BTC/USDT": 0.0685391228718841,
+    "supertrend_ETH/USDT": 0.036890103097585544,
+    "supertrend_AAPL": 0.18826458910562205,
+    "bollinger_revert_BTC/USDT": 0.04222927801874421,
+    "bollinger_revert_ETH/USDT": 0.09889607919908713,
+    "donchian_breakout_BTC/USDT": 0.06195499359480209,
+    "donchian_breakout_AAPL": 0.20953201903718308
+  },
+  "metrics": {
+    "expected_return": -0.1710890440255218,
+    "volatility": 0.10382505973132915,
+    "sharpe_ratio": -1.8404905763599653,
+    "max_drawdown": -0.06331048387925214,
+    "effective_n_assets": 7.709859953434437,
+    "concentration_hhi": 0.12970404210189831,
+    "risk_contributions": {
+      "sma_cross_BTC/USDT": 0.06486201087673563,
+      "sma_cross_ETH/USDT": 0.020734138619664035,
+      "sma_cross_AAPL": 0.12025774328650106,
+      "sma_cross_MSFT": 0.036450505332995396,
+      "supertrend_BTC/USDT": 0.0590725960926413,
+      "supertrend_ETH/USDT": 0.027484320502938166,
+      "supertrend_AAPL": 0.14934830892864856,
+      "bollinger_revert_BTC/USDT": 0.05178370777530284,
+      "bollinger_revert_ETH/USDT": 0.22661998759490443,
+      "donchian_breakout_BTC/USDT": 0.07198742853807005,
+      "donchian_breakout_AAPL": 0.1713992524515985
+    },
+    "total_weight": 0.9999999999999999,
+    "n_positions": 11
+  },
+  "n_assets": 11,
+  "total_weight": 0.9999999999999999
+}

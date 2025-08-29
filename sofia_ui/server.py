@@ -17,6 +17,7 @@ import sys
 from sofia_ui.live_data import live_data_service
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.api.paper_trading import router as paper_trading_router
+from src.api.canary_trading import router as canary_trading_router
 
 # FastAPI uygulaması
 app = FastAPI(
@@ -25,8 +26,9 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# Include paper trading routes
+# Include trading routes
 app.include_router(paper_trading_router)
+app.include_router(canary_trading_router)
 
 # Static dosyalar ve template'ler
 static_path = Path(__file__).parent / "static"
