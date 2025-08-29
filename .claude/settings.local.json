@@ -13,7 +13,12 @@
       "Bash(curl:*)",
       "Bash(git checkout:*)",
       "Bash(.venvScriptsactivate.ps1)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(taskkill:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git tag:*)"
     ],
     "deny": [],
     "ask": []

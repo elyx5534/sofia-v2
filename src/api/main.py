@@ -24,6 +24,9 @@ from src.sofia.data.realtime import ReliabilityFeed
 from src.sofia.config import SYMBOLS, STALE_TTL_SEC
 from src.sofia.symbols import to_ui
 
+# Import API routers
+from src.api import market_endpoints, portfolio_endpoints, ai_local_endpoints
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -57,14 +60,21 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:8000",
         "http://localhost:8002",
+        "http://localhost:8004",
         "http://127.0.0.1:8000",
-        "http://127.0.0.1:8002"
+        "http://127.0.0.1:8002",
+        "http://127.0.0.1:8004",
+        "http://127.0.0.1:8023"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Include API routers
+app.include_router(market_endpoints.router)
+app.include_router(portfolio_endpoints.router)
+app.include_router(ai_local_endpoints.router)
 
 @app.on_event("startup")
 async def startup_event():
