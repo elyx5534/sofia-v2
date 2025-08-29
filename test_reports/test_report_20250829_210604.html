@@ -1,0 +1,484 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sofia V2 Test Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #2c3e50; color: white; padding: 20px; border-radius: 5px; }
+        .summary { display: flex; gap: 20px; margin: 20px 0; }
+        .metric { background: #ecf0f1; padding: 15px; border-radius: 5px; flex: 1; text-align: center; }
+        .metric.success { background: #d5edda; }
+        .metric.warning { background: #fff3cd; }
+        .metric.error { background: #f8d7da; }
+        .test-result { margin: 10px 0; padding: 15px; border-radius: 5px; }
+        .test-result.success { background: #d5edda; border-left: 5px solid #28a745; }
+        .test-result.failed { background: #f8d7da; border-left: 5px solid #dc3545; }
+        .details { font-family: monospace; font-size: 12px; margin-top: 10px; }
+        .collapsible { cursor: pointer; user-select: none; }
+        .content { max-height: 0; overflow: hidden; transition: max-height 0.2s ease-out; }
+        .content.active { max-height: 500px; overflow-y: auto; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; font-size: 11px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Sofia V2 Test Report</h1>
+        <p>Generated: 2025-08-29 21:06:04</p>
+        <p>Duration: 34.3 seconds</p>
+    </div>
+    
+    <div class="summary">
+        <div class="metric success">
+            <h3>0</h3>
+            <p>Passed Tests</p>
+        </div>
+        <div class="metric error">
+            <h3>10</h3>
+            <p>Failed Tests</p>
+        </div>
+        <div class="metric">
+            <h3>0.0%</h3>
+            <p>Pass Rate</p>
+        </div>
+        <div class="metric">
+            <h3>3.4s</h3>
+            <p>Avg Duration</p>
+        </div>
+    </div>
+    
+    <h2>Test Results</h2>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_test_smoke_py')">
+            <strong>tests/test_smoke.py</strong> - FAILED (1.9s)
+        </div>
+        <div class="content" id="tests_test_smoke_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/test_smoke.py -v --tb=short</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/test_smoke.py::test_smoke PASSED                                   [100%]
+ERROR: Coverage failure: total of 0.00 is less than fail-under=80.00
+
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0 _______________
+
+Name                                 Stmts   Miss  Cover   Missing
+------------------------------------------------------------------
+src\adapters\binance_ws.py             170    170  0.00%   5-280
+src\adapters\coingecko_free.py          89     89  0.00%   5-199
+src\adapters\stooq_eod.py               47     47  0.00%   5-111
+src\adapters\yahoo_free.py              69     69  0.00%   5-138
+src\api\ai_endpoints.py                 35     35  0.00%   4-62
+src\api\ai_local_endpoints.py           35     35  0.00%   5-111
+src\api\main.py                        102    102  0.00%   6-240
+src\api\market_endpoints.py             77     77  0.00%   4-206
+src\api\trade_endpoints.py              72     72  0.00%   4-138
+src\services\price_service_real.py      97     97  0.00%   5-184
+src\services\symbols.py                 36     36  0.00%   5-71
+src\sofia\cli.py                        52     52  0.00%   2-97
+src\sofia\config.py                     30     30  0.00%   1-41
+src\sofia\data\realtime.py              84     84  0.00%   2-148
+src\sofia\data\ttl_cache.py             24     24  0.00%   2-42
+src\sofia\opt\genetic_algorithm.</pre><p><strong>Errors:</strong></p><pre>C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\coverage\control.py:945: CoverageWarning: No data was collected. (no-data-collected)
+  self._warn("No data was collected.", slug="no-data-collected")
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_test_symbols_py')">
+            <strong>tests/test_symbols.py</strong> - FAILED (1.7s)
+        </div>
+        <div class="content" id="tests_test_symbols_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/test_symbols.py -v --tb=short</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+tests/test_symbols.py::test_roundtrip PASSED                             [ 20%]
+tests/test_symbols.py::test_binance_to_ui PASSED                         [ 40%]
+tests/test_symbols.py::test_ui_to_binance PASSED                         [ 60%]
+tests/test_symbols.py::test_invalid_passthrough PASSED                   [ 80%]
+tests/test_symbols.py::test_is_valid_symbol PASSED                       [100%]
+ERROR: Coverage failure: total of 0.53 is less than fail-under=80.00
+
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0 _______________
+
+Name                                 Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------
+src\adapters\binance_ws.py             170    170     52      0  0.00%   5-280
+src\adapters\coingecko_free.py          89     89     26      0  0.00%   5-199
+src\adapters\stooq_eod.py               47     47      6      0  0.00%   5-111
+src\adapters\yahoo_free.py              69     69     12      0  0.00%   5-138
+src\api\ai_endpoints.py                 35     35      4      0  0.00%   4-62
+src\api\ai_local_endpoints.py           35     35      0      0  0.00%   5-111
+src\api\main.py                        102    102     12      0  0.00%   6-240
+src\api\market_endpoints.py             77     77     22      0  0.00%   4-206
+src\api\trade_endpoint</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_test_api_contract_py')">
+            <strong>tests/test_api_contract.py</strong> - FAILED (1.4s)
+        </div>
+        <div class="content" id="tests_test_api_contract_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/test_api_contract.py -v --tb=short</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+tests/test_api_contract.py::test_api_health_contract PASSED              [ 20%]
+tests/test_api_contract.py::test_symbols_endpoint_contract PASSED        [ 40%]
+tests/test_api_contract.py::test_price_endpoint_contract PASSED          [ 60%]
+tests/test_api_contract.py::test_metrics_endpoint_contract PASSED        [ 80%]
+tests/test_api_contract.py::test_debug_endpoint_contract PASSED          [100%]
+ERROR: Coverage failure: total of 0.00 is less than fail-under=80.00
+
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0 _______________
+
+Name                                 Stmts   Miss  Cover   Missing
+------------------------------------------------------------------
+src\adapters\binance_ws.py             170    170  0.00%   5-280
+src\adapters\coingecko_free.py          89     89  0.00%   5-199
+src\adapters\stooq_eod.py               47     47  0.00%   5-111
+src\adapters\yahoo_free.py              69     69  0.00%   5-138
+src\api\ai_endpoints.py                 35     35  0.00%   4-62
+src\api\ai_local_endpoints.py           35     35  0.00%   5-111
+src\api\main.py                        102    102  0.00%   6-240
+src\api\market_endpoints.py             77     77  0.00%   4-206
+src\api\trade_endpoints.py              72     72  0.00%   4-138
+src\services\price_service_real.py      97     97  0.00%   5-184
+src\services\symbols.py         </pre><p><strong>Errors:</strong></p><pre>C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\coverage\control.py:945: CoverageWarning: No data was collected. (no-data-collected)
+  self._warn("No data was collected.", slug="no-data-collected")
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_test_live_data_py')">
+            <strong>tests/test_live_data.py</strong> - FAILED (2.8s)
+        </div>
+        <div class="content" id="tests_test_live_data_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/test_live_data.py -v --tb=short</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 14 items
+
+tests/test_live_data.py::TestLiveDataService::test_service_initialization PASSED [  7%]
+tests/test_live_data.py::TestLiveDataService::test_format_volume PASSED  [ 14%]
+tests/test_live_data.py::TestLiveDataService::test_fallback_data_btc PASSED [ 21%]
+tests/test_live_data.py::TestLiveDataService::test_fallback_data_unknown_symbol PASSED [ 28%]
+tests/test_live_data.py::TestLiveDataService::test_fallback_fear_greed PASSED [ 35%]
+tests/test_live_data.py::TestLiveDataService::test_fallback_crypto_data PASSED [ 42%]
+tests/test_live_data.py::TestLiveDataService::test_cache_functionality PASSED [ 50%]
+tests/test_live_data.py::TestLiveDataService::test_get_live_price_success PASSED [ 57%]
+tests/test_live_data.py::TestLiveDataService::test_get_live_price_failure PASSED [ 64%]
+tests/test_live_data.py::TestLiveDataService::test_get_multiple_prices PASSED [ 71%]
+tests/test_live_data.py::TestLiveDataService::test_get_crypto_fear_greed_success PASSED [ 78%]
+tests/test_live_data.py::TestLiveDataService::test_get_crypto_fear_greed_failure PASSED [ 85%]
+tests/test_live_data.py::TestLiveDataService::test_get_crypto_market_data_success PASSED [ 92%]
+tests/test_live_data.py::TestLiveDataService::test_get_market_summary PASSED [100%]
+ERROR: Coverage failure: total of 5.01 is less than fail-under=80.00
+
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_test_reliability_py')">
+            <strong>tests/test_reliability.py</strong> - FAILED (4.1s)
+        </div>
+        <div class="content" id="tests_test_reliability_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/test_reliability.py -v --tb=short</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+tests/test_reliability.py::test_ttl_cache_basic PASSED                   [ 20%]
+tests/test_reliability.py::test_ttl_cache_cleanup PASSED                 [ 40%]
+tests/test_reliability.py::test_price_tick_creation PASSED               [ 60%]
+tests/test_reliability.py::test_reliability_feed_init PASSED             [ 80%]
+tests/test_reliability.py::test_reliability_feed_metrics PASSED          [100%]
+ERROR: Coverage failure: total of 4.30 is less than fail-under=80.00
+
+
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0 _______________
+
+Name                                 Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------
+src\adapters\binance_ws.py             170    170     52      0  0.00%   5-280
+src\adapters\coingecko_free.py          89     89     26      0  0.00%   5-199
+src\adapters\stooq_eod.py               47     47      6      0  0.00%   5-111
+src\adapters\yahoo_free.py              69     69     12      0  0.00%   5-138
+src\api\ai_endpoints.py                 35     35      4      0  0.00%   4-62
+src\api\ai_local_endpoints.py           35     35      0      0  0.00%   5-111
+src\api\main.py                        102    102     12      0  0.00%   6-240
+src\api\market_endpoints.py             77     77     22      0  0.00%   4-206
+src\api\trade_endpoint</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_test_rest_fallback_py')">
+            <strong>tests/test_rest_fallback.py</strong> - FAILED (2.0s)
+        </div>
+        <div class="content" id="tests_test_rest_fallback_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/test_rest_fallback.py -v --tb=short</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/test_rest_fallback.py::test_rest_fallback FAILED                   [100%]
+ERROR: Coverage failure: total of 0.00 is less than fail-under=80.00
+
+
+================================== FAILURES ===================================
+_____________________________ test_rest_fallback ______________________________
+tests\test_rest_fallback.py:37: in test_rest_fallback
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response [404 Not Found]>.status_code
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.13.4-final-0 _______________
+
+Name                                 Stmts   Miss  Cover   Missing
+------------------------------------------------------------------
+src\adapters\binance_ws.py             170    170  0.00%   5-280
+src\adapters\coingecko_free.py          89     89  0.00%   5-199
+src\adapters\stooq_eod.py               47     47  0.00%   5-111
+src\adapters\yahoo_free.py              69     69  0.00%   5-138
+src\api\ai_endpoints.py                 35     35  0.00%   4-62
+src\api\ai_local_endpoints.py           35     35  0.00%   5-111
+src\api\main.py                        102    102  0.00%   6-240
+src\api\market_endpoints.py             77     77  0.00%   4-206
+src\api\trade_endpoints.py              72     72  0.00%   4-138
+src\services\price_service_real.py      97     97  0.00%   5-184
+src\services\symbol</pre><p><strong>Errors:</strong></p><pre>C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\coverage\control.py:945: CoverageWarning: No data was collected. (no-data-collected)
+  self._warn("No data was collected.", slug="no-data-collected")
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_e2e_test_route_audit_comprehensive_py')">
+            <strong>tests/e2e/test_route_audit_comprehensive.py</strong> - FAILED (15.5s)
+        </div>
+        <div class="content" id="tests_e2e_test_route_audit_comprehensive_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/e2e/test_route_audit_comprehensive.py -v --tb=short -s</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 5 items
+
+tests/e2e/test_route_audit_comprehensive.py::test_api_core_endpoints PASSED
+tests/e2e/test_route_audit_comprehensive.py::test_ui_core_routes PASSED
+tests/e2e/test_route_audit_comprehensive.py::test_api_error_handling FAILED
+tests/e2e/test_route_audit_comprehensive.py::test_performance_benchmarks PASSED
+tests/e2e/test_route_audit_comprehensive.py::test_full_route_audit FAILED
+ERROR: Coverage failure: total of 0.00 is less than fail-under=80.00
+
+
+================================== FAILURES ===================================
+___________________________ test_api_error_handling ___________________________
+tests\e2e\test_route_audit_comprehensive.py:227: in test_api_error_handling
+    assert passed_error_tests / len(error_tests) >= 0.8, f"API error handling too poor: {passed_error_tests}/{len(error_tests)}"
+E   AssertionError: API error handling too poor: 3/5
+E   assert (3 / 5) >= 0.8
+E    +  where 5 = len([{'method': 'GET', 'path': '/nonexistent/endpoint', 'url': 'http://127.0.0.1:8024/nonexistent/endpoint', 'expected_status': 404, 'actual_status': 404, 'duration_ms': 1.58, 'success': True, 'response_size': 23, 'error': None}, {'method': 'GET', 'path': '/market/invalid', 'url': 'http://127.0.0.1:8024/market/invalid', 'expected_status': 404, 'actual_status': 404, 'duration_ms': 0.62, 'success': True, 'response_size': 23, 'error': None}, {'method': 'GET', 'path': '/market/quotes?symbols=', 'url': 'http://127.0.0.1:8024/market/quo</pre><p><strong>Errors:</strong></p><pre>C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\coverage\control.py:945: CoverageWarning: No data was collected. (no-data-collected)
+  self._warn("No data was collected.", slug="no-data-collected")
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_e2e_test_backtest_flow_comprehensive_py')">
+            <strong>tests/e2e/test_backtest_flow_comprehensive.py</strong> - FAILED (1.7s)
+        </div>
+        <div class="content" id="tests_e2e_test_backtest_flow_comprehensive_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/e2e/test_backtest_flow_comprehensive.py -v --tb=short -s</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 2 items
+
+tests/e2e/test_backtest_flow_comprehensive.py::test_complete_backtest_flow FAILED
+tests/e2e/test_backtest_flow_comprehensive.py::test_backtest_edge_cases FAILED
+ERROR: Coverage failure: total of 0.00 is less than fail-under=80.00
+
+
+================================== FAILURES ===================================
+_________________________ test_complete_backtest_flow _________________________
+tests\e2e\test_backtest_flow_comprehensive.py:335: in test_complete_backtest_flow
+    assert passed_tests / total_tests >= 0.7, f"Backtest flow pass rate too low: {passed_tests}/{total_tests} ({passed_tests/total_tests*100:.1f}%)"
+E   AssertionError: Backtest flow pass rate too low: 1/3 (33.3%)
+E   assert (1 / 3) >= 0.7
+------------------------------ Captured log call ------------------------------
+ERROR    test_backtest_flow_comprehensive:test_backtest_flow_comprehensive.py:75 \u2717 Failed to get strategies: assert 404 == 200\n +  where 404 = <ClientResponse(http://127.0.0.1:8024/backtest/strategies) [404 Not Found]>\\n<CIMultiDictProxy('Date': 'Fri, 29 Aug 2025 18:06:00 GMT', 'Server': 'uvicorn', 'Content-Length': '22', 'Content-Type': 'application/json')>\\n.status\nWARNING  test_backtest_flow_comprehensive:test_backtest_flow_comprehensive.py:252 \u26a0 Missing UI elements: ['timeframe']\nERROR    test_backtest_flow_comprehensive:test_backtest_flow_comprehensive.py:115 \u2717 Failed to create backtest: Status 404, {"detail":"Not Found"</pre><p><strong>Errors:</strong></p><pre>C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\coverage\control.py:945: CoverageWarning: No data was collected. (no-data-collected)
+  self._warn("No data was collected.", slug="no-data-collected")
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_e2e_test_optimizer_flow_comprehensive_py')">
+            <strong>tests/e2e/test_optimizer_flow_comprehensive.py</strong> - FAILED (1.8s)
+        </div>
+        <div class="content" id="tests_e2e_test_optimizer_flow_comprehensive_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/e2e/test_optimizer_flow_comprehensive.py -v --tb=short -s</p>
+                <p><strong>Return Code:</strong> 1</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 2 items
+
+tests/e2e/test_optimizer_flow_comprehensive.py::test_complete_optimizer_flow FAILED
+tests/e2e/test_optimizer_flow_comprehensive.py::test_optimizer_edge_cases FAILED
+ERROR: Coverage failure: total of 0.00 is less than fail-under=80.00
+
+
+================================== FAILURES ===================================
+________________________ test_complete_optimizer_flow _________________________
+tests\e2e\test_optimizer_flow_comprehensive.py:407: in test_complete_optimizer_flow
+    assert passed_tests / total_tests >= 0.6, f"Optimizer flow pass rate too low: {passed_tests}/{total_tests} ({passed_tests/total_tests*100:.1f}%)"
+E   AssertionError: Optimizer flow pass rate too low: 1/5 (20.0%)
+E   assert (1 / 5) >= 0.6
+------------------------------ Captured log call ------------------------------
+WARNING  test_optimizer_flow_comprehensive:test_optimizer_flow_comprehensive.py:84 \u26a0 Optimization methods endpoint returned 404\nWARNING  test_optimizer_flow_comprehensive:test_optimizer_flow_comprehensive.py:98 \u26a0 Parameters endpoint returned 404\nERROR    test_optimizer_flow_comprehensive:test_optimizer_flow_comprehensive.py:316 \u2717 Optimizer UI page failed: Status 404\nERROR    test_optimizer_flow_comprehensive:test_optimizer_flow_comprehensive.py:126 \u2717 Failed to create optimization: Status 404, {"detail":"Not Found"}\nWARNING  test_optimizer_flow_comprehensive:test_optimizer_flow_comprehensive.py:400 FAILED TESTS:\nW</pre><p><strong>Errors:</strong></p><pre>C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\coverage\control.py:945: CoverageWarning: No data was collected. (no-data-collected)
+  self._warn("No data was collected.", slug="no-data-collected")
+</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-result failed">
+        <div class="collapsible" onclick="toggleContent('tests_e2e_test_visual_regression_py')">
+            <strong>tests/e2e/test_visual_regression.py</strong> - FAILED (1.3s)
+        </div>
+        <div class="content" id="tests_e2e_test_visual_regression_py">
+            <div class="details">
+                <p><strong>Command:</strong> C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe -m pytest tests/e2e/test_visual_regression.py -v --tb=short -s</p>
+                <p><strong>Return Code:</strong> 2</p>
+<p><strong>Output:</strong></p><pre>============================= test session starts =============================
+platform win32 -- Python 3.13.4, pytest-8.4.1, pluggy-1.6.0 -- C:\Users\Elyx\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: D:\BORSA2\sofia-v2
+configfile: pyproject.toml
+plugins: anyio-4.6.2.post1, asyncio-1.1.0, base-url-2.1.0, cov-6.2.1, httpx-0.35.0, playwright-0.7.0, requests-mock-1.12.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 0 items / 1 error
+
+=================================== ERRORS ====================================
+____________ ERROR collecting tests/e2e/test_visual_regression.py _____________
+C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\python.py:498: in importtestmodule
+    mod = import_path(
+C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\importlib\__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:177: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\site-packages\_pytest\assertion\rewrite.py:357: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Elyx\AppData\Local\Programs\Python\Python313\Lib\ast.py:</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleContent(id) {
+            var content = document.getElementById(id);
+            content.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

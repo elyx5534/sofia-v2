@@ -2769,4 +2769,13 @@ async def reset_paper_trading():
         return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
-    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=True)
+    # Load environment variables
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    # Get port from environment or use default
+    port = int(os.getenv('UI_PORT', 8004))
+    host = os.getenv('UI_HOST', '127.0.0.1')
+    
+    print(f"[UI] Starting Sofia V2 UI Server on {host}:{port}")
+    uvicorn.run("server:app", host=host, port=port, reload=True)
