@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(PYTHONPATH=. python sofia_cli/main.py backtest BTC-USD --fast 5 --slow 15)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

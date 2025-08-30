@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Strategy Cards</title>
+    <style>
+        body { font-family: system-ui; margin: 20px; background: #0f0b1a; color: #e6edf3; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+        .card { border: 1px solid #333; padding: 16px; border-radius: 12px; background: #111427; }
+        .pnl-positive { color: #10b981; }
+        .pnl-negative { color: #ef4444; }
+        img { width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; margin-top: 10px; }
+        a { color: #9333ea; }
+    </style>
+</head>
+<body>
+    <h1>📊 Strategy Cards</h1>
+    
+    {% if runs %}
+    <div class="grid">
+        {% for r in runs %}
+        <div class="card">
+            <h3>{{ r.symbol }} — {{ r.strategy }}</h3>
+            <p><strong>Params:</strong> {{ r.params }}</p>
+            <p>
+                <strong>PNL:</strong> 
+                <span class="{{ 'pnl-positive' if r.pnl > 0 else 'pnl-negative' }}">
+                    {{ '%.2f' % r.pnl }}
+                </span>
+                | 
+                <strong>Sharpe:</strong> {{ '%.2f' % r.sharpe }}
+            </p>
+            {% if r.artifact %}
+            <img src="/{{ r.artifact }}" alt="Strategy Chart"/>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <p>No strategy runs yet. Try running a backtest first!</p>
+        <p><a href="/api/backtest/BTC-USD?fast=10&slow=20">Run Sample Backtest</a></p>
+    </div>
+    {% endif %}
+    
+    <p style="margin-top: 40px;"><a href="/">← Back to Home</a></p>
+</body>
+</html>
