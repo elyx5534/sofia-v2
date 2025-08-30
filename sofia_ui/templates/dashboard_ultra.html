@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Sofia V2 - Ultra Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    .gradient-mesh {
+        background:
+            radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+            radial-gradient(circle at 40% 20%, rgba(34, 211, 238, 0.2) 0%, transparent 50%);
+    }
+
+    .card-glow {
+        box-shadow:
+            0 0 20px rgba(99, 102, 241, 0.1),
+            0 0 40px rgba(99, 102, 241, 0.05);
+    }
+
+    .neon-text {
+        text-shadow:
+            0 0 10px currentColor,
+            0 0 20px currentColor,
+            0 0 30px currentColor;
+    }
+
+    .flowing-chart {
+        background: linear-gradient(90deg,
+            transparent,
+            rgba(34, 211, 238, 0.1),
+            rgba(99, 102, 241, 0.1),
+            rgba(168, 85, 247, 0.1),
+            transparent
+        );
+        background-size: 200% 100%;
+        animation: flow 3s ease-in-out infinite;
+    }
+
+    @keyframes flow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .crypto-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-ring {
+        transform: rotate(-90deg);
+    }
+
+    .balance-glow {
+        animation: balance-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes balance-pulse {
+        0%, 100% {
+            filter: brightness(1);
+            transform: scale(1);
+        }
+        50% {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gradient-mesh min-h-full">
+    <!-- Top Stats Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Total Balance Card -->
+        <div class="stat-card p-6 relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500">
+                        <i class="fas fa-wallet text-white text-xl"></i>
+                    </div>
+                    <span class="pulse-dot"></span>
+                </div>
+                <p class="text-gray-400 text-sm mb-1">Total Balance</p>
+                <h3 class="text-3xl font-bold text-white balance-glow" id="totalBalance">$125,430.67</h3>
+                <div class="flex items-center mt-2">
+                    <i class="fas fa-arrow-up text-green-400 text-xs mr-1"></i>
+                    <span class="text-green-400 text-sm font-semibold">+12.5%</span>
+                    <span class="text-gray-500 text-xs ml-2">This month</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's P&L -->
+        <div class="stat-card p-6 relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-3xl"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500">
+                        <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+                    <div class="text-xs text-gray-400">24h</div>
+                </div>
+                <p class="text-gray-400 text-sm mb-1">Today's P&L</p>
+                <h3 class="text-3xl font-bold text-green-400" id="todayPnl">+$3,847.32</h3>
+                <div class="mt-2">
+                    <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-green-400 to-emerald-400 rounded-full" style="width: 68%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Trades -->
+        <div class="stat-card p-6 relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
+            <div class="relative">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500">
+                        <i class="fas fa-exchange-alt text-white text-xl"></i>
+                    </div>
+                    <div class="flex space-x-1">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <div class="w-2 h-2 bg-yellow-400 rounded-full animate-pulse delay-100"></div>
+                        <div class="w-2 h-2 bg-red-400 rounded-full animate-pulse delay-200"></div>
+                    </div>
+                </div>
+                <p class="text-gray-400 text-sm mb-1">Active Trades</p>
+                <h3 class="text-3xl font-bold text-white">187</h3>
+                <div class="flex items-center mt-2 space-x-4">
+                    <span class="text-green-400 text-xs">103 Win</span>
+                    <span class="text-red-400 text-xs">27 Loss</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Win Rate -->
+        <div class="stat-card p-6 relative overflow-hidden group hover:scale-105 transition-transform duration-300">
+            <div class="relative">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500">
+                        <i class="fas fa-trophy text-white text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-gray-400 text-sm mb-2">Win Rate</p>
+                <div class="relative w-24 h-24 mx-auto">
+                    <svg class="w-24 h-24 progress-ring">
+                        <circle cx="48" cy="48" r="36" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="none"/>
+                        <circle cx="48" cy="48" r="36" stroke="url(#gradient)" stroke-width="8" fill="none"
+                                stroke-dasharray="226" stroke-dashoffset="59" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#10b981"/>
+                                <stop offset="100%" stop-color="#3b82f6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-white">74%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - 2 cols -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Main Chart -->
+            <div class="glass-card p-6 card-glow">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-white">Portfolio Performance</h3>
+                    <div class="flex items-center space-x-2">
+                        <button class="px-3 py-1 text-xs rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors">1D</button>
+                        <button class="px-3 py-1 text-xs rounded-lg bg-gray-700/50 text-gray-400 hover:bg-gray-700 transition-colors">1W</button>
+                        <button class="px-3 py-1 text-xs rounded-lg bg-gray-700/50 text-gray-400 hover:bg-gray-700 transition-colors">1M</button>
+                        <button class="px-3 py-1 text-xs rounded-lg bg-gray-700/50 text-gray-400 hover:bg-gray-700 transition-colors">1Y</button>
+                    </div>
+                </div>
+                <div class="h-80 flowing-chart rounded-xl p-4">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Crypto Prices Table -->
+            <div class="glass-card p-6 card-glow">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold text-white">Live Prices</h3>
+                    <div class="flex items-center space-x-4">
+                        <button class="text-sm text-gray-400 hover:text-white transition-colors">All</button>
+                        <button class="text-sm text-purple-400">Tradable</button>
+                        <button class="text-sm text-gray-400 hover:text-white transition-colors">Gainers</button>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <!-- BTC Row -->
+                    <div class="crypto-card rounded-xl p-4 hover:bg-white/5 transition-all cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-orange-500/20 flex items-center justify-center">
+                                    <i class="fab fa-bitcoin text-orange-500 text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">Bitcoin</p>
+                                    <p class="text-xs text-gray-400">BTC</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-mono text-white">$67,845.32</p>
+                                <p class="text-xs text-green-400">+2.45%</p>
+                            </div>
+                            <div class="w-20 h-10">
+                                <canvas id="btcMiniChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ETH Row -->
+                    <div class="crypto-card rounded-xl p-4 hover:bg-white/5 transition-all cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                    <i class="fab fa-ethereum text-blue-500 text-xl"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">Ethereum</p>
+                                    <p class="text-xs text-gray-400">ETH</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-mono text-white">$3,456.78</p>
+                                <p class="text-xs text-green-400">+3.12%</p>
+                            </div>
+                            <div class="w-20 h-10">
+                                <canvas id="ethMiniChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- More cryptos... -->
+                    <div class="crypto-card rounded-xl p-4 hover:bg-white/5 transition-all cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                                    <span class="text-green-500 font-bold">₮</span>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">Tether</p>
+                                    <p class="text-xs text-gray-400">USDT</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-mono text-white">$1.00</p>
+                                <p class="text-xs text-gray-400">0.00%</p>
+                            </div>
+                            <div class="w-20 h-10">
+                                <canvas id="usdtMiniChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-6">
+            <!-- Mining/Strategy Status -->
+            <div class="glass-card p-6 card-glow">
+                <h3 class="text-lg font-bold text-white mb-4">Strategy Status</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400 text-sm">Active Strategies</span>
+                        <span class="text-white font-semibold">5</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400 text-sm">Total Signals</span>
+                        <span class="text-white font-semibold">1,247</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400 text-sm">Success Rate</span>
+                        <span class="text-green-400 font-semibold">87.3%</span>
+                    </div>
+                    <div class="h-2 bg-gray-700 rounded-full overflow-hidden mt-4">
+                        <div class="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full" style="width: 87%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promotional Card -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 p-6">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                <div class="relative">
+                    <h4 class="text-white font-bold text-lg mb-2">Pro Features</h4>
+                    <p class="text-white/80 text-sm mb-4">Unlock advanced strategies and real-time signals</p>
+                    <button class="px-4 py-2 bg-white/20 backdrop-blur text-white rounded-lg hover:bg-white/30 transition-colors text-sm font-semibold">
+                        Upgrade Now
+                    </button>
+                </div>
+                <div class="absolute bottom-0 right-0 w-24 h-24 opacity-50">
+                    <i class="fas fa-rocket text-white/30 text-6xl"></i>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="glass-card p-6 card-glow">
+                <h3 class="text-lg font-bold text-white mb-4">Recent Activity</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-300">Buy BTC</p>
+                            <p class="text-xs text-gray-500">2 mins ago</p>
+                        </div>
+                        <span class="text-green-400 text-sm font-semibold">+$234</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-2 h-2 bg-red-400 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-300">Sell ETH</p>
+                            <p class="text-xs text-gray-500">15 mins ago</p>
+                        </div>
+                        <span class="text-red-400 text-sm font-semibold">-$123</span>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-300">Buy SOL</p>
+                            <p class="text-xs text-gray-500">1 hour ago</p>
+                        </div>
+                        <span class="text-green-400 text-sm font-semibold">+$567</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Initialize WebSocket for live updates
+let ws = null;
+
+function connectWebSocket() {
+    ws = new WebSocket('ws://localhost:8000/ws/portfolio');
+
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        updateDashboard(data);
+    };
+
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        setTimeout(connectWebSocket, 5000);
+    };
+
+    ws.onclose = function() {
+        setTimeout(connectWebSocket, 5000);
+    };
+}
+
+function updateDashboard(data) {
+    // Update balance with animation
+    if (data.balance) {
+        const balanceEl = document.getElementById('totalBalance');
+        balanceEl.textContent = '$' + data.balance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        balanceEl.classList.add('balance-glow');
+    }
+
+    // Update P&L
+    if (data.daily_pnl) {
+        const pnlEl = document.getElementById('todayPnl');
+        const value = data.daily_pnl;
+        pnlEl.textContent = (value >= 0 ? '+' : '') + '$' + Math.abs(value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        pnlEl.className = value >= 0 ? 'text-3xl font-bold text-green-400' : 'text-3xl font-bold text-red-400';
+    }
+}
+
+// Initialize main chart
+const ctx = document.getElementById('mainChart').getContext('2d');
+const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+gradient.addColorStop(1, 'rgba(99, 102, 241, 0.01)');
+
+const mainChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: Array.from({length: 30}, (_, i) => i),
+        datasets: [{
+            label: 'Portfolio Value',
+            data: Array.from({length: 30}, () => Math.random() * 5000 + 120000),
+            borderColor: 'rgb(99, 102, 241)',
+            backgroundColor: gradient,
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: 'rgb(99, 102, 241)',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    label: function(context) {
+                        return '$' + context.parsed.y.toLocaleString();
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                display: false
+            },
+            y: {
+                display: false
+            }
+        },
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        }
+    }
+});
+
+// Initialize mini charts
+function createMiniChart(elementId, color) {
+    const ctx = document.getElementById(elementId).getContext('2d');
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 10}, (_, i) => i),
+            datasets: [{
+                data: Array.from({length: 10}, () => Math.random() * 100),
+                borderColor: color,
+                borderWidth: 1.5,
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            },
+            scales: {
+                x: { display: false },
+                y: { display: false }
+            }
+        }
+    });
+}
+
+createMiniChart('btcMiniChart', '#f97316');
+createMiniChart('ethMiniChart', '#3b82f6');
+createMiniChart('usdtMiniChart', '#10b981');
+
+// Connect WebSocket
+connectWebSocket();
+
+// Animate numbers on load
+document.addEventListener('DOMContentLoaded', function() {
+    const elements = document.querySelectorAll('.stat-card h3');
+    elements.forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            el.style.transition = 'all 0.5s ease';
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        }, 100);
+    });
+});
+</script>
+{% endblock %}
