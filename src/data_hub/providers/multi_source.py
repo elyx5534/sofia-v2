@@ -4,7 +4,7 @@ import ccxt
 import yfinance as yf
 import pandas as pd
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 import logging
 from enum import Enum
@@ -207,7 +207,7 @@ class MultiSourceDataProvider:
             if since:
                 period = None
                 start = since
-                end = datetime.now()
+                end = datetime.now(timezone.utc)
             else:
                 # Use period for simplicity
                 period_map = {

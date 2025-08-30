@@ -1,0 +1,445 @@
+{% extends "clean_base.html" %}
+
+{% block title %}Ultimate Trading System - Sofia V2{% endblock %}
+{% block page_title %}🚀 Ultimate Trading System{% endblock %}
+
+{% block content %}
+<!-- System Status Header -->
+<div class="glass-card rounded-lg p-6 mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold mb-2">Ultimate Trading System</h2>
+            <p class="text-gray-400">En iyi özelliklerin birleşimi - Gerçek Binance verileri ile</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="start-btn" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Start System
+            </button>
+            <button id="stop-btn" class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition hidden">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+                </svg>
+                Stop System
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Real-Time Stats -->
+<div class="grid grid-cols-1 lg:grid-cols-6 gap-4 mb-6">
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Bakiye</div>
+        <div class="text-xl font-bold" id="balance">₺100,000</div>
+        <div class="text-xs text-gray-400">Turkish Lira</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Toplam Değer</div>
+        <div class="text-xl font-bold" id="total-value">₺100,000</div>
+        <div class="text-xs" id="roi">ROI: 0%</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Pozisyonlar</div>
+        <div class="text-xl font-bold text-blue-400" id="positions-count">0</div>
+        <div class="text-xs text-gray-400">Aktif</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Toplam P&L</div>
+        <div class="text-xl font-bold" id="total-pnl">₺0</div>
+        <div class="text-xs text-gray-400">Kar/Zarar</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">İşlem Sayısı</div>
+        <div class="text-xl font-bold" id="total-trades">0</div>
+        <div class="text-xs" id="win-rate">Win: 0%</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Sistem Durumu</div>
+        <div class="flex items-center">
+            <div class="w-3 h-3 rounded-full mr-2" id="status-indicator"></div>
+            <span class="font-bold" id="system-status">Stopped</span>
+        </div>
+    </div>
+</div>
+
+<!-- Live Prices and Signals -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Live Binance Prices -->
+    <div class="glass-card rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">🔥 Canlı Binance Fiyatları</h3>
+            <div class="flex items-center">
+                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                <span class="text-sm text-gray-400">Live</span>
+            </div>
+        </div>
+        <div class="space-y-2 max-h-96 overflow-y-auto" id="live-prices">
+            <!-- Prices will be updated here -->
+        </div>
+    </div>
+    
+    <!-- Trading Signals -->
+    <div class="glass-card rounded-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">📊 Trading Sinyalleri</h3>
+            <button class="text-sm text-blue-400 hover:text-blue-300" onclick="updateSignals()">Yenile</button>
+        </div>
+        <div class="space-y-2 max-h-96 overflow-y-auto" id="trading-signals">
+            <!-- Signals will be updated here -->
+        </div>
+    </div>
+</div>
+
+<!-- Active Positions -->
+<div class="glass-card rounded-lg p-6 mb-6">
+    <h3 class="text-lg font-semibold mb-4">💼 Aktif Pozisyonlar</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-700">
+                    <th class="text-left py-3 px-4">Coin</th>
+                    <th class="text-right py-3 px-4">Miktar</th>
+                    <th class="text-right py-3 px-4">Giriş Fiyatı</th>
+                    <th class="text-right py-3 px-4">Güncel Fiyat</th>
+                    <th class="text-right py-3 px-4">P&L</th>
+                    <th class="text-right py-3 px-4">%</th>
+                </tr>
+            </thead>
+            <tbody id="positions-table">
+                <tr>
+                    <td colspan="6" class="text-center py-8 text-gray-400">Henüz pozisyon yok</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Trades -->
+<div class="glass-card rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-4">📈 Son İşlemler</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-700">
+                    <th class="text-left py-3 px-4">Zaman</th>
+                    <th class="text-left py-3 px-4">Coin</th>
+                    <th class="text-left py-3 px-4">Tip</th>
+                    <th class="text-right py-3 px-4">Miktar</th>
+                    <th class="text-right py-3 px-4">Fiyat</th>
+                    <th class="text-right py-3 px-4">Durum</th>
+                </tr>
+            </thead>
+            <tbody id="trades-table">
+                <tr>
+                    <td colspan="6" class="text-center py-8 text-gray-400">Henüz işlem yok</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let updateInterval;
+let systemRunning = false;
+
+// Format currency
+function formatTRY(amount) {
+    return '₺' + Math.abs(amount).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+// Start system
+async function startSystem() {
+    try {
+        const response = await fetch('http://127.0.0.1:8090/api/ultimate/start', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log('System started:', data);
+            systemRunning = true;
+            updateUI();
+            startAutoUpdate();
+            
+            // Update buttons
+            document.getElementById('start-btn').classList.add('hidden');
+            document.getElementById('stop-btn').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error starting system:', error);
+    }
+}
+
+// Stop system
+async function stopSystem() {
+    try {
+        const response = await fetch('http://127.0.0.1:8090/api/ultimate/stop', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            systemRunning = false;
+            stopAutoUpdate();
+            
+            // Update buttons
+            document.getElementById('stop-btn').classList.add('hidden');
+            document.getElementById('start-btn').classList.remove('hidden');
+            
+            // Update status
+            document.getElementById('system-status').textContent = 'Stopped';
+            document.getElementById('status-indicator').className = 'w-3 h-3 rounded-full mr-2 bg-gray-500';
+        }
+    } catch (error) {
+        console.error('Error stopping system:', error);
+    }
+}
+
+// Update UI with latest data
+async function updateUI() {
+    try {
+        // Get system status
+        const response = await fetch('http://127.0.0.1:8090/api/ultimate/status');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        
+        // Update stats
+        document.getElementById('balance').textContent = formatTRY(data.balance || 100000);
+        document.getElementById('total-value').textContent = formatTRY(data.total_value || 100000);
+        document.getElementById('positions-count').textContent = data.positions || 0;
+        
+        // Update P&L
+        const pnlEl = document.getElementById('total-pnl');
+        const pnl = data.total_pnl || 0;
+        pnlEl.textContent = (pnl >= 0 ? '+' : '') + formatTRY(pnl);
+        pnlEl.className = pnl >= 0 ? 'text-xl font-bold text-green-400' : 'text-xl font-bold text-red-400';
+        
+        // Update trades
+        document.getElementById('total-trades').textContent = data.total_trades || 0;
+        document.getElementById('win-rate').textContent = `Win: ${(data.win_rate * 100).toFixed(1)}%`;
+        
+        // Update ROI
+        const roi = ((data.total_value - 100000) / 100000 * 100).toFixed(2);
+        document.getElementById('roi').textContent = `ROI: ${roi >= 0 ? '+' : ''}${roi}%`;
+        document.getElementById('roi').className = roi >= 0 ? 'text-xs text-green-400' : 'text-xs text-red-400';
+        
+        // Update status
+        if (data.status === 'running') {
+            document.getElementById('system-status').textContent = 'Running';
+            document.getElementById('status-indicator').className = 'w-3 h-3 rounded-full mr-2 bg-green-500 animate-pulse';
+        }
+        
+        // Update live prices
+        if (data.live_prices) {
+            updateLivePrices(data.live_prices);
+        }
+        
+        // Update positions
+        if (data.positions_detail) {
+            updatePositions(data.positions_detail);
+        }
+        
+    } catch (error) {
+        console.error('Error updating UI:', error);
+    }
+}
+
+// Update live prices display
+function updateLivePrices(prices) {
+    const container = document.getElementById('live-prices');
+    const html = Object.entries(prices).map(([symbol, price]) => {
+        const coinName = symbol.replace('/USDT', '');
+        const bgColor = coinName === 'BTC' ? 'bg-orange-500' : 
+                       coinName === 'ETH' ? 'bg-blue-500' :
+                       coinName === 'BNB' ? 'bg-yellow-500' : 'bg-purple-500';
+        
+        return `
+            <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 ${bgColor} rounded-full flex items-center justify-center text-xs font-bold">
+                        ${coinName.substring(0, 3)}
+                    </div>
+                    <span class="font-medium">${symbol}</span>
+                </div>
+                <span class="font-bold">$${price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})}</span>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = html || '<div class="text-center text-gray-400">Fiyatlar yükleniyor...</div>';
+}
+
+// Update positions table
+function updatePositions(positions) {
+    const tbody = document.getElementById('positions-table');
+    
+    if (Object.keys(positions).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">Henüz pozisyon yok</td></tr>';
+        return;
+    }
+    
+    const html = Object.entries(positions).map(([symbol, pos]) => {
+        const pnlClass = pos.unrealized_pnl >= 0 ? 'text-green-400' : 'text-red-400';
+        const pnlPercent = ((pos.current_price - pos.avg_price) / pos.avg_price * 100).toFixed(2);
+        
+        return `
+            <tr class="border-b border-gray-800">
+                <td class="py-3 px-4 font-medium">${symbol}</td>
+                <td class="text-right py-3 px-4">${pos.quantity.toFixed(6)}</td>
+                <td class="text-right py-3 px-4">$${pos.avg_price.toFixed(2)}</td>
+                <td class="text-right py-3 px-4">$${pos.current_price.toFixed(2)}</td>
+                <td class="text-right py-3 px-4 ${pnlClass}">${pos.unrealized_pnl >= 0 ? '+' : ''}₺${Math.abs(pos.unrealized_pnl).toFixed(2)}</td>
+                <td class="text-right py-3 px-4 ${pnlClass}">${pnlPercent >= 0 ? '+' : ''}${pnlPercent}%</td>
+            </tr>
+        `;
+    }).join('');
+    
+    tbody.innerHTML = html;
+}
+
+// Update trading signals
+async function updateSignals() {
+    try {
+        const response = await fetch('http://127.0.0.1:8090/api/ultimate/signals');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const container = document.getElementById('trading-signals');
+        
+        if (!data.signals || data.signals.length === 0) {
+            container.innerHTML = '<div class="text-center text-gray-400">Sinyal bekleniyor...</div>';
+            return;
+        }
+        
+        const html = data.signals.map(signal => {
+            const actionColor = signal.action === 'BUY' ? 'text-green-400' : 
+                              signal.action === 'SELL' ? 'text-red-400' : 'text-yellow-400';
+            const confidence = (signal.confidence * 100).toFixed(1);
+            const confColor = signal.confidence > 0.7 ? 'text-green-400' : 
+                             signal.confidence > 0.5 ? 'text-yellow-400' : 'text-gray-400';
+            
+            return `
+                <div class="p-3 bg-gray-800 rounded-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-bold">${signal.symbol}</span>
+                        <span class="${actionColor} font-bold">${signal.action}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-400">${signal.reasoning || 'Multiple signals'}</span>
+                        <span class="${confColor}">${confidence}%</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error updating signals:', error);
+    }
+}
+
+// Update trades
+async function updateTrades() {
+    try {
+        const response = await fetch('http://127.0.0.1:8090/api/ultimate/trades?limit=10');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const tbody = document.getElementById('trades-table');
+        
+        if (!data.trades || data.trades.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">Henüz işlem yok</td></tr>';
+            return;
+        }
+        
+        const html = data.trades.reverse().map(trade => {
+            const time = new Date(trade.timestamp).toLocaleTimeString('tr-TR');
+            const sideColor = trade.side === 'buy' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
+            
+            return `
+                <tr class="border-b border-gray-800">
+                    <td class="py-3 px-4 text-gray-400">${time}</td>
+                    <td class="py-3 px-4">${trade.symbol}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 ${sideColor} rounded text-xs">${trade.side.toUpperCase()}</span></td>
+                    <td class="text-right py-3 px-4">${trade.quantity.toFixed(6)}</td>
+                    <td class="text-right py-3 px-4">$${trade.price.toFixed(2)}</td>
+                    <td class="text-right py-3 px-4">
+                        <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">${trade.status}</span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        tbody.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error updating trades:', error);
+    }
+}
+
+// Start auto update
+function startAutoUpdate() {
+    updateInterval = setInterval(() => {
+        updateUI();
+        updateSignals();
+        updateTrades();
+    }, 5000); // Update every 5 seconds
+}
+
+// Stop auto update
+function stopAutoUpdate() {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+}
+
+// Check initial status
+async function checkInitialStatus() {
+    try {
+        const response = await fetch('http://127.0.0.1:8090/api/ultimate/status');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'running') {
+                systemRunning = true;
+                document.getElementById('start-btn').classList.add('hidden');
+                document.getElementById('stop-btn').classList.remove('hidden');
+                startAutoUpdate();
+            }
+        }
+    } catch (error) {
+        console.log('System not running');
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    // Bind button events
+    document.getElementById('start-btn').addEventListener('click', startSystem);
+    document.getElementById('stop-btn').addEventListener('click', stopSystem);
+    
+    // Check initial status
+    checkInitialStatus();
+    
+    // Initial update
+    updateUI();
+    updateSignals();
+});
+
+// Cleanup
+window.addEventListener('beforeunload', () => {
+    stopAutoUpdate();
+});
+</script>
+{% endblock %}

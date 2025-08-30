@@ -1,0 +1,253 @@
+{% extends "clean_base.html" %}
+
+{% block title %}Portfolio - Sofia V2{% endblock %}
+{% block page_title %}Portfolio Management{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Portfolio Summary -->
+    <div class="glass-card rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Portfolio Summary</h3>
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span class="text-gray-400">Total Value</span>
+                <span class="font-bold">$125,430.67</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Available Cash</span>
+                <span class="font-bold">$32,450.00</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Total P&L</span>
+                <span class="font-bold text-green-400">+$18,234.56</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">ROI</span>
+                <span class="font-bold text-green-400">+17.2%</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Asset Allocation -->
+    <div class="glass-card rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Asset Allocation</h3>
+        <div style="position: relative; height: 200px;">
+            <canvas id="allocationChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Performance Metrics -->
+    <div class="glass-card rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Performance Metrics</h3>
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span class="text-gray-400">Sharpe Ratio</span>
+                <span class="font-bold">1.85</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Max Drawdown</span>
+                <span class="font-bold text-red-400">-12.3%</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Win Rate</span>
+                <span class="font-bold text-green-400">67.8%</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Avg Trade</span>
+                <span class="font-bold">$245.50</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Holdings Table -->
+<div class="glass-card rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Current Holdings</h3>
+        <button class="px-4 py-2 bg-accent-blue text-white rounded-lg hover:bg-blue-600 transition">
+            Add Position
+        </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-700">
+                    <th class="text-left py-3 px-4">Asset</th>
+                    <th class="text-right py-3 px-4">Quantity</th>
+                    <th class="text-right py-3 px-4">Avg Cost</th>
+                    <th class="text-right py-3 px-4">Current Price</th>
+                    <th class="text-right py-3 px-4">Market Value</th>
+                    <th class="text-right py-3 px-4">P&L</th>
+                    <th class="text-right py-3 px-4">% Change</th>
+                    <th class="text-center py-3 px-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="holdings-table">
+                <tr class="border-b border-gray-800">
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold">BTC</div>
+                            <div>
+                                <p class="font-medium">Bitcoin</p>
+                                <p class="text-xs text-gray-400">BTC/USDT</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right py-3 px-4">0.8543</td>
+                    <td class="text-right py-3 px-4">$58,234.00</td>
+                    <td class="text-right py-3 px-4 font-bold">$64,245.00</td>
+                    <td class="text-right py-3 px-4">$54,876.54</td>
+                    <td class="text-right py-3 px-4 text-green-400">+$5,134.23</td>
+                    <td class="text-right py-3 px-4 text-green-400">+10.3%</td>
+                    <td class="text-center py-3 px-4">
+                        <button class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 text-sm">Trade</button>
+                    </td>
+                </tr>
+                
+                <tr class="border-b border-gray-800">
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">ETH</div>
+                            <div>
+                                <p class="font-medium">Ethereum</p>
+                                <p class="text-xs text-gray-400">ETH/USDT</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right py-3 px-4">5.234</td>
+                    <td class="text-right py-3 px-4">$2,845.00</td>
+                    <td class="text-right py-3 px-4 font-bold">$3,245.00</td>
+                    <td class="text-right py-3 px-4">$16,984.33</td>
+                    <td class="text-right py-3 px-4 text-green-400">+$2,093.60</td>
+                    <td class="text-right py-3 px-4 text-green-400">+14.1%</td>
+                    <td class="text-center py-3 px-4">
+                        <button class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 text-sm">Trade</button>
+                    </td>
+                </tr>
+                
+                <tr class="border-b border-gray-800">
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold">SOL</div>
+                            <div>
+                                <p class="font-medium">Solana</p>
+                                <p class="text-xs text-gray-400">SOL/USDT</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right py-3 px-4">125.50</td>
+                    <td class="text-right py-3 px-4">$145.30</td>
+                    <td class="text-right py-3 px-4 font-bold">$152.45</td>
+                    <td class="text-right py-3 px-4">$19,132.48</td>
+                    <td class="text-right py-3 px-4 text-green-400">+$897.33</td>
+                    <td class="text-right py-3 px-4 text-green-400">+4.9%</td>
+                    <td class="text-center py-3 px-4">
+                        <button class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 text-sm">Trade</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Trade History -->
+<div class="glass-card rounded-lg p-6 mt-6">
+    <h3 class="text-lg font-semibold mb-4">Recent Trade History</h3>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-700">
+                    <th class="text-left py-3 px-4">Time</th>
+                    <th class="text-left py-3 px-4">Type</th>
+                    <th class="text-left py-3 px-4">Asset</th>
+                    <th class="text-right py-3 px-4">Quantity</th>
+                    <th class="text-right py-3 px-4">Price</th>
+                    <th class="text-right py-3 px-4">Total</th>
+                    <th class="text-right py-3 px-4">P&L</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="border-b border-gray-800">
+                    <td class="py-3 px-4 text-gray-400">2 hours ago</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">BUY</span></td>
+                    <td class="py-3 px-4">BTC/USDT</td>
+                    <td class="text-right py-3 px-4">0.05</td>
+                    <td class="text-right py-3 px-4">$63,890.00</td>
+                    <td class="text-right py-3 px-4">$3,194.50</td>
+                    <td class="text-right py-3 px-4 text-green-400">+$45.23</td>
+                </tr>
+                <tr class="border-b border-gray-800">
+                    <td class="py-3 px-4 text-gray-400">5 hours ago</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">SELL</span></td>
+                    <td class="py-3 px-4">ETH/USDT</td>
+                    <td class="text-right py-3 px-4">1.2</td>
+                    <td class="text-right py-3 px-4">$3,234.00</td>
+                    <td class="text-right py-3 px-4">$3,880.80</td>
+                    <td class="text-right py-3 px-4 text-green-400">+$234.50</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Asset Allocation Chart
+const ctx = document.getElementById('allocationChart').getContext('2d');
+const allocationChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['BTC', 'ETH', 'SOL', 'Cash'],
+        datasets: [{
+            data: [43.7, 13.5, 15.2, 27.6],
+            backgroundColor: [
+                '#f97316',
+                '#3b82f6',
+                '#10b981',
+                '#6b7280'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#9ca3af',
+                    padding: 15
+                }
+            }
+        }
+    }
+});
+
+// Update portfolio data
+async function updatePortfolio() {
+    try {
+        // Fetch BTC price
+        const btcResponse = await fetch('http://127.0.0.1:8001/ohlcv?symbol=BTC/USDT&asset_type=crypto&timeframe=1m&limit=1');
+        if (btcResponse.ok) {
+            const btcData = await btcResponse.json();
+            if (btcData.data && btcData.data.length > 0) {
+                const price = btcData.data[btcData.data.length - 1].close;
+                // Update BTC price in table
+                const btcRow = document.querySelector('#holdings-table tr:first-child');
+                if (btcRow) {
+                    btcRow.querySelector('td:nth-child(4)').textContent = '$' + price.toLocaleString('en-US', {minimumFractionDigits: 2});
+                }
+            }
+        }
+    } catch (error) {
+        console.log('Using mock data');
+    }
+}
+
+updatePortfolio();
+setInterval(updatePortfolio, 30000);
+</script>
+{% endblock %}
