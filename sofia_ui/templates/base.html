@@ -1,225 +1,42 @@
-<!DOCTYPE html>
-<html lang="tr" class="h-full">
+﻿<!DOCTYPE html>
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ page_title }}{% endblock %}</title>
+    <title>{% block title %}Sofia V2 - Glass Dark{% endblock %}</title>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Chart.js for beautiful charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Alpine.js for interactivity -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom styles -->
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .glass-effect {
-            backdrop-filter: blur(20px);
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .price-up { color: #10b981; }
-        .price-down { color: #ef4444; }
-        .trading-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .trading-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        .pulse-glow {
-            animation: pulse-glow 2s infinite;
-        }
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
-            50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
-        }
-    </style>
+    <!-- Static CSS Lock - Glass Dark Theme -->
+    <link rel="stylesheet" href="{{ url_for('static', path='styles/app.css') }}">
     
     {% block extra_head %}{% endblock %}
 </head>
-
-<body class="h-full bg-gray-50 dark:bg-gray-900" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' || false, sidebarOpen: false }" x-init="$watch('darkMode', val => { localStorage.setItem('darkMode', val); document.documentElement.classList.toggle('dark', val) })" :class="{ 'dark': darkMode }">
-    <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <!-- Logo & Brand -->
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <i class="fas fa-chart-line text-2xl text-blue-600 mr-3"></i>
-                        <h1 class="text-xl font-bold text-gray-900 dark:text-white">
-                            Sofia <span class="text-blue-600">V2</span>
-                        </h1>
-                    </div>
-                    
-                    <!-- Desktop Navigation -->
-                    <div class="hidden md:ml-10 md:flex md:space-x-8">
-                        <a href="/" class="text-gray-900 dark:text-white hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fas fa-home mr-1"></i> Ana Sayfa
-                        </a>
-                        <a href="/assets/BTC-USD" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fab fa-bitcoin mr-1"></i> Assets
-                        </a>
-                        <a href="/backtest" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fas fa-chart-line mr-1"></i> Backtest
-                        </a>
-                        <a href="/strategies" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fas fa-layer-group mr-1"></i> Strategies
-                        </a>
-                        <a href="/cards" class="text-gray-700 dark:text-gray-300 hover:text-blue-600 px-3 py-2 text-sm font-medium">
-                            <i class="fas fa-chart-area mr-1"></i> Cards
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Right side controls -->
-                <div class="flex items-center space-x-4">
-                    <!-- Live Price Ticker -->
-                    <div class="hidden lg:flex items-center space-x-4 text-sm" x-data="livePriceTicker()">
-                        <div class="flex items-center space-x-2">
-                            <i class="fab fa-bitcoin text-orange-500"></i>
-                            <span class="font-mono text-gray-900 dark:text-white" x-text="'$' + price.toLocaleString()"></span>
-                            <span :class="change >= 0 ? 'price-up' : 'price-down'" class="font-semibold" x-text="(change >= 0 ? '+' : '') + change + '%'"></span>
-                        </div>
-                        <div class="flex items-center space-x-2" x-show="ethPrice">
-                            <i class="fab fa-ethereum text-blue-500"></i>
-                            <span class="font-mono text-gray-900 dark:text-white" x-text="'$' + ethPrice.toLocaleString()"></span>
-                        </div>
-                    </div>
-                    
-                    <!-- Dark Mode Toggle -->
-                    <button @click="darkMode = !darkMode" 
-                            class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                        <i class="fas fa-moon dark:hidden"></i>
-                        <i class="fas fa-sun hidden dark:inline text-yellow-400"></i>
-                    </button>
-                    
-                    <!-- Mobile menu button -->
-                    <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
-                        <i class="fas fa-bars text-gray-600 dark:text-gray-300"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Mobile Navigation -->
-        <div class="md:hidden" x-show="sidebarOpen" x-transition>
-            <div class="px-2 pt-2 pb-3 space-y-1 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                <a href="/" class="block px-3 py-2 text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fas fa-home mr-2"></i> Ana Sayfa
-                </a>
-                <a href="/assets/BTC-USD" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fab fa-bitcoin mr-2"></i> Assets
-                </a>
-                <a href="/backtest" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fas fa-chart-line mr-2"></i> Backtest
-                </a>
-                <a href="/strategies" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fas fa-layer-group mr-2"></i> Strategies
-                </a>
-                <a href="/cards" class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                    <i class="fas fa-chart-area mr-2"></i> Cards
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="flex-1">
+<body class="bg-[#0f0b1a] text-[#e6edf3]">
+    <!-- ONE BAR ONLY - Single navbar include -->
+    {% include "partials/navbar.html" %}
+    
+    <!-- Main content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {% block content %}{% endblock %}
     </main>
-
-    <!-- Footer -->
-    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
-        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="flex items-center mb-4 md:mb-0">
-                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
-                    <span class="text-gray-600 dark:text-gray-400">Sofia V2 - Intelligent Trading Platform</span>
-                </div>
-                <div class="flex space-x-6 text-sm text-gray-500 dark:text-gray-400">
-                    <span>© 2024 Sofia V2</span>
-                    <span>•</span>
-                    <span>Yapay Zeka Destekli</span>
-                    <span>•</span>
-                    <span>7/24 Aktif</span>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Dark Mode Script -->
+    
+    <!-- Runtime one-bar enforcement -->
     <script>
-        // Dark mode initialization - çalışır hemen
-        (function() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
-            if (darkMode) {
-                document.documentElement.classList.add('dark');
-            }
+        (function(){
+            try {
+                var navs = [...document.querySelectorAll('nav')];
+                if (navs.length > 1) {
+                    var keep = navs.find(n => 
+                        n.className.includes('app-navbar') || 
+                        n.className.includes('sticky') || 
+                        n.className.includes('brand')
+                    ) || navs[0];
+                    navs.forEach(n => { if (n !== keep) n.remove(); });
+                }
+                document.querySelectorAll('[class*="sidebar"], aside').forEach(el => el.remove());
+            } catch(e) {}
         })();
     </script>
-
-    <!-- Custom JavaScript -->
-    <script>
-        // Live Price Ticker
-        function livePriceTicker() {
-            return {
-                price: 67845,
-                change: 2.45,
-                ethPrice: 3456,
-                
-                init() {
-                    this.fetchPrices();
-                    // Update every 30 seconds
-                    setInterval(() => {
-                        this.fetchPrices();
-                    }, 30000);
-                },
-                
-                async fetchPrices() {
-                    try {
-                        const response = await fetch('/api/quotes?symbols=BTC-USD,ETH-USD');
-                        const data = await response.json();
-                        
-                        if (data['BTC-USD']) {
-                            this.price = data['BTC-USD'].price;
-                            this.change = data['BTC-USD'].change_percent;
-                        }
-                        
-                        if (data['ETH-USD']) {
-                            this.ethPrice = data['ETH-USD'].price;
-                        }
-                    } catch (error) {
-                        console.log('Price fetch error:', error);
-                    }
-                }
-            }
-        }
-        
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth'
-                    });
-                }
-            });
-        });
-    </script>
-
-    {% block extra_scripts %}{% endblock %}
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

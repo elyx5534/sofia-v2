@@ -55,6 +55,17 @@ repos:
       - id: commitizen-branch
         stages: [push]
 
+  - repo: local
+    hooks:
+      - id: one-bar-only-check
+        name: ONE-BAR ONLY validation
+        entry: python scripts/one-bar-check.py
+        language: system
+        files: '\.html$'
+        pass_filenames: true
+        stages: [commit]
+        verbose: true
+
 default_language_version:
   python: python3.11
 

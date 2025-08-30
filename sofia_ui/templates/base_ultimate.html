@@ -1,0 +1,359 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="tr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sofia V2 - AI Trading Platform{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --primary: #F0B90B;
+            --primary-dark: #C89507;
+            --bg-dark: #0B0E11;
+            --bg-card: #161A1E;
+            --bg-hover: #1E2329;
+            --text-primary: #EAECEF;
+            --text-secondary: #848E9C;
+            --green: #0ECB81;
+            --red: #F6465D;
+            --border: #2B3139;
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-dark) var(--bg-card);
+        }
+
+        *::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: var(--bg-card);
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: var(--primary-dark);
+            border-radius: 3px;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .sidebar {
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            transition: width 0.3s ease;
+        }
+
+        .sidebar-item {
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            margin: 2px 0;
+        }
+
+        .sidebar-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            background: rgba(240, 185, 11, 0.1);
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--primary-dark);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--bg-dark);
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(240, 185, 11, 0.1);
+            border-color: var(--primary);
+        }
+
+        .price-up {
+            color: var(--green);
+        }
+
+        .price-down {
+            color: var(--red);
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-success {
+            background: rgba(14, 203, 129, 0.1);
+            color: var(--green);
+        }
+
+        .badge-danger {
+            background: rgba(246, 70, 93, 0.1);
+            color: var(--red);
+        }
+
+        .badge-warning {
+            background: rgba(240, 185, 11, 0.1);
+            color: var(--primary);
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(14, 203, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 8px rgba(14, 203, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(14, 203, 129, 0);
+            }
+        }
+
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+
+        input, select {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 8px 12px;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(240, 185, 11, 0.1);
+        }
+
+        .table-row {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s ease;
+        }
+
+        .table-row:hover {
+            background: var(--bg-hover);
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="h-full flex" x-data="{
+    sidebarOpen: localStorage.getItem('sidebarOpen') !== 'false',
+    currentPage: '{{ current_page|default('dashboard') }}',
+    prices: { btc: 0, eth: 0, sol: 0 }
+}" x-init="
+    $watch('sidebarOpen', val => localStorage.setItem('sidebarOpen', val));
+    // Fetch live prices
+    setInterval(async () => {
+        try {
+            const res = await fetch('/api/quotes?symbols=BTC-USD,ETH-USD,SOL-USD');
+            const data = await res.json();
+            if (data['BTC-USD']) prices.btc = data['BTC-USD'].price;
+            if (data['ETH-USD']) prices.eth = data['ETH-USD'].price;
+            if (data['SOL-USD']) prices.sol = data['SOL-USD'].price;
+        } catch(e) {}
+    }, 5000);
+">
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="sidebarOpen ? 'w-64' : 'w-16'" style="transition: width 0.3s ease;">
+        <div class="h-full flex flex-col">
+            <!-- Logo -->
+            <div class="p-4 border-b" style="border-color: var(--border);">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3" x-show="sidebarOpen">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--primary);">
+                            <i class="fas fa-chart-line text-lg" style="color: var(--bg-dark);"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold" style="color: var(--text-primary);">Sofia V2</h1>
+                            <p class="text-xs" style="color: var(--text-secondary);">AI Trading</p>
+                        </div>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: var(--primary);" x-show="!sidebarOpen">
+                        <i class="fas fa-chart-line" style="color: var(--bg-dark);"></i>
+                    </div>
+                    <button @click="sidebarOpen = !sidebarOpen" class="p-1 rounded hover:bg-gray-700">
+                        <i class="fas fa-bars text-sm" style="color: var(--text-secondary);"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            
+
+            <!-- Live Prices (Bottom) -->
+            <div class="p-3 border-t" style="border-color: var(--border);" x-show="sidebarOpen">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span style="color: var(--text-secondary);">BTC</span>
+                        <span class="font-mono" style="color: var(--text-primary);" x-text="'$' + prices.btc.toLocaleString()"></span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span style="color: var(--text-secondary);">ETH</span>
+                        <span class="font-mono" style="color: var(--text-primary);" x-text="'$' + prices.eth.toLocaleString()"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col">
+        <!-- Top Bar -->
+        <header class="h-16 border-b flex items-center justify-between px-6" style="background: var(--bg-card); border-color: var(--border);">
+            <div class="flex items-center space-x-4">
+                <h2 class="text-xl font-semibold">{% block page_header %}Dashboard{% endblock %}</h2>
+                <div class="live-dot"></div>
+                <span class="text-xs" style="color: var(--text-secondary);">Live</span>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" placeholder="Search..." class="pl-10 pr-4 py-2 text-sm" style="width: 250px;">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-xs" style="color: var(--text-secondary);"></i>
+                </div>
+
+                <!-- Notifications -->
+                <button class="relative p-2 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-bell" style="color: var(--text-secondary);"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                <!-- User -->
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--primary);">
+                        <i class="fas fa-user text-xs" style="color: var(--bg-dark);"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="flex-1 overflow-y-auto p-6" style="background: var(--bg-dark);">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- WebSocket Connection -->
+    <script>
+        let ws = null;
+
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:8000/ws/portfolio');
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                window.dispatchEvent(new CustomEvent('wsUpdate', { detail: data }));
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                setTimeout(connectWebSocket, 5000);
+            };
+
+            ws.onclose = function() {
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        // Connect on page load
+        document.addEventListener('DOMContentLoaded', connectWebSocket);
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+
+{% endblock %}

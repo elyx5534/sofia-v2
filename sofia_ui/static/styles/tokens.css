@@ -1,0 +1,106 @@
+/* Sofia V2 - Design Tokens */
+
+:root {
+  /* Purple Brand Colors (Mor Tema) */
+  --brand-50: #faf5ff;
+  --brand-100: #f3e8ff;
+  --brand-200: #e9d5ff;
+  --brand-300: #d8b4fe;
+  --brand-400: #c084fc;
+  --brand-500: #a855f7;
+  --brand-600: #9333ea;
+  --brand-700: #7c3aed;
+  --brand-800: #6b21a8;
+  --brand-900: #581c87;
+  
+  /* Legacy Primary Colors (for compatibility) */
+  --primary-50: #faf5ff;
+  --primary-100: #f3e8ff;
+  --primary-500: #a855f7;
+  --primary-600: #9333ea;
+  --primary-700: #7c3aed;
+  --primary-900: #581c87;
+  
+  /* Surface Colors */
+  --surface: #ffffff;
+  --surface-card: #f9fafb;
+  --surface-border: #e5e7eb;
+  
+  /* Semantic Colors */
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  
+  /* Text Colors */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  
+  /* Spacing Scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  
+  /* Z-Index Scale */
+  --z-navbar: 50;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-tooltip: 1001;
+  
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Dark Mode Tokens (Purple Theme) */
+.dark {
+  --surface: #0f0b1a;         /* Deep purple-black */
+  --surface-card: #1a1426;    /* Purple-gray cards */
+  --surface-border: #2d1b45;  /* Purple borders */
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #a0aec0;
+  
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+  
+  /* Purple accent adjustments for dark mode */
+  --brand-600: #a855f7;
+  --brand-700: #9333ea;
+}
+
+/* Custom Properties for Trading */
+:root {
+  --price-up: #10b981;
+  --price-down: #ef4444;
+  --price-neutral: #6b7280;
+  
+  --grid-row-height: 40px;
+  --navbar-height: 64px;
+  --card-padding: 1.5rem;
+  
+  /* Animation Durations */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+}
+
+/* Trading-specific color utilities */
+.price-up { color: var(--price-up); }
+.price-down { color: var(--price-down); }
+.price-neutral { color: var(--price-neutral); }
+
+.bg-price-up { background-color: var(--price-up); }
+.bg-price-down { background-color: var(--price-down); }

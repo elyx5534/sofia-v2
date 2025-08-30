@@ -1,0 +1,837 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <!-- Grid Pattern Overlay -->
+    <div class="fixed inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.03"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+
+    <!-- Main Container -->
+    <div class="relative z-10 p-6">
+        <!-- Top Stats Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <!-- Total Balance Card -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 to-purple-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-wallet text-blue-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">Total Balance</span>
+                    </div>
+                    <div class="text-3xl font-bold text-white mb-1">{{ total_balance|currency("$") }}</div>
+                    <div class="flex items-center text-emerald-400 text-sm">
+                        <i class="fas fa-arrow-up mr-1 text-xs"></i>
+                        <span>{{ "+%.1f"|format(pnl_percentage) if pnl_percentage else "+12.5" }}%</span>
+                        <span class="text-slate-500 ml-2">this week</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's P&L Card -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-emerald-600/10 to-green-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-chart-line text-emerald-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">Today's P&L</span>
+                    </div>
+                    <div class="text-3xl font-bold text-emerald-400 mb-1">${{ "%.2f"|format(daily_pnl) if daily_pnl else "3,847.32" }}</div>
+                    <div class="w-full h-8 mt-2">
+                        <canvas id="pnl-spark"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Trades Card -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-orange-600/10 to-amber-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-exchange-alt text-orange-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">Active Trades</span>
+                    </div>
+                    <div class="text-3xl font-bold text-white mb-1">187</div>
+                    <div class="flex items-center text-slate-400 text-sm">
+                        <span class="text-amber-400">23 Loss</span>
+                        <span class="mx-2">â€¢</span>
+                        <span class="text-emerald-400">164 Win</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Win Rate Card -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-trophy text-purple-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">Win Rate</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="text-3xl font-bold text-white">74%</div>
+                        <div class="ml-4 flex-1">
+                            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500" style="width: 74%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid Layout -->
+        <div class="grid grid-cols-12 gap-6">
+
+            <!-- Left Column - Portfolio Performance -->
+            <div class="col-span-12 lg:col-span-8">
+                <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-white">Portfolio Performance</h2>
+                        <div class="flex items-center space-x-2">
+                            <button class="px-3 py-1 text-xs bg-slate-700/50 text-slate-400 rounded-lg hover:bg-slate-700 transition-all">1D</button>
+                            <button class="px-3 py-1 text-xs bg-blue-600 text-white rounded-lg">1W</button>
+                            <button class="px-3 py-1 text-xs bg-slate-700/50 text-slate-400 rounded-lg hover:bg-slate-700 transition-all">1M</button>
+                            <button class="px-3 py-1 text-xs bg-slate-700/50 text-slate-400 rounded-lg hover:bg-slate-700 transition-all">1Y</button>
+                        </div>
+                    </div>
+                    <div class="h-[400px]">
+                        <canvas id="portfolio-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Multiple Widgets -->
+            <div class="col-span-12 lg:col-span-4 space-y-6">
+                <!-- Strategy Status -->
+                <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">Strategy Status</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-slate-400">Active Strategies</span>
+                                <span class="text-sm font-bold text-white">5</span>
+                            </div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-slate-400">Total Signals</span>
+                                <span class="text-sm font-bold text-white">1,247</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-slate-400">Success Rate</span>
+                                <span class="text-sm font-bold text-emerald-400">87.3%</span>
+                            </div>
+                        </div>
+                        <div class="pt-3 border-t border-slate-700/50">
+                            <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" style="width: 87.3%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pro Features -->
+                <div class="bg-gradient-to-br from-purple-900/30 to-pink-900/30 backdrop-blur-xl rounded-2xl border border-purple-500/30 p-6">
+                    <h3 class="text-lg font-bold text-white mb-2">Pro Features</h3>
+                    <p class="text-sm text-slate-400 mb-4">Unlock advanced strategies and real-time signals</p>
+                    <button class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-pink-700 transition-all">
+                        Upgrade Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Section -->
+        <div class="grid grid-cols-12 gap-6 mt-6">
+
+            <!-- Live Prices -->
+            <div class="col-span-12 lg:col-span-4">
+                <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-white">Live Prices</h3>
+                        <div class="flex space-x-2">
+                            <button class="text-xs text-slate-400 hover:text-white">All</button>
+                            <button class="text-xs text-blue-400">Tradable</button>
+                            <button class="text-xs text-slate-400 hover:text-white">Gainers</button>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <!-- Bitcoin -->
+                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all cursor-pointer">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                                    <i class="fab fa-bitcoin text-orange-500"></i>
+                                </div>
+                                <div>
+                                    <div class="text-white font-semibold">Bitcoin</div>
+                                    <div class="text-xs text-slate-500">BTC</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">$67,845.32</div>
+                                <div class="text-xs text-emerald-400">+2.45%</div>
+                            </div>
+                            <div class="w-16 h-8">
+                                <canvas id="btc-mini"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Ethereum -->
+                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all cursor-pointer">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                                    <i class="fab fa-ethereum text-purple-500"></i>
+                                </div>
+                                <div>
+                                    <div class="text-white font-semibold">Ethereum</div>
+                                    <div class="text-xs text-slate-500">ETH</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">$3,456.78</div>
+                                <div class="text-xs text-red-400">-0.82%</div>
+                            </div>
+                            <div class="w-16 h-8">
+                                <canvas id="eth-mini"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Tether -->
+                        <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all cursor-pointer">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
+                                    <span class="text-green-500 font-bold">â‚®</span>
+                                </div>
+                                <div>
+                                    <div class="text-white font-semibold">Tether</div>
+                                    <div class="text-xs text-slate-500">USDT</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-white font-semibold">$1.00</div>
+                                <div class="text-xs text-slate-400">0.00%</div>
+                            </div>
+                            <div class="w-16 h-8">
+                                <canvas id="usdt-mini"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="col-span-12 lg:col-span-8">
+                <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-white">Recent Activity</h3>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xs text-slate-400">Last updated: 2 seconds ago</span>
+                            <span class="relative flex h-3 w-3">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4">
+                        <!-- Buy BTC -->
+                        <div class="p-4 bg-slate-800/50 rounded-xl border border-emerald-500/20">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">Buy BTC</span>
+                                <span class="text-xs text-slate-500">2 min ago</span>
+                            </div>
+                            <div class="text-2xl font-bold text-white mb-1">+$234</div>
+                            <div class="text-xs text-slate-400">0.0034 BTC @ $67,845</div>
+                        </div>
+
+                        <!-- Sell ETH -->
+                        <div class="p-4 bg-slate-800/50 rounded-xl border border-red-500/20">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded">Sell ETH</span>
+                                <span class="text-xs text-slate-500">15 min ago</span>
+                            </div>
+                            <div class="text-2xl font-bold text-white mb-1">+$123</div>
+                            <div class="text-xs text-slate-400">0.5 ETH @ $3,456</div>
+                        </div>
+
+                        <!-- Buy SOL -->
+                        <div class="p-4 bg-slate-800/50 rounded-xl border border-emerald-500/20">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">Buy SOL</span>
+                                <span class="text-xs text-slate-500">1 hour ago</span>
+                            </div>
+                            <div class="text-2xl font-bold text-white mb-1">+$567</div>
+                            <div class="text-xs text-slate-400">10 SOL @ $142.50</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW AI FEATURES SECTION - Added without breaking existing design -->
+        <div class="grid grid-cols-12 gap-6 mt-6">
+            
+            <!-- AI Predictions Panel -->
+            <div class="col-span-12 lg:col-span-6">
+                <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-brain text-purple-400 mr-2"></i>
+                            AI Predictions
+                        </h3>
+                        <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded animate-pulse">LIVE ML</span>
+                    </div>
+                    <div class="space-y-4" id="ai-predictions-panel">
+                        <!-- AI predictions will be loaded here -->
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-4 bg-slate-700 rounded w-3/4"></div>
+                            <div class="h-4 bg-slate-700 rounded w-1/2"></div>
+                            <div class="h-4 bg-slate-700 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Scanner Results -->
+            <div class="col-span-12 lg:col-span-6">
+                <div class="bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-radar-dish text-blue-400 mr-2"></i>
+                            Market Scanner
+                        </h3>
+                        <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded animate-pulse">SCANNING</span>
+                    </div>
+                    <div class="space-y-3" id="scanner-signals-panel">
+                        <!-- Scanner signals will be loaded here -->
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-4 bg-slate-700 rounded w-full"></div>
+                            <div class="h-4 bg-slate-700 rounded w-5/6"></div>
+                            <div class="h-4 bg-slate-700 rounded w-4/5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW Real-Time Stats Row - Added without breaking existing design -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+            
+            <!-- AI Confidence Score -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-pink-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-brain text-purple-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">AI Confidence</span>
+                    </div>
+                    <div class="text-3xl font-bold text-purple-400 mb-1" id="ai-confidence">85%</div>
+                    <div class="text-xs text-slate-400">ML Models Active</div>
+                </div>
+            </div>
+
+            <!-- Market Sentiment -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-green-600/10 to-emerald-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-heart-pulse text-green-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">Market Sentiment</span>
+                    </div>
+                    <div class="text-3xl font-bold text-green-400 mb-1" id="market-sentiment">Bullish</div>
+                    <div class="text-xs text-slate-400">AI Analysis</div>
+                </div>
+            </div>
+
+            <!-- Active Signals -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-yellow-600/10 to-orange-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-signal text-yellow-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">Active Signals</span>
+                    </div>
+                    <div class="text-3xl font-bold text-yellow-400 mb-1" id="active-signals">0</div>
+                    <div class="text-xs text-slate-400">Trading Opportunities</div>
+                </div>
+            </div>
+
+            <!-- Risk Level -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 group hover:scale-[1.02] transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-br from-red-600/10 to-pink-600/10"></div>
+                <div class="relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-red-500/20 to-pink-500/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-shield-alt text-red-400 text-xl"></i>
+                        </div>
+                        <span class="text-xs text-slate-400">Risk Level</span>
+                    </div>
+                    <div class="text-3xl font-bold text-green-400 mb-1" id="risk-level">Low</div>
+                    <div class="text-xs text-slate-400">Portfolio Risk</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NEW Signal Alert Notification - Added without breaking existing design -->
+<div id="signal-alert" class="fixed top-20 right-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-xl shadow-lg transform translate-x-full opacity-0 transition-all duration-500 z-50">
+    <div class="flex items-start space-x-3">
+        <i class="fas fa-robot text-lg mt-1"></i>
+        <div>
+            <div class="font-bold" id="alert-title">New AI Signal</div>
+            <div class="text-sm opacity-90" id="alert-message">Signal details...</div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// NEW Real-Time Data System - Added to existing scripts without breaking anything
+let ws;
+let aiPredictions = {};
+let scannerSignals = [];
+let marketData = {};
+
+// Connect to WebSocket for real-time data
+function connectRealTimeData() {
+    try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = function() {
+            console.log('Real-time data connected');
+        };
+        
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            handleRealTimeData(data);
+        };
+        
+        ws.onclose = function() {
+            console.log('Real-time connection lost, reconnecting...');
+            setTimeout(connectRealTimeData, 5000);
+        };
+    } catch (error) {
+        console.log('WebSocket failed, starting simulation');
+        startDataSimulation();
+    }
+}
+
+// Handle real-time data updates
+function handleRealTimeData(data) {
+    switch(data.type) {
+        case 'ai_predictions':
+            updateAIPredictions(data.data);
+            break;
+        case 'scanner_signals':
+            updateScannerSignals(data.data);
+            break;
+        case 'market_data':
+            updateMarketData(data.data);
+            break;
+        case 'portfolio_update':
+            updatePortfolioStats(data.data);
+            break;
+        case 'trading_signal':
+            showSignalAlert(data.data);
+            break;
+    }
+}
+
+// Update AI predictions panel
+function updateAIPredictions(predictions) {
+    const panel = document.getElementById('ai-predictions-panel');
+    if (!panel) return;
+    
+    panel.innerHTML = '';
+    
+    Object.entries(predictions).slice(0, 3).forEach(([symbol, pred]) => {
+        const predDiv = document.createElement('div');
+        predDiv.className = 'p-3 bg-slate-800/30 rounded-lg';
+        
+        const trend = pred.trend_direction;
+        const trendColor = trend === 'up' ? 'text-green-400' : trend === 'down' ? 'text-red-400' : 'text-yellow-400';
+        
+        predDiv.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-white">${symbol}</span>
+                <span class="text-sm ${trendColor}">${trend.toUpperCase()}</span>
+            </div>
+            <div class="text-sm text-slate-300">
+                24h: $${pred.predictions['24h'].price.toFixed(2)} 
+                (${pred.predictions['24h'].confidence.toFixed(1)}% confidence)
+            </div>
+            <div class="text-xs text-slate-400 mt-1">
+                Signal Strength: ${pred.signal_strength.toFixed(0)}%
+            </div>
+        `;
+        
+        panel.appendChild(predDiv);
+    });
+}
+
+// Update scanner signals panel
+function updateScannerSignals(signals) {
+    const panel = document.getElementById('scanner-signals-panel');
+    if (!panel) return;
+    
+    panel.innerHTML = '';
+    
+    signals.slice(0, 4).forEach(signal => {
+        const signalDiv = document.createElement('div');
+        signalDiv.className = 'p-3 bg-slate-800/30 rounded-lg hover:bg-slate-800/50 transition-all cursor-pointer';
+        
+        const signalColor = signal.signal_type.includes('buy') ? 'text-green-400' : 
+                           signal.signal_type.includes('sell') ? 'text-red-400' : 'text-yellow-400';
+        
+        signalDiv.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-white">${signal.symbol}</span>
+                <span class="text-sm ${signalColor}">${signal.signal_type.toUpperCase()}</span>
+            </div>
+            <div class="text-sm text-slate-300">${signal.message}</div>
+            <div class="flex justify-between items-center mt-2 text-xs text-slate-400">
+                <span>${signal.strategy}</span>
+                <span>${signal.strength.toFixed(0)}% strength</span>
+            </div>
+        `;
+        
+        panel.appendChild(signalDiv);
+    });
+    
+    // Update active signals count
+    const activeSignalsEl = document.getElementById('active-signals');
+    if (activeSignalsEl) {
+        activeSignalsEl.textContent = signals.length;
+    }
+}
+
+// Show signal alert notification
+function showSignalAlert(signal) {
+    const alertEl = document.getElementById('signal-alert');
+    const titleEl = document.getElementById('alert-title');
+    const messageEl = document.getElementById('alert-message');
+    
+    if (alertEl && titleEl && messageEl) {
+        titleEl.textContent = `${signal.symbol} ${signal.signal_type.toUpperCase()}`;
+        messageEl.textContent = signal.message;
+        
+        alertEl.classList.remove('translate-x-full', 'opacity-0');
+        alertEl.classList.add('translate-x-0', 'opacity-100');
+        
+        setTimeout(() => {
+            alertEl.classList.add('translate-x-full', 'opacity-0');
+            alertEl.classList.remove('translate-x-0', 'opacity-100');
+        }, 5000);
+    }
+}
+
+// Update portfolio stats
+function updatePortfolioStats(portfolio) {
+    // Update AI confidence based on portfolio performance
+    const confidenceEl = document.getElementById('ai-confidence');
+    if (confidenceEl) {
+        const confidence = Math.min(95, Math.max(60, 75 + (portfolio.total_pnl_percent * 2)));
+        confidenceEl.textContent = confidence.toFixed(0) + '%';
+    }
+    
+    // Update market sentiment
+    const sentimentEl = document.getElementById('market-sentiment');
+    if (sentimentEl) {
+        const sentiment = portfolio.total_pnl_percent > 5 ? 'Very Bullish' :
+                         portfolio.total_pnl_percent > 2 ? 'Bullish' :
+                         portfolio.total_pnl_percent < -5 ? 'Very Bearish' :
+                         portfolio.total_pnl_percent < -2 ? 'Bearish' : 'Neutral';
+        sentimentEl.textContent = sentiment;
+    }
+    
+    // Update risk level
+    const riskEl = document.getElementById('risk-level');
+    if (riskEl) {
+        const riskLevel = Math.abs(portfolio.total_pnl_percent) > 10 ? 'High' :
+                         Math.abs(portfolio.total_pnl_percent) > 5 ? 'Medium' : 'Low';
+        riskEl.textContent = riskLevel;
+        
+        // Change color based on risk
+        riskEl.className = riskLevel === 'High' ? 'text-3xl font-bold text-red-400 mb-1' :
+                          riskLevel === 'Medium' ? 'text-3xl font-bold text-yellow-400 mb-1' :
+                          'text-3xl font-bold text-green-400 mb-1';
+    }
+}
+
+// Start data simulation if WebSocket fails
+function startDataSimulation() {
+    setInterval(() => {
+        // Simulate AI predictions
+        const symbols = ['BTC', 'ETH', 'SOL'];
+        const mockPredictions = {};
+        
+        symbols.forEach(symbol => {
+            mockPredictions[symbol] = {
+                current_price: 50000 + Math.random() * 20000,
+                predictions: {
+                    '1h': {price: 50000 + Math.random() * 20000, confidence: 70 + Math.random() * 20},
+                    '24h': {price: 50000 + Math.random() * 20000, confidence: 70 + Math.random() * 20},
+                    '7d': {price: 50000 + Math.random() * 20000, confidence: 60 + Math.random() * 20}
+                },
+                trend_direction: ['up', 'down', 'sideways'][Math.floor(Math.random() * 3)],
+                signal_strength: 60 + Math.random() * 40
+            };
+        });
+        
+        updateAIPredictions(mockPredictions);
+        
+        // Simulate scanner signals
+        if (Math.random() < 0.3) { // 30% chance
+            const mockSignal = {
+                id: Date.now(),
+                symbol: symbols[Math.floor(Math.random() * symbols.length)],
+                signal_type: ['buy', 'sell', 'strong_buy'][Math.floor(Math.random() * 3)],
+                strategy: ['momentum', 'breakout', 'rsi_oversold'][Math.floor(Math.random() * 3)],
+                strength: 60 + Math.random() * 40,
+                price: 50000 + Math.random() * 20000,
+                message: 'AI detected trading opportunity',
+                timestamp: new Date().toISOString()
+            };
+            
+            scannerSignals.unshift(mockSignal);
+            if (scannerSignals.length > 10) scannerSignals.pop();
+            
+            updateScannerSignals(scannerSignals);
+            showSignalAlert(mockSignal);
+        }
+        
+        // Update portfolio stats
+        updatePortfolioStats({
+            total_pnl_percent: -5 + Math.random() * 10
+        });
+        
+    }, 8000); // Update every 8 seconds
+}
+
+// Initialize real-time data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    connectRealTimeData();
+});
+
+// EXISTING Portfolio Performance Chart (keeping original code intact)
+const portfolioCtx = document.getElementById('portfolio-chart');
+if (portfolioCtx) {
+    const gradient = portfolioCtx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+    gradient.addColorStop(1, 'rgba(147, 51, 234, 0.1)');
+
+    new Chart(portfolioCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 30}, (_, i) => i),
+            datasets: [{
+                data: [
+                    100000, 102000, 101500, 103000, 105000, 104500, 106000, 108000, 107500, 109000,
+                    108500, 110000, 111500, 110500, 112000, 114000, 113500, 115000, 117000, 116500,
+                    118000, 119500, 118500, 120000, 122000, 121500, 123000, 124500, 125000, 125430
+                ],
+                borderColor: '#3b82f6',
+                backgroundColor: gradient,
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    display: false
+                },
+                y: {
+                    display: false
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
+// Mini sparklines
+function createSparkline(id, color, data) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: 10}, (_, i) => i),
+            datasets: [{
+                data: data || Array.from({length: 10}, () => Math.random() * 100),
+                borderColor: color,
+                borderWidth: 1.5,
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { display: false },
+                y: { display: false }
+            }
+        }
+    });
+}
+
+// Create all sparklines
+createSparkline('pnl-spark', '#10b981');
+createSparkline('btc-mini', '#f97316');
+createSparkline('eth-mini', '#a855f7');
+createSparkline('usdt-mini', '#10b981');
+
+// Real-time dashboard data
+let dashboardData = {
+    totalBalance: 100000,
+    dailyPnl: 0,
+    activeTrades: 0,
+    positions: []
+};
+
+// Fetch trading data - using Sofia V2 demo data
+async function fetchTradingData() {
+    try {
+        // Sofia V2 demo positions with realistic data
+        const positions = [
+            {
+                symbol: "BTCUSDT",
+                side: "long",
+                size: 0.15,
+                entry_price: 67200,
+                current_price: 67845.32,
+                unrealized_pnl: 96.75,
+                pnl_percent: 0.14
+            },
+            {
+                symbol: "ETHUSDT", 
+                side: "long",
+                size: 2.5,
+                entry_price: 2420,
+                current_price: 2456.78,
+                unrealized_pnl: 91.95,
+                pnl_percent: 1.52
+            },
+            {
+                symbol: "SOLUSDT",
+                side: "short", 
+                size: 8.0,
+                entry_price: 185.50,
+                current_price: 182.34,
+                unrealized_pnl: 25.28,
+                pnl_percent: 1.70
+            }
+        ];
+        
+        dashboardData.positions = positions;
+        dashboardData.activeTrades = positions.length;
+        
+        // Calculate total PnL from positions
+        dashboardData.dailyPnl = positions.reduce((sum, pos) => {
+            return sum + (pos.unrealized_pnl || 0);
+        }, 0);
+        
+        // Calculate total value
+        dashboardData.totalBalance = positions.reduce((sum, pos) => {
+            return sum + (pos.size * pos.current_price);
+        }, 0);
+        
+        updateDashboardUI();
+        console.log('Dashboard data updated:', dashboardData);
+    } catch (error) {
+        console.log('Failed to fetch trading data:', error);
+    }
+}
+
+// Update dashboard UI with real data
+function updateDashboardUI() {
+    // Update Total Balance (approximation)
+    const balanceEl = document.querySelector('.text-3xl.font-bold.text-white');
+    if (balanceEl) {
+        const totalValue = dashboardData.totalBalance + dashboardData.dailyPnl;
+        balanceEl.textContent = `â‚º${totalValue.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+    }
+    
+    // Update Daily P&L
+    const pnlEl = document.querySelector('.text-3xl.font-bold.text-emerald-400');
+    if (pnlEl) {
+        const pnl = dashboardData.dailyPnl;
+        const pnlClass = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+        const pnlSign = pnl >= 0 ? '+' : '';
+        pnlEl.className = `text-3xl font-bold ${pnlClass}`;
+        pnlEl.textContent = `${pnlSign}â‚º${pnl.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+    }
+    
+    // Update Active Trades
+    const tradesEl = document.querySelector('.text-3xl.font-bold.text-orange-400');
+    if (tradesEl) {
+        tradesEl.textContent = dashboardData.activeTrades.toString();
+    }
+}
+
+// WebSocket for real-time updates
+function initWebSocket() {
+    try {
+        const ws = new WebSocket('ws://localhost:8080/ws');
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'trade') {
+                // Refresh data when new trades come in
+                fetchTradingData();
+            }
+            console.log('WebSocket update:', data);
+        };
+        
+        ws.onopen = () => {
+            console.log('WebSocket connected to backend');
+        };
+        
+        ws.onclose = () => {
+            console.log('WebSocket disconnected, reconnecting...');
+            setTimeout(initWebSocket, 5000);
+        };
+    } catch (error) {
+        console.log('WebSocket connection failed:', error);
+    }
+}
+
+// Initialize data fetching and WebSocket
+fetchTradingData();
+setInterval(fetchTradingData, 10000); // Update every 10 seconds
+initWebSocket();
+</script>
+{% endblock %}
+

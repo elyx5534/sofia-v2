@@ -1,0 +1,308 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Settings - Sofia V2{% endblock %}
+
+{% block content %}
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Trading Settings</h1>
+                <p class="text-gray-600 dark:text-gray-400">Configure paper trading and system parameters</p>
+            </div>
+            <div id="paper-status-badge" class="hidden">
+                <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full text-sm font-semibold">
+                    <i class="fas fa-play-circle mr-1"></i> Paper Trading ON
+                </span>
+            </div>
+        </div>
+    </div>
+        
+        <!-- Paper Trading Control -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Paper Trading Mode</h2>
+            
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <p class="text-gray-400">Enable paper trading to test strategies with simulated money</p>
+                    <p class="text-sm text-gray-500 mt-1">Initial Balance: $10,000 | K-Factor: 0.25</p>
+                </div>
+                
+                <!-- Toggle Switch -->
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="paper-trading-toggle" class="sr-only peer" data-testid="paper-trading-toggle">
+                    <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-600"></div>
+                    <span class="ml-3 text-sm font-medium" id="toggle-status">OFF</span>
+                </label>
+            </div>
+            
+            <!-- Status Indicator -->
+            <div id="trading-status" class="mt-4 p-3 rounded bg-gray-700 hidden">
+                <div class="flex items-center">
+                    <div id="status-indicator" class="w-3 h-3 rounded-full mr-2"></div>
+                    <span id="status-text"></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button id="run-replay" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded" data-testid="run-replay-btn">
+                    <i class="fas fa-fast-forward mr-2"></i>Run Replay (24h)
+                </button>
+                
+                <button id="generate-report" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded" data-testid="generate-report-btn">
+                    <i class="fas fa-file-alt mr-2"></i>Generate Report
+                </button>
+                
+                <button id="view-positions" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded" data-testid="view-positions-btn">
+                    <i class="fas fa-chart-pie mr-2"></i>View Positions
+                </button>
+                
+                <button id="kill-switch" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded" data-testid="kill-switch-btn">
+                    <i class="fas fa-stop-circle mr-2"></i>Kill Switch
+                </button>
+            </div>
+        </div>
+        
+        <!-- Live Metrics Preview -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Live Metrics</h2>
+            
+            <div id="live-metrics" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-700 p-4 rounded">
+                    <div class="text-gray-400 text-sm">Total P&L</div>
+                    <div class="text-2xl font-bold" id="metric-pnl-total" data-testid="metric-pnl-total">$0.00</div>
+                </div>
+                
+                <div class="bg-gray-700 p-4 rounded">
+                    <div class="text-gray-400 text-sm">Daily P&L</div>
+                    <div class="text-2xl font-bold" id="metric-pnl-daily" data-testid="metric-pnl-daily">$0.00</div>
+                </div>
+                
+                <div class="bg-gray-700 p-4 rounded">
+                    <div class="text-gray-400 text-sm">Win Rate</div>
+                    <div class="text-2xl font-bold" id="metric-win-rate" data-testid="metric-win-rate">0%</div>
+                </div>
+                
+                <div class="bg-gray-700 p-4 rounded">
+                    <div class="text-gray-400 text-sm">Open Positions</div>
+                    <div class="text-2xl font-bold" id="metric-positions" data-testid="metric-positions">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Paper Trading Toggle
+        const toggle = document.getElementById('paper-trading-toggle');
+        const toggleStatus = document.getElementById('toggle-status');
+        const tradingStatus = document.getElementById('trading-status');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        
+        // Check initial state
+        async function checkPaperTradingState() {
+            try {
+                const response = await fetch('/api/paper/state');
+                const data = await response.json();
+                
+                const isRunning = data.mode === 'paper' && data.status === 'running';
+                toggle.checked = isRunning;
+                toggleStatus.textContent = isRunning ? 'ON' : 'OFF';
+                
+                updateStatusIndicator(isRunning ? 'running' : 'stopped');
+                updatePaperTradingBadge(isRunning);
+                updateMetrics(data);
+            } catch (error) {
+                // Paper trading API not available - show toggle as available but OFF
+                console.log('Paper trading API not available on current branch');
+                toggle.checked = false;
+                toggleStatus.textContent = 'OFF';
+                updateStatusIndicator('stopped');
+                updatePaperTradingBadge(false);
+            }
+        }
+        
+        // Update paper trading badge
+        function updatePaperTradingBadge(isOn) {
+            const badge = document.getElementById('paper-status-badge');
+            const badgeSpan = badge.querySelector('span');
+            
+            if (isOn) {
+                badge.classList.remove('hidden');
+                badgeSpan.className = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-3 py-1 rounded-full text-sm font-semibold';
+                badgeSpan.innerHTML = '<i class="fas fa-play-circle mr-1"></i> Paper Trading ON';
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+        
+        // Toggle handler
+        toggle.addEventListener('change', async (e) => {
+            const mode = e.target.checked ? 'paper' : 'off';
+            
+            try {
+                const response = await fetch('/api/paper/settings/trading_mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    toggleStatus.textContent = mode === 'paper' ? 'ON' : 'OFF';
+                    updateStatusIndicator(mode === 'paper' ? 'running' : 'stopped');
+                    updatePaperTradingBadge(mode === 'paper');
+                    
+                    // Show notification
+                    showNotification(data.message, 'success');
+                }
+            } catch (error) {
+                console.error('Failed to toggle:', error);
+                e.target.checked = !e.target.checked;
+                showNotification('Failed to toggle paper trading', 'error');
+            }
+        });
+        
+        // Status indicator update
+        function updateStatusIndicator(status) {
+            tradingStatus.classList.remove('hidden');
+            
+            if (status === 'running') {
+                statusIndicator.className = 'w-3 h-3 rounded-full mr-2 bg-green-500 animate-pulse';
+                statusText.textContent = 'Paper trading is running';
+                statusText.className = 'text-green-400';
+            } else {
+                statusIndicator.className = 'w-3 h-3 rounded-full mr-2 bg-red-500';
+                statusText.textContent = 'Paper trading is stopped';
+                statusText.className = 'text-red-400';
+            }
+        }
+        
+        // Update metrics
+        function updateMetrics(data) {
+            document.getElementById('metric-pnl-total').textContent = `$${parseFloat(data.total_pnl).toFixed(2)}`;
+            document.getElementById('metric-pnl-daily').textContent = `$${parseFloat(data.daily_pnl).toFixed(2)}`;
+            document.getElementById('metric-win-rate').textContent = `${data.win_rate.toFixed(1)}%`;
+            document.getElementById('metric-positions').textContent = data.positions_count;
+            
+            // Color code P&L
+            const totalPnl = parseFloat(data.total_pnl);
+            const dailyPnl = parseFloat(data.daily_pnl);
+            
+            document.getElementById('metric-pnl-total').className = 
+                `text-2xl font-bold ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            document.getElementById('metric-pnl-daily').className = 
+                `text-2xl font-bold ${dailyPnl >= 0 ? 'text-green-400' : 'text-red-400'}`;
+        }
+        
+        // Quick Actions
+        document.getElementById('run-replay').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/paper/replay', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hours: 24 })
+                });
+                
+                const data = await response.json();
+                showNotification('Replay simulation started', 'info');
+                
+                // Check status after 5 seconds
+                setTimeout(async () => {
+                    const statusResponse = await fetch('/api/paper/replay/status');
+                    const status = await statusResponse.json();
+                    
+                    if (status.status === 'completed') {
+                        const profitable = status.is_profitable ? 'YES' : 'NO';
+                        showNotification(`Replay complete. Profitable: ${profitable}`, 
+                                       status.is_profitable ? 'success' : 'warning');
+                    }
+                }, 5000);
+            } catch (error) {
+                console.error('Failed to run replay:', error);
+                showNotification('Failed to start replay', 'error');
+            }
+        });
+        
+        document.getElementById('generate-report').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/paper/report/generate', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                showNotification('Report generation started', 'info');
+            } catch (error) {
+                console.error('Failed to generate report:', error);
+                showNotification('Failed to generate report', 'error');
+            }
+        });
+        
+        document.getElementById('view-positions').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/paper/positions');
+                const positions = await response.json();
+                
+                if (positions.length === 0) {
+                    showNotification('No open positions', 'info');
+                } else {
+                    console.log('Positions:', positions);
+                    showNotification(`${positions.length} open positions`, 'info');
+                }
+            } catch (error) {
+                console.error('Failed to get positions:', error);
+            }
+        });
+        
+        document.getElementById('kill-switch').addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to activate the kill switch?')) return;
+            
+            try {
+                const response = await fetch('/api/paper/kill-switch', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                showNotification(data.message, 'warning');
+                
+                // Update UI
+                toggle.checked = false;
+                toggleStatus.textContent = 'OFF';
+                updateStatusIndicator('stopped');
+            } catch (error) {
+                console.error('Failed to activate kill switch:', error);
+                showNotification('Failed to activate kill switch', 'error');
+            }
+        });
+        
+        // Notification helper
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-600' :
+                type === 'error' ? 'bg-red-600' :
+                type === 'warning' ? 'bg-yellow-600' :
+                'bg-blue-600'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Auto-refresh metrics every 30 seconds
+        setInterval(checkPaperTradingState, 30000);
+        
+        // Initial load
+        checkPaperTradingState();
+    </script>
+</body>
+</html>

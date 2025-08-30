@@ -1,0 +1,366 @@
+﻿{% extends "base.html" %}
+
+{% block title %}AI Trading - Sofia V2{% endblock %}
+
+{% block content %}
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">
+                    <i class="fas fa-robot mr-3 text-brand-400"></i>
+                    AI Trading
+                </h1>
+                <p class="text-gray-300">Automated trading with AI strategy selection</p>
+            </div>
+            <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-300 text-sm">AI Status:</span>
+                    <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-green-400 text-sm font-medium">Online</span>
+                </div>
+                <button class="bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded text-white transition-colors">
+                    <i class="fas fa-sync-alt mr-2"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <!-- AI Control Panel -->
+        <div class="xl:col-span-1 space-y-6">
+            <!-- AI Toggle -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h2 class="text-xl font-semibold text-white mb-4">
+                    <i class="fas fa-toggle-on mr-2 text-brand-400"></i>
+                    AI Control
+                </h2>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-gray-300">Enable AI Trading</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="ai-toggle" class="sr-only peer" data-testid="ai-toggle">
+                        <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-brand-600"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-300" id="ai-status">OFF</span>
+                    </label>
+                </div>
+                
+                <div class="text-xs text-gray-400 bg-gray-800 rounded p-3">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    AI trading uses machine learning to execute trades based on market signals
+                </div>
+            </div>
+            
+            <!-- Strategy Selection -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-brain mr-2 text-brand-400"></i>
+                    Strategy Selection
+                </h3>
+                
+                <select class="w-full bg-gray-800 text-white border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-brand-500" data-testid="ai-strategy-select">
+                    <option value="sma_cross">SMA Crossover</option>
+                    <option value="ema_breakout">EMA Breakout</option>
+                    <option value="rsi_mr">RSI Mean Reversion</option>
+                    <option value="donchian">Donchian Breakout</option>
+                    <option value="bollinger">Bollinger Bands</option>
+                    <option value="supertrend">SuperTrend</option>
+                </select>
+                
+                <div class="mt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">K-Factor:</span>
+                        <span class="text-white font-mono">0.25</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Risk Level:</span>
+                        <span class="text-yellow-400">Medium</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Expected Trades/Day:</span>
+                        <span class="text-white">3-5</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Safety Gates -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-shield-alt mr-2 text-green-400"></i>
+                    Safety Gates
+                </h3>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-300 text-sm">Daily P&L</span>
+                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">âœ“ PASS</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-300 text-sm">Max Drawdown</span>
+                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">âœ“ PASS</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-300 text-sm">Error Rate</span>
+                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">âœ“ PASS</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-300 text-sm">Slippage</span>
+                        <span class="bg-yellow-600 px-2 py-1 rounded text-xs text-white">âš  WATCH</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Trading Dashboard -->
+        <div class="xl:col-span-2 space-y-6">
+            <!-- News Sentiment Panel -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white">
+                        <i class="fas fa-newspaper mr-2 text-brand-400"></i>
+                        News Sentiment
+                    </h3>
+                    <div class="flex items-center space-x-2" data-testid="ai-news-badge">
+                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">BULLISH</span>
+                        <span class="text-green-400 text-sm font-mono">+0.73</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-400">+0.73</div>
+                        <div class="text-xs text-gray-400">1H Sentiment</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-400">+0.45</div>
+                        <div class="text-xs text-gray-400">24H Sentiment</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-white">12</div>
+                        <div class="text-xs text-gray-400">News Articles</div>
+                    </div>
+                </div>
+                
+                <button class="w-full bg-brand-600 hover:bg-brand-700 text-white py-2 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-lightbulb mr-2"></i> Explain Last Trade
+                </button>
+            </div>
+            
+            <!-- AI Signals Feed -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-satellite-dish mr-2 text-brand-400"></i>
+                    Live Signals Feed
+                </h3>
+                
+                <div class="space-y-3" data-testid="ai-signal-feed">
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-mono text-white">BTC/USDT</span>
+                            <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">BUY SIGNAL</span>
+                        </div>
+                        <div class="text-sm text-gray-300">
+                            SuperTrend breakout detected â€¢ Confidence: 0.84 â€¢ K-Factor: 0.28
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            2 minutes ago â€¢ News sentiment: +0.73
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-mono text-white">ETH/USDT</span>
+                            <span class="bg-red-600 px-2 py-1 rounded text-xs text-white">SELL SIGNAL</span>
+                        </div>
+                        <div class="text-sm text-gray-300">
+                            RSI overbought (78.4) â€¢ Confidence: 0.67 â€¢ K-Factor: 0.22
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            5 minutes ago â€¢ News sentiment: -0.12
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-mono text-white">AAPL</span>
+                            <span class="bg-gray-600 px-2 py-1 rounded text-xs text-white">NEUTRAL</span>
+                        </div>
+                        <div class="text-sm text-gray-300">
+                            No clear signal â€¢ Waiting for breakout â€¢ K-Factor: 0.15
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">
+                            8 minutes ago â€¢ News sentiment: +0.23
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Performance -->
+            <div class="bg-surface-card rounded-lg p-6 border border-surface-border">
+                <h3 class="text-lg font-semibold text-white mb-4">
+                    <i class="fas fa-chart-area mr-2 text-brand-400"></i>
+                    AI Performance (24H)
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-400">+$247.83</div>
+                        <div class="text-xs text-gray-400">Total P&L</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-white">67.2%</div>
+                        <div class="text-xs text-gray-400">Win Rate</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-white">12</div>
+                        <div class="text-xs text-gray-400">Trades</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-400">1.84</div>
+                        <div class="text-xs text-gray-400">Sharpe Ratio</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // AI Trading functionality
+    let aiEnabled = false;
+    let currentStrategy = 'sma_cross';
+    
+    function initAITrading() {
+        const aiToggle = document.getElementById('ai-toggle');
+        const aiStatus = document.getElementById('ai-status');
+        const strategySelect = document.querySelector('[data-testid="ai-strategy-select"]');
+        
+        // AI Toggle handler
+        aiToggle.addEventListener('change', (e) => {
+            aiEnabled = e.target.checked;
+            aiStatus.textContent = aiEnabled ? 'ON' : 'OFF';
+            
+            if (aiEnabled) {
+                showNotification('AI Trading enabled', 'success');
+                startAITrading();
+            } else {
+                showNotification('AI Trading disabled', 'info');
+                stopAITrading();
+            }
+        });
+        
+        // Strategy selection
+        strategySelect.addEventListener('change', (e) => {
+            currentStrategy = e.target.value;
+            updateStrategyInfo();
+            showNotification(`Strategy changed to ${e.target.selectedOptions[0].text}`, 'info');
+        });
+        
+        // Explain last trade button
+        document.querySelector('button[data-testid="explain-trade"]')?.addEventListener('click', explainLastTrade);
+        
+        // Initialize signals feed
+        updateSignalsFeed();
+        setInterval(updateSignalsFeed, 10000); // Update every 10 seconds
+        
+        // Initialize AI performance
+        updateAIPerformance();
+        setInterval(updateAIPerformance, 30000); // Update every 30 seconds
+    }
+    
+    function startAITrading() {
+        console.log('Starting AI trading with strategy:', currentStrategy);
+        // In production, would call API to start AI trading
+    }
+    
+    function stopAITrading() {
+        console.log('Stopping AI trading');
+        // In production, would call API to stop AI trading
+    }
+    
+    function updateStrategyInfo() {
+        // Update K-factor and risk info based on strategy
+        const strategyInfo = {
+            'sma_cross': { kFactor: 0.25, risk: 'Medium', trades: '3-5' },
+            'ema_breakout': { kFactor: 0.30, risk: 'Medium-High', trades: '4-7' },
+            'rsi_mr': { kFactor: 0.20, risk: 'Low-Medium', trades: '2-4' },
+            'donchian': { kFactor: 0.35, risk: 'High', trades: '2-3' },
+            'bollinger': { kFactor: 0.22, risk: 'Low', trades: '3-6' },
+            'supertrend': { kFactor: 0.28, risk: 'Medium', trades: '4-6' }
+        };
+        
+        const info = strategyInfo[currentStrategy] || strategyInfo['sma_cross'];
+        
+        // Update displayed info (would be more sophisticated in production)
+        console.log(`Strategy updated: ${currentStrategy}`, info);
+    }
+    
+    function updateSignalsFeed() {
+        // Mock signal updates - in production would fetch from AI API
+        const feed = document.querySelector('[data-testid="ai-signal-feed"]');
+        
+        // Simulate new signals by updating timestamps
+        const timeElements = feed.querySelectorAll('.text-xs.text-gray-400');
+        timeElements.forEach((el, index) => {
+            const minutesAgo = Math.floor(Math.random() * 10) + 1;
+            el.textContent = `${minutesAgo} minutes ago â€¢ News sentiment: ${(Math.random() - 0.5).toFixed(2)}`;
+        });
+    }
+    
+    function updateAIPerformance() {
+        // Mock performance updates - in production would fetch real metrics
+        const pnl = 200 + (Math.random() - 0.5) * 100;
+        const winRate = 60 + Math.random() * 20;
+        const trades = Math.floor(Math.random() * 5) + 10;
+        const sharpe = 1.5 + (Math.random() - 0.5) * 0.7;
+        
+        const performanceCards = document.querySelectorAll('.text-2xl.font-bold');
+        if (performanceCards.length >= 4) {
+            performanceCards[0].textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+            performanceCards[0].className = `text-2xl font-bold ${pnl >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            
+            performanceCards[1].textContent = `${winRate.toFixed(1)}%`;
+            performanceCards[2].textContent = trades.toString();
+            performanceCards[3].textContent = sharpe.toFixed(2);
+        }
+    }
+    
+    async function explainLastTrade() {
+        try {
+            // Mock AI explanation - in production would call /ai/explain_trade
+            const explanation = "BTC long position opened due to SuperTrend breakout above $67,200 resistance with positive news sentiment (+0.73) and strong volume confirmation.";
+            
+            showNotification(explanation, 'info');
+            
+        } catch (error) {
+            console.error('Failed to get trade explanation:', error);
+            showNotification('AI explanation unavailable', 'error');
+        }
+    }
+    
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 max-w-md ${
+            type === 'success' ? 'bg-green-600' :
+            type === 'error' ? 'bg-red-600' :
+            type === 'info' ? 'bg-brand-600' :
+            'bg-gray-600'
+        } text-white`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAITrading);
+    } else {
+        initAITrading();
+    }
+</script>
+{% endblock %}

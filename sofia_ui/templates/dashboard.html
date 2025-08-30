@@ -1,0 +1,403 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Trading Dashboard - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Trading Dashboard</h1>
+        <div class="flex items-center space-x-4">
+            <span id="last-update" class="text-gray-400 text-sm"></span>
+            <button id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+    
+    <!-- Main Metrics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <!-- Total Balance Widget -->
+        <div class="bg-gray-800 rounded-lg p-6" data-testid="total-balance">
+            <div class="flex justify-between items-start mb-2">
+                <div class="text-gray-400 text-sm uppercase tracking-wider">Total Balance</div>
+                <i class="fas fa-wallet text-gray-500"></i>
+            </div>
+            <div data-testid="total-balance" class="text-3xl font-bold text-white mb-2">{{ total_balance|format_currency("$") }}</div>
+            <div class="text-sm text-gray-500">Portfolio Value</div>
+        </div>
+        
+        <!-- Total P&L Widget -->
+        <div class="bg-gray-800 rounded-lg p-6" data-testid="paper-pnl-total">
+            <div class="flex justify-between items-start mb-2">
+                <div class="text-gray-400 text-sm uppercase tracking-wider">Total P&L</div>
+                <i class="fas fa-chart-line text-gray-500"></i>
+            </div>
+            <div id="pnl-total" class="text-3xl font-bold mb-2">$0.00</div>
+            <div id="pnl-total-change" class="text-sm">
+                <span class="text-gray-500">Return:</span>
+                <span id="pnl-total-pct">0.00%</span>
+            </div>
+        </div>
+            
+            <!-- Daily P&L Widget -->
+            <div class="bg-gray-800 rounded-lg p-6" data-testid="paper-pnl-daily">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="text-gray-400 text-sm uppercase tracking-wider">Daily P&L</div>
+                    <i class="fas fa-calendar-day text-gray-500"></i>
+                </div>
+                <div id="pnl-daily" class="text-3xl font-bold mb-2">$0.00</div>
+                <div class="text-sm text-gray-500">Today's Performance</div>
+            </div>
+            
+            <!-- Open Positions Widget -->
+            <div class="bg-gray-800 rounded-lg p-6" data-testid="paper-positions-count">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="text-gray-400 text-sm uppercase tracking-wider">Open Positions</div>
+                    <i class="fas fa-briefcase text-gray-500"></i>
+                </div>
+                <div id="positions-count" class="text-3xl font-bold mb-2">0</div>
+                <div class="text-sm text-gray-500">Active Trades</div>
+            </div>
+            
+            <!-- Trades Today Widget -->
+            <div class="bg-gray-800 rounded-lg p-6" data-testid="paper-trades-today">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="text-gray-400 text-sm uppercase tracking-wider">Trades Today</div>
+                    <i class="fas fa-exchange-alt text-gray-500"></i>
+                </div>
+                <div id="trades-today" class="text-3xl font-bold mb-2">0</div>
+                <div class="text-sm text-gray-500">Executed Orders</div>
+            </div>
+        </div>
+        
+        <!-- Secondary Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Win Rate -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="text-gray-400 text-sm uppercase tracking-wider mb-2">Win Rate</div>
+                <div class="flex items-end justify-between">
+                    <div id="win-rate" class="text-2xl font-bold">0%</div>
+                    <div class="h-16 w-16">
+                        <canvas id="win-rate-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sharpe Ratio -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="text-gray-400 text-sm uppercase tracking-wider mb-2">Sharpe Ratio</div>
+                <div id="sharpe-ratio" class="text-2xl font-bold">0.00</div>
+                <div class="text-sm text-gray-500 mt-1">Risk-Adjusted Return</div>
+            </div>
+            
+            <!-- Max Drawdown -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="text-gray-400 text-sm uppercase tracking-wider mb-2">Max Drawdown</div>
+                <div id="max-drawdown" class="text-2xl font-bold text-red-400">0.00%</div>
+                <div class="text-sm text-gray-500 mt-1">Peak to Trough</div>
+            </div>
+        </div>
+        
+        <!-- P&L Chart -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">P&L Performance</h2>
+            <div class="h-64">
+                <canvas id="pnl-chart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Recent Trades Table -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Recent Trades</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-gray-400 text-sm">
+                            <th class="pb-3">Time</th>
+                            <th class="pb-3">Symbol</th>
+                            <th class="pb-3">Side</th>
+                            <th class="pb-3">Quantity</th>
+                            <th class="pb-3">Price</th>
+                            <th class="pb-3">Fees</th>
+                            <th class="pb-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trades-table" class="text-sm">
+                        <!-- Trades will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        let pnlChart = null;
+        let winRateChart = null;
+        let pnlHistory = [];
+        
+        // Initialize charts
+        function initCharts() {
+            // P&L Chart
+            const pnlCtx = document.getElementById('pnl-chart').getContext('2d');
+            pnlChart = new Chart(pnlCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Cumulative P&L',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Win Rate Donut Chart
+            const winRateCtx = document.getElementById('win-rate-chart').getContext('2d');
+            winRateChart = new Chart(winRateCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Wins', 'Losses'],
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Fetch and update dashboard data
+        async function updateDashboard() {
+            try {
+                // Fetch state
+                const stateResponse = await fetch('/api/paper/state');
+                const state = await stateResponse.json();
+                
+                // Update main widgets
+                updateWidget('pnl-total', state.total_pnl, true);
+                updateWidget('pnl-daily', state.daily_pnl, true);
+                document.getElementById('positions-count').textContent = state.positions_count;
+                
+                // Calculate return percentage
+                const totalPnl = parseFloat(state.total_pnl);
+                const balance = parseFloat(state.balance);
+                const returnPct = balance > 0 ? (totalPnl / 10000) * 100 : 0;
+                document.getElementById('pnl-total-pct').textContent = `${returnPct.toFixed(2)}%`;
+                document.getElementById('pnl-total-pct').className = returnPct >= 0 ? 'text-green-400' : 'text-red-400';
+                
+                // Update secondary metrics
+                document.getElementById('win-rate').textContent = `${state.win_rate.toFixed(1)}%`;
+                document.getElementById('sharpe-ratio').textContent = state.sharpe_ratio.toFixed(2);
+                document.getElementById('max-drawdown').textContent = `${state.max_drawdown.toFixed(2)}%`;
+                
+                // Update win rate chart
+                if (state.trade_count > 0) {
+                    const wins = state.win_rate;
+                    const losses = 100 - wins;
+                    winRateChart.data.datasets[0].data = [wins, losses];
+                    winRateChart.update();
+                }
+                
+                // Fetch today's trades count
+                const tradesResponse = await fetch('/api/paper/widgets/trades-today');
+                const tradesData = await tradesResponse.json();
+                document.getElementById('trades-today').textContent = tradesData.value;
+                
+                // Fetch recent trades
+                const recentTradesResponse = await fetch('/api/paper/trades?limit=10');
+                const recentTrades = await recentTradesResponse.json();
+                updateTradesTable(recentTrades);
+                
+                // Update P&L chart
+                updatePnlChart(totalPnl);
+                
+                // Update last update time
+                document.getElementById('last-update').textContent = 
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+                    
+            } catch (error) {
+                console.error('Failed to update dashboard:', error);
+            }
+        }
+        
+        // Update widget with color coding
+        function updateWidget(elementId, value, isPnl = false) {
+            const element = document.getElementById(elementId);
+            const numValue = parseFloat(value);
+            
+            element.textContent = `$${numValue.toFixed(2)}`;
+            
+            if (isPnl) {
+                element.className = `text-3xl font-bold mb-2 ${numValue >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            }
+        }
+        
+        // Update trades table
+        function updateTradesTable(trades) {
+            const tbody = document.getElementById('trades-table');
+            tbody.innerHTML = '';
+            
+            if (trades.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-gray-500 py-4">No trades yet</td></tr>';
+                return;
+            }
+            
+            trades.forEach(trade => {
+                const row = document.createElement('tr');
+                row.className = 'border-t border-gray-700';
+                
+                const time = new Date(trade.timestamp).toLocaleTimeString();
+                const sideClass = trade.side === 'buy' ? 'text-green-400' : 'text-red-400';
+                
+                row.innerHTML = `
+                    <td class="py-2">${time}</td>
+                    <td class="py-2">${trade.symbol}</td>
+                    <td class="py-2 ${sideClass}">${trade.side.toUpperCase()}</td>
+                    <td class="py-2">${trade.quantity}</td>
+                    <td class="py-2">$${parseFloat(trade.filled_price).toFixed(2)}</td>
+                    <td class="py-2">$${parseFloat(trade.fees).toFixed(2)}</td>
+                    <td class="py-2">
+                        <span class="px-2 py-1 rounded text-xs ${
+                            trade.status === 'filled' ? 'bg-green-600' : 'bg-yellow-600'
+                        }">${trade.status}</span>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Update P&L chart
+        function updatePnlChart(currentPnl) {
+            const now = new Date().toLocaleTimeString();
+            
+            // Add to history
+            pnlHistory.push({ time: now, value: currentPnl });
+            
+            // Keep only last 20 points
+            if (pnlHistory.length > 20) {
+                pnlHistory.shift();
+            }
+            
+            // Update chart
+            pnlChart.data.labels = pnlHistory.map(p => p.time);
+            pnlChart.data.datasets[0].data = pnlHistory.map(p => p.value);
+            pnlChart.update();
+        }
+        
+        // Refresh button handler
+        document.getElementById('refresh-btn').addEventListener('click', () => {
+            updateDashboard();
+        });
+        
+        // Update total balance with proper formatting
+        async function updateTotalBalance() {
+            try {
+                // Mock total balance calculation - in production would fetch from API
+                const balance = 10000 + (Math.random() - 0.5) * 2000; // $8k-12k range
+                
+                // Format using Intl.NumberFormat for locale-aware display
+                const formatter = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                
+                const balanceElement = document.getElementById('total-balance');
+                if (balanceElement) {
+                    balanceElement.textContent = formatter.format(balance);
+                    
+                    // Add color based on performance vs initial balance
+                    const initialBalance = 10000;
+                    if (balance > initialBalance) {
+                        balanceElement.className = 'text-3xl font-bold text-success mb-2';
+                    } else if (balance < initialBalance) {
+                        balanceElement.className = 'text-3xl font-bold text-danger mb-2';
+                    } else {
+                        balanceElement.className = 'text-3xl font-bold text-gray-900 dark:text-white mb-2';
+                    }
+                }
+                
+                // Update last update time
+                const lastUpdateElement = document.getElementById('last-update');
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                }
+                
+            } catch (error) {
+                console.error('Failed to update total balance:', error);
+                
+                // Fallback to default value
+                const balanceElement = document.getElementById('total-balance');
+                if (balanceElement && balanceElement.textContent === '$10,000.00') {
+                    // Already has default, no need to change
+                } else if (balanceElement) {
+                    balanceElement.textContent = '$10,000.00';
+                }
+            }
+        }
+        
+        // Initialize on load
+        initCharts();
+        updateDashboard();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(updateDashboard, 30000);
+        
+        // Update total balance immediately and every 5 seconds
+        updateTotalBalance();
+        setInterval(updateTotalBalance, 5000);
+    </script>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}

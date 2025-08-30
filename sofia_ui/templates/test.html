@@ -1,0 +1,37 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+    <style>
+        body {
+            background: #0B0E11;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .card {
+            background: #161A1E;
+            border: 1px solid #2B3139;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        .yellow {
+            color: #F0B90B;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="yellow">Sofia V2 - Test Page Working!</h1>
+    <div class="card">
+        <h2>Dashboard Test</h2>
+        <p>If you can see this, the server is working correctly.</p>
+        <p>Current Time: {{ btc_data.last_updated }}</p>
+        <p>BTC Price: ${{ btc_data.price }}</p>
+    </div>
+</body>
+</html>
+
+{% endblock %}

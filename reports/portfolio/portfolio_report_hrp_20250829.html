@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sofia V2 - Portfolio Construction Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .header { background: #2c3e50; color: white; padding: 20px; border-radius: 5px; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+        .metric-card { background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
+        .metric-card h4 { margin: 0 0 10px 0; color: #6c757d; font-size: 0.9rem; }
+        .metric-value { font-size: 1.8rem; font-weight: bold; color: #495057; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 8px 12px; text-align: left; border: 1px solid #ddd; }
+        th { background: #e9ecef; }
+        .weights-table { max-height: 400px; overflow-y: auto; }
+        .correlation-stats { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Portfolio Construction Report</h1>
+        <p>Method: HRP | Generated: 2025-08-29 23:54:28</p>
+        <p>Assets: 11 | Periods: 61</p>
+    </div>
+    
+    
+        <div class="portfolio-report">
+            <h2>Portfolio Construction Report - HRP</h2>
+            <p>Generated: 2025-08-29T23:54:28.341213</p>
+            <p>Assets: 11, Periods: 61</p>
+            
+            <h3>Portfolio Metrics</h3>
+            
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h4>Expected Return</h4>
+                <div class="metric-value">-17.1%</div>
+            </div>
+            <div class="metric-card">
+                <h4>Volatility</h4>
+                <div class="metric-value">10.4%</div>
+            </div>
+            <div class="metric-card">
+                <h4>Sharpe Ratio</h4>
+                <div class="metric-value">-1.84</div>
+            </div>
+            <div class="metric-card">
+                <h4>Max Drawdown</h4>
+                <div class="metric-value">-6.3%</div>
+            </div>
+            <div class="metric-card">
+                <h4>Effective Assets</h4>
+                <div class="metric-value">7.7</div>
+            </div>
+            <div class="metric-card">
+                <h4>Concentration</h4>
+                <div class="metric-value">0.130</div>
+            </div>
+        </div>
+        
+            
+            <h3>Asset Weights</h3>
+            
+        <table class="weights-table">
+            <thead>
+                <tr><th>Strategy-Symbol</th><th>Weight (%)</th><th>Risk Contrib (%)</th></tr>
+            </thead>
+            <tbody>
+        
+                    <tr>
+                        <td>donchian_breakout_AAPL</td>
+                        <td>21.0%</td>
+                        <td>17.1%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>supertrend_AAPL</td>
+                        <td>18.8%</td>
+                        <td>14.9%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>sma_cross_AAPL</td>
+                        <td>13.9%</td>
+                        <td>12.0%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>bollinger_revert_ETH/USDT</td>
+                        <td>9.9%</td>
+                        <td>22.7%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>sma_cross_MSFT</td>
+                        <td>7.8%</td>
+                        <td>3.6%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>supertrend_BTC/USDT</td>
+                        <td>6.9%</td>
+                        <td>5.9%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>donchian_breakout_BTC/USDT</td>
+                        <td>6.2%</td>
+                        <td>7.2%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>sma_cross_BTC/USDT</td>
+                        <td>5.5%</td>
+                        <td>6.5%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>bollinger_revert_BTC/USDT</td>
+                        <td>4.2%</td>
+                        <td>5.2%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>supertrend_ETH/USDT</td>
+                        <td>3.7%</td>
+                        <td>2.7%</td>
+                    </tr>
+                
+                    <tr>
+                        <td>sma_cross_ETH/USDT</td>
+                        <td>2.2%</td>
+                        <td>2.1%</td>
+                    </tr>
+                </tbody></table>
+        </div>
+        
+    
+    <div class="section">
+        <h2>Risk Analysis</h2>
+        <div class="correlation-stats">
+            <h4>Correlation Statistics</h4>
+            <p><strong>Average Correlation:</strong> 0.024</p>
+            <p><strong>Max Correlation:</strong> 0.346</p>
+            <p><strong>Min Correlation:</strong> -0.212</p>
+        </div>
+        
+        <h3>Risk Contributions</h3>
+        
+        <table>
+            <thead>
+                <tr><th>Strategy-Symbol</th><th>Weight</th><th>Risk Contrib</th><th>Risk/Weight Ratio</th></tr>
+            </thead>
+            <tbody>
+        
+                <tr>
+                    <td>bollinger_revert_ETH/USDT</td>
+                    <td>9.9%</td>
+                    <td>22.7%</td>
+                    <td>2.29</td>
+                </tr>
+            
+                <tr>
+                    <td>donchian_breakout_AAPL</td>
+                    <td>21.0%</td>
+                    <td>17.1%</td>
+                    <td>0.82</td>
+                </tr>
+            
+                <tr>
+                    <td>supertrend_AAPL</td>
+                    <td>18.8%</td>
+                    <td>14.9%</td>
+                    <td>0.79</td>
+                </tr>
+            
+                <tr>
+                    <td>sma_cross_AAPL</td>
+                    <td>13.9%</td>
+                    <td>12.0%</td>
+                    <td>0.86</td>
+                </tr>
+            
+                <tr>
+                    <td>donchian_breakout_BTC/USDT</td>
+                    <td>6.2%</td>
+                    <td>7.2%</td>
+                    <td>1.16</td>
+                </tr>
+            
+                <tr>
+                    <td>sma_cross_BTC/USDT</td>
+                    <td>5.5%</td>
+                    <td>6.5%</td>
+                    <td>1.17</td>
+                </tr>
+            
+                <tr>
+                    <td>supertrend_BTC/USDT</td>
+                    <td>6.9%</td>
+                    <td>5.9%</td>
+                    <td>0.86</td>
+                </tr>
+            
+                <tr>
+                    <td>bollinger_revert_BTC/USDT</td>
+                    <td>4.2%</td>
+                    <td>5.2%</td>
+                    <td>1.23</td>
+                </tr>
+            
+                <tr>
+                    <td>sma_cross_MSFT</td>
+                    <td>7.8%</td>
+                    <td>3.6%</td>
+                    <td>0.47</td>
+                </tr>
+            
+                <tr>
+                    <td>supertrend_ETH/USDT</td>
+                    <td>3.7%</td>
+                    <td>2.7%</td>
+                    <td>0.75</td>
+                </tr>
+            </tbody></table>
+    </div>
+    
+    <div class="section">
+        <h2>Implementation Notes</h2>
+        <ul>
+            <li><strong>Rebalancing Frequency:</strong> Daily or when significant drift detected</li>
+            <li><strong>Transaction Costs:</strong> 1% turnover penalty applied</li>
+            <li><strong>Constraints:</strong> Max symbol weight 30%, max strategy weight 20%</li>
+            <li><strong>Capital Allocation:</strong> Weights will be scaled by current canary capital percentage</li>
+            <li><strong>Risk Management:</strong> Individual strategy stops and portfolio-level risk limits apply</li>
+        </ul>
+    </div>
+    
+    <div style="text-align: center; color: #666; margin-top: 40px;">
+        <p>Sofia V2 Portfolio Construction | Generated by HRP optimizer</p>
+    </div>
+</body>
+</html>
+        

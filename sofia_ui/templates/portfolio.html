@@ -1,0 +1,484 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio - Sofia V2</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .glass-hover:hover {
+            background: rgba(15, 23, 42, 0.5);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .gradient-border {
+            position: relative;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 12px;
+        }
+
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            padding: 1px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.5;
+        }
+
+        .crypto-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.5));
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .crypto-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950" x-data="{
+    sidebarOpen: false,
+    activeTab: 'positions',
+    selectedAsset: null,
+    portfolio: {
+        total: {{ portfolio_data.total_value | default(100000) }},
+        change: {{ portfolio_data.daily_pnl_percentage | default(0) }},
+        profit: {{ portfolio_data.daily_pnl | default(0) }},
+        assets: [
+            { symbol: 'BTC', name: 'Bitcoin', amount: 1.85, value: 124234.50, change: 5.2, price: 67153.24, icon: 'fa-bitcoin' },
+            { symbol: 'ETH', name: 'Ethereum', amount: 12.4, value: 43088.40, change: -2.1, price: 3474.87, icon: 'fa-ethereum' },
+            { symbol: 'SOL', name: 'Solana', amount: 145, value: 20490.50, change: 8.7, price: 141.31, icon: 'fa-coins' },
+            { symbol: 'ADA', name: 'Cardano', amount: 5000, value: 3350.00, change: -0.5, price: 0.67, icon: 'fa-coins' },
+            { symbol: 'DOT', name: 'Polkadot', amount: 250, value: 2125.00, change: 3.2, price: 8.50, icon: 'fa-coins' }
+        ]
+    }
+}">
+    <!-- Background Effects -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse-slow" style="animation-delay: 2s;"></div>
+    </div>
+
+    <div class="relative flex h-screen">
+        <!-- Sidebar -->
+        <aside class="fixed lg:relative w-64 h-full glass border-r border-slate-800 z-50 transform transition-transform duration-300 lg:translate-x-0"
+               :class="{'translate-x-0': sidebarOpen, '-translate-x-full': !sidebarOpen}"
+               @click.away="sidebarOpen = false">
+            <div class="p-6 border-b border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        <i class="fas fa-chart-line text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Sofia V2</h1>
+                        <p class="text-xs text-slate-400">AI Trading Platform</p>
+                    </div>
+                </div>
+            </div>
+
+            
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col lg:ml-0">
+            <!-- Header -->
+            <header class="glass border-b border-slate-800 px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <button @click="sidebarOpen = !sidebarOpen" class="text-slate-400 hover:text-white">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <h2 class="text-xl font-semibold text-white">Portfolio Management</h2>
+                        <span class="text-xs text-slate-500 hidden sm:inline">Last update: <span class="text-blue-400">2 seconds ago</span></span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:opacity-90 transition-all">
+                            <i class="fas fa-plus mr-2"></i>Add Position
+                        </button>
+                        <button class="px-4 py-2 glass border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800/50 transition-all">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Portfolio Stats -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="gradient-border p-5 glass-hover transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-slate-400">Total Value</span>
+                            <i class="fas fa-wallet text-blue-400"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-white mb-1" x-text="'$' + portfolio.total.toLocaleString()"></div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-green-400">+12.4%</span>
+                            <span class="text-xs text-slate-500">24h</span>
+                        </div>
+                    </div>
+
+                    <div class="gradient-border p-5 glass-hover transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-slate-400">Today's P&L</span>
+                            <i class="fas fa-chart-line text-green-400"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-green-400 mb-1">+$8,432.12</div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-400">ROI:</span>
+                            <span class="text-xs text-green-400">6.7%</span>
+                        </div>
+                    </div>
+
+                    <div class="gradient-border p-5 glass-hover transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-slate-400">Best Performer</span>
+                            <i class="fas fa-trophy text-yellow-400"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-white mb-1">SOL</div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-green-400">+8.7%</span>
+                            <span class="text-xs text-slate-500">24h</span>
+                        </div>
+                    </div>
+
+                    <div class="gradient-border p-5 glass-hover transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-slate-400">Assets</span>
+                            <i class="fas fa-coins text-purple-400"></i>
+                        </div>
+                        <div class="text-2xl font-bold text-white mb-1" x-text="portfolio.assets.length"></div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-400">Diversified</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex space-x-1 mb-6 border-b border-slate-800">
+                    <button @click="activeTab = 'positions'"
+                            :class="activeTab === 'positions' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
+                            class="px-4 py-3 font-medium transition-all">
+                        Positions
+                    </button>
+                    <button @click="activeTab = 'allocation'"
+                            :class="activeTab === 'allocation' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
+                            class="px-4 py-3 font-medium transition-all">
+                        Allocation
+                    </button>
+                    <button @click="activeTab = 'performance'"
+                            :class="activeTab === 'performance' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
+                            class="px-4 py-3 font-medium transition-all">
+                        Performance
+                    </button>
+                    <button @click="activeTab = 'history'"
+                            :class="activeTab === 'history' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-slate-400'"
+                            class="px-4 py-3 font-medium transition-all">
+                        History
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div x-show="activeTab === 'positions'" class="space-y-4">
+                    <div class="glass rounded-xl overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-slate-800">
+                                    <th class="text-left p-4 text-xs text-slate-400 font-medium">Asset</th>
+                                    <th class="text-right p-4 text-xs text-slate-400 font-medium">Amount</th>
+                                    <th class="text-right p-4 text-xs text-slate-400 font-medium">Price</th>
+                                    <th class="text-right p-4 text-xs text-slate-400 font-medium">Value</th>
+                                    <th class="text-right p-4 text-xs text-slate-400 font-medium">24h Change</th>
+                                    <th class="text-right p-4 text-xs text-slate-400 font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="asset in portfolio.assets" :key="asset.symbol">
+                                    <tr class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-all">
+                                        <td class="p-4">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                                    <i :class="asset.icon" class="text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <p class="font-medium text-white" x-text="asset.symbol"></p>
+                                                    <p class="text-xs text-slate-400" x-text="asset.name"></p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-4 text-right text-white" x-text="asset.amount"></td>
+                                        <td class="p-4 text-right text-white" x-text="'$' + asset.price.toLocaleString()"></td>
+                                        <td class="p-4 text-right text-white font-medium" x-text="'$' + asset.value.toLocaleString()"></td>
+                                        <td class="p-4 text-right">
+                                            <span :class="asset.change > 0 ? 'text-green-400' : 'text-red-400'"
+                                                  x-text="(asset.change > 0 ? '+' : '') + asset.change + '%'"></span>
+                                        </td>
+                                        <td class="p-4 text-right">
+                                            <div class="flex items-center justify-end space-x-2">
+                                                <button class="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all">
+                                                    <i class="fas fa-plus text-sm"></i>
+                                                </button>
+                                                <button class="p-2 text-yellow-400 hover:bg-yellow-500/20 rounded-lg transition-all">
+                                                    <i class="fas fa-exchange-alt text-sm"></i>
+                                                </button>
+                                                <button class="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-all">
+                                                    <i class="fas fa-minus text-sm"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Allocation Tab -->
+                <div x-show="activeTab === 'allocation'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Asset Allocation</h3>
+                        <div style="height: 300px; position: relative;">
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">Risk Distribution</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-slate-400">Low Risk</span>
+                                    <span class="text-green-400">35%</span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style="width: 35%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-slate-400">Medium Risk</span>
+                                    <span class="text-yellow-400">45%</span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-yellow-500 to-orange-500 h-2 rounded-full" style="width: 45%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm mb-2">
+                                    <span class="text-slate-400">High Risk</span>
+                                    <span class="text-red-400">20%</span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-red-500 to-pink-500 h-2 rounded-full" style="width: 20%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Tab -->
+                <div x-show="activeTab === 'performance'" class="glass rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Portfolio Performance</h3>
+                    <div style="height: 400px; position: relative;">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div x-show="activeTab === 'history'" class="glass rounded-xl p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Transaction History</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                                <div>
+                                    <p class="text-sm text-white">Bought 0.5 BTC</p>
+                                    <p class="text-xs text-slate-400">@ $65,432 â€¢ 2 hours ago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm text-green-400">+$1,234</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-2 h-2 rounded-full bg-red-400"></div>
+                                <div>
+                                    <p class="text-sm text-white">Sold 2.5 ETH</p>
+                                    <p class="text-xs text-slate-400">@ $3,521 â€¢ 5 hours ago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm text-red-400">-$432</span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 border border-slate-700/50">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                                <div>
+                                    <p class="text-sm text-white">Bought 50 SOL</p>
+                                    <p class="text-xs text-slate-400">@ $138.50 â€¢ Yesterday</p>
+                                </div>
+                            </div>
+                            <span class="text-sm text-green-400">+$892</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Allocation Chart
+        document.addEventListener('alpine:init', () => {
+            const ctx = document.getElementById('allocationChart');
+            if (ctx) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['BTC', 'ETH', 'SOL', 'ADA', 'DOT'],
+                        datasets: [{
+                            data: [62, 21, 10, 4, 3],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)',
+                                'rgba(139, 92, 246, 0.8)',
+                                'rgba(16, 185, 129, 0.8)',
+                                'rgba(245, 158, 11, 0.8)',
+                                'rgba(239, 68, 68, 0.8)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#94a3b8',
+                                    padding: 15
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Performance Chart
+            const perfCtx = document.getElementById('performanceChart');
+            if (perfCtx) {
+                const gradient = perfCtx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
+                gradient.addColorStop(1, 'rgba(139, 92, 246, 0)');
+
+                new Chart(perfCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                        datasets: [{
+                            label: 'Portfolio Value',
+                            data: [100000, 105000, 98000, 112000, 118000, 115000, 122000, 128000, 125000, 130000, 127000, 125430],
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: gradient,
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: { color: '#64748b' }
+                            },
+                            y: {
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#64748b',
+                                    callback: function(value) {
+                                        return '$' + (value / 1000) + 'k';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
+{% endblock %}

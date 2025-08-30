@@ -4,7 +4,7 @@ Modern ve profesyonel trading stratejisi arayüzü
 """
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
@@ -12,21 +12,40 @@ import asyncio
 from pathlib import Path
 import random
 from datetime import datetime
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sofia_ui.live_data import live_data_service
+
+# Import template resolver
+from src.web.templates import render, get_templates_instance, get_resolution_report
+
+from src.api.paper_trading import router as paper_trading_router
+from src.api.canary_trading import router as canary_trading_router
+from src.api.live_trading import router as live_trading_router
+from src.web.middleware import OneBarMiddleware
 
 # FastAPI uygulaması
 app = FastAPI(
-    title="Sofia V2 - Trading Strategy Platform",
-    description="Akıllı trading stratejileri ve backtest platformu",
+    title="Sofia V2 - Glass Dark Trading Platform",
+    description="AI Trading Platform with Glass Dark Theme",
     version="2.0.0"
 )
+
+# Add one-bar middleware
+app.add_middleware(OneBarMiddleware)
+
+# Include trading routes
+app.include_router(paper_trading_router)
+app.include_router(canary_trading_router)
+app.include_router(live_trading_router)
 
 # Static dosyalar ve template'ler
 static_path = Path(__file__).parent / "static"
 template_path = Path(__file__).parent / "templates"
 
 app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
-templates = Jinja2Templates(directory=str(template_path))
+templates = get_templates_instance()  # Use canonical template resolver
 
 
 # Mock data functions
@@ -122,54 +141,30 @@ def get_mock_strategies():
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
-    """Ana sayfa"""
+    """Ana sayfa - Sofia V2 Glass Dark UI"""
     try:
-        btc_data = await get_live_btc_data()
-    except:
-        btc_data = {
-            "symbol": "BTC/USDT",
-            "name": "Bitcoin",
-            "price": 67845.32,
-            "change": 2.45,
-            "change_percent": 3.74,
-            "volume": "28.5B",
-            "last_updated": datetime.now().strftime("%H:%M:%S")
-        }
-    
-    context = {
-        "request": request,
-        "page_title": "Sofia V2 - Trading Platform",
-        "btc_data": btc_data,
-        "featured_strategies": get_mock_strategies()[:2],
-        "latest_news": get_mock_news()[:3]
-    }
-    return templates.TemplateResponse("homepage.html", context)
+        # Always use stable Glass Dark template for production
+        homepage_path = Path("templates/homepage_glass_dark_stable.html")
+        if homepage_path.exists():
+            content = homepage_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            # Fallback to regular homepage
+            fallback_path = Path("templates/homepage.html")
+            if fallback_path.exists():
+                content = fallback_path.read_text(encoding='utf-8')
+                return HTMLResponse(content=content)
+            return HTMLResponse(content="<h1>No homepage template found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading homepage: {str(e)}</h1>")
+
+@app.get("/test", response_class=HTMLResponse)
+async def test_page():
+    """Test sayfası"""
+    return HTMLResponse(content="<h1>Test Page Working! Server Updated!</h1>")
 
 
-@app.get("/showcase/{symbol}", response_class=HTMLResponse)
-async def showcase(request: Request, symbol: str):
-    """Sembol showcase sayfası - teknik planda belirtilen"""
-    try:
-        symbol_data = live_data_service.get_live_price(symbol.upper())
-    except:
-        symbol_data = get_live_btc_data()
-        symbol_data["symbol"] = symbol.upper()
-    
-    context = {
-        "request": request,
-        "page_title": f"{symbol.upper()} - Showcase",
-        "symbol_data": symbol_data,
-        "news": get_mock_news(),
-        "strategies": get_mock_strategies(),
-        "technical_indicators": {
-            "rsi": 45.6,
-            "sma_20": 66234.45,
-            "sma_50": 64567.89,
-            "bollinger_upper": 68500.0,
-            "bollinger_lower": 65200.0
-        }
-    }
-    return templates.TemplateResponse("showcase.html", context)
+# Showcase route moved to end of file to avoid duplicates
 
 
 @app.get("/cards", response_class=HTMLResponse)
@@ -180,7 +175,7 @@ async def strategy_cards(request: Request):
         "page_title": "Strategy Cards",
         "strategies": get_mock_strategies()
     }
-    return templates.TemplateResponse("cards.html", context)
+    return render(request, "cards.html", context)
 
 
 @app.get("/analysis/{symbol}", response_class=HTMLResponse)
@@ -217,7 +212,7 @@ async def analysis(request: Request, symbol: str):
             "target_1m": 75000
         }
     }
-    return templates.TemplateResponse("analysis.html", context)
+    return render(request, "analysis.html", context)
 
 
 # API Endpoints
@@ -363,6 +358,82 @@ async def get_fear_greed():
         return {"value": 72, "value_classification": "Greed"}
 
 
+@app.get("/ai/news/sentiment")
+async def get_news_sentiment(symbol: str = "BTC/USDT"):
+    """Get news sentiment for symbol"""
+    try:
+        # Import here to avoid circular dependencies
+        from src.ai.news_sentiment import NewsSentimentAnalyzer
+        
+        analyzer = NewsSentimentAnalyzer()
+        if not analyzer.enabled:
+            return {"error": "News sentiment analysis disabled"}
+        
+        # Get sentiment summary
+        sentiment_data = await analyzer.get_sentiment_summary(symbol)
+        
+        if sentiment_data:
+            return sentiment_data
+        else:
+            return {
+                "symbol": symbol,
+                "sentiment_1h": 0.0,
+                "sentiment_24h": 0.0,
+                "volume_1h": 0,
+                "volume_24h": 0,
+                "confidence_1h": 0.0,
+                "confidence_24h": 0.0,
+                "last_update": datetime.now().isoformat(),
+                "strategy_overlay": {
+                    "k_factor_adjustment": 0.0,
+                    "strategy_bias": "neutral"
+                },
+                "recent_news": []
+            }
+    except Exception as e:
+        logger.error(f"News sentiment API error: {e}")
+        return {"error": "Failed to get news sentiment"}
+
+
+@app.get("/ai/news/features")
+async def get_news_features(symbol: str = "BTC/USDT"):
+    """Get news features for symbol"""
+    try:
+        from src.ai.news_sentiment import NewsSentimentAnalyzer
+        from src.ai.news_features import NewsFeatureEngine
+        
+        analyzer = NewsSentimentAnalyzer()
+        feature_engine = NewsFeatureEngine()
+        
+        if not analyzer.enabled:
+            return {"error": "News analysis disabled"}
+        
+        # Update sentiment first
+        await analyzer.update_news_sentiment([symbol])
+        
+        # Get news items and sentiment
+        news_items = analyzer.news_cache.get(symbol, [])
+        sentiment_score = analyzer.sentiment_cache.get(symbol)
+        
+        # Extract features
+        features = feature_engine.extract_features(symbol, news_items, sentiment_score)
+        
+        # Get trading signals
+        signals = feature_engine.get_trading_signals(features)
+        
+        return {
+            "symbol": symbol,
+            "features": features,
+            "trading_signals": signals,
+            "news_count": len(news_items),
+            "last_update": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"News features API error: {e}")
+        return {"error": "Failed to get news features"}
+
+
 @app.get("/assets/{symbol}", response_class=HTMLResponse)
 async def assets_detail(request: Request, symbol: str):
     """Asset detay sayfası - UI planında belirtilen"""
@@ -391,7 +462,7 @@ async def assets_detail(request: Request, symbol: str):
             "fear_greed_index": 72
         }
     }
-    return templates.TemplateResponse("assets_detail.html", context)
+    return render(request, "assets_detail.html", context)
 
 
 @app.get("/backtest", response_class=HTMLResponse)
@@ -403,7 +474,7 @@ async def backtest_page(request: Request, symbol: str = None, strategy: str = No
         "preselected_symbol": symbol,
         "preselected_strategy": strategy
     }
-    return templates.TemplateResponse("backtest.html", context)
+    return render(request, "backtest.html", context)
 
 
 @app.get("/strategies", response_class=HTMLResponse)
@@ -413,7 +484,66 @@ async def strategies_page(request: Request):
         "request": request,
         "page_title": "Trading Strategies"
     }
-    return templates.TemplateResponse("strategies.html", context)
+    return render(request, "strategies.html", context)
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """Settings page - ROUTES ALWAYS OPEN"""
+    context = {
+        "request": request,
+        "page_title": "Settings - Paper Trading Control"
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "settings.html", context)
+    except:
+        return render(request, "settings_stub.html", context)
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page(request: Request):
+    """Paper trading dashboard with live metrics"""
+    # Mock total balance - in production would come from database/API
+    total_balance = 12500.75  # Example balance
+    
+    context = {
+        "request": request,
+        "page_title": "Trading Dashboard",
+        "total_balance": total_balance
+    }
+    return render(request, "dashboard.html", context)
+
+
+@app.get("/live", response_class=HTMLResponse)
+async def live_trading_grid(request: Request):
+    """Live trading grid with 200+ assets"""
+    context = {
+        "request": request,
+        "page_title": "Live Trading Grid"
+    }
+    return render(request, "live.html", context)
+
+
+@app.get("/trade/manual", response_class=HTMLResponse)
+async def trade_manual(request: Request):
+    """Manual trading interface"""
+    context = {
+        "request": request,
+        "page_title": "Manual Trading - Sofia V2"
+    }
+    return render(request, "trade_manual.html", context)
+
+
+@app.get("/trade/ai", response_class=HTMLResponse)
+async def trade_ai(request: Request):
+    """AI trading interface"""
+    context = {
+        "request": request,
+        "page_title": "AI Trading - Sofia V2"
+    }
+    return render(request, "trade_ai.html", context)
 
 
 # Backtest API endpoint - arkadaşının kullanacağı
@@ -439,6 +569,177 @@ async def run_backtest(request: Request):
             "equity_curve": [{"date": "2023-01-01", "value": 10000}] # Placeholder
         }
     }
+
+
+# Missing main pages
+@app.get("/portfolio", response_class=HTMLResponse)
+async def portfolio_page(request: Request):
+    """Portfolio sayfası - ROUTES ALWAYS OPEN guarantee"""
+    total_balance = 12500.75  # Mock data
+    
+    context = {
+        "request": request,
+        "page_title": "Portfolio",
+        "total_balance": total_balance
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "portfolio.html", context)
+    except:
+        return render(request, "portfolio_stub.html", context)
+
+@app.get("/markets", response_class=HTMLResponse) 
+async def markets_page(request: Request):
+    """Markets sayfası - ROUTES ALWAYS OPEN guarantee"""
+    context = {
+        "request": request,
+        "page_title": "Crypto Markets"
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "markets.html", context)
+    except:
+        return render(request, "markets_stub.html", context)
+
+@app.get("/bist", response_class=HTMLResponse)
+async def bist_page(request: Request):
+    """BIST sayfası - ROUTES ALWAYS OPEN guarantee"""
+    context = {
+        "request": request,
+        "page_title": "BIST Markets"
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "bist_markets.html", context)
+    except:
+        return render(request, "bist_stub.html", context)
+
+@app.get("/bist/analysis", response_class=HTMLResponse)
+async def bist_analysis_page(request: Request):
+    """BIST analiz sayfası"""
+    try:
+        template_path = Path("templates/bist_analysis.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>BIST Analysis template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading BIST Analysis: {str(e)}</h1>")
+
+@app.get("/data-collection", response_class=HTMLResponse)
+async def data_collection_page(request: Request):
+    """Data collection sayfası"""
+    try:
+        template_path = Path("templates/data_collection.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>Data Collection template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading Data Collection: {str(e)}</h1>")
+
+@app.get("/trading", response_class=HTMLResponse)
+async def ai_trading_page(request: Request):
+    """AI Trading sayfası"""
+    try:
+        template_path = Path("templates/ai_trading.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>AI Trading template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading AI Trading: {str(e)}</h1>")
+
+@app.get("/manual-trading", response_class=HTMLResponse)
+async def manual_trading_page(request: Request):
+    """Manuel trading sayfası"""
+    try:
+        template_path = Path("templates/manual_trading.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>Manual Trading template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading Manual Trading: {str(e)}</h1>")
+
+@app.get("/reliability", response_class=HTMLResponse)
+async def reliability_page(request: Request):
+    """Güvenilirlik sayfası"""
+    try:
+        template_path = Path("templates/reliability.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>Reliability template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading Reliability: {str(e)}</h1>")
+
+# Compat redirects (307)
+@app.get("/manual-trading")
+async def compat_manual_trading():
+    """Redirect old manual-trading URL"""
+    return RedirectResponse(url="/trade/manual", status_code=307)
+
+@app.get("/trading") 
+async def compat_trading():
+    """Redirect old trading URL"""
+    return RedirectResponse(url="/trade/ai", status_code=307)
+
+@app.get("/bist/analiz")
+async def compat_bist_analiz():
+    """Redirect Turkish analysis URL"""
+    return RedirectResponse(url="/bist/analysis", status_code=307)
+
+# Missing routes
+@app.get("/ai-strategies", response_class=HTMLResponse)
+async def ai_strategies_page(request: Request):
+    """AI Strategies page - ROUTES ALWAYS OPEN"""
+    context = {
+        "request": request,
+        "page_title": "AI Strategies"
+    }
+    return render(request, "ai_strategies.html", context)
+
+@app.get("/showcase/{symbol}", response_class=HTMLResponse)
+async def showcase_page(request: Request, symbol: str):
+    """Showcase page for any symbol - ROUTES ALWAYS OPEN"""
+    # Mock symbol data
+    symbol_data = {
+        "symbol": f"{symbol}/USDT",
+        "name": symbol.upper(),
+        "price": 67845.32 if symbol.upper() == "BTC" else 3456.78,
+        "change": 2.45,
+        "change_percent": 3.74,
+        "volume": "28.5B"
+    }
+    
+    context = {
+        "request": request,
+        "page_title": f"{symbol.upper()} Showcase",
+        "symbol": symbol.upper(),
+        "symbol_data": symbol_data,
+        "news": get_mock_news(),
+        "strategies": get_mock_strategies()
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "showcase.html", context)
+    except:
+        return render(request, "showcase_stub.html", context)
+
+@app.get("/api/template-resolution")
+async def get_template_resolution():
+    """Get template resolution report for debugging"""
+    return get_resolution_report()
 
 
 if __name__ == "__main__":

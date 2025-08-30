@@ -1,0 +1,497 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-20"> <!-- Add top padding for fixed navbar -->
+    <!-- Page Header -->
+    <div class="px-6 py-6 border-b border-gray-800/50 bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <h1 class="text-3xl font-bold text-white flex items-center">
+                    <i class="fas fa-chart-line mr-3 text-blue-400"></i>
+                    Trading Dashboard
+                    <span class="ml-3 text-sm bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full animate-pulse">
+                        LIVE DATA
+                    </span>
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm">
+                        <span class="text-gray-400">Portfolio:</span>
+                        <span class="text-white font-semibold ml-2" id="portfolioBalance">{{ total_balance|currency("$") }}</span>
+                        <span class="{% if daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} ml-2" id="portfolioPnL">
+                            {% if daily_pnl >= 0 %}+{% endif %}{{ "%.2f"|format(daily_pnl) }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <!-- Main Charts -->
+            <div class="xl:col-span-3 space-y-6">
+                <!-- Portfolio Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">Total Balance</h3>
+                            <i class="fas fa-wallet text-blue-400"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-2">{{ total_balance|currency("$") }}</div>
+                        <div class="{% if daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} text-sm">
+                            {% if daily_pnl >= 0 %}+{% endif %}{{ "%.2f"|format(daily_pnl) }}% (24h)
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">Active Positions</h3>
+                            <i class="fas fa-chart-pie text-green-400"></i>
+                        </div>
+                        <div class="text-3xl font-bold text-white mb-2" id="activePositions">5</div>
+                        <div class="text-green-400 text-sm">2 profitable</div>
+                    </div>
+
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">24h P&L</h3>
+                            <i class="fas fa-trending-up text-purple-400"></i>
+                        </div>
+                        <div class="text-3xl font-bold {% if daily_pnl >= 0 %}text-green-400{% else %}text-red-400{% endif %} mb-2">
+                            {% if daily_pnl >= 0 %}+{% endif %}{{ total_balance|currency("$") }}
+                        </div>
+                        <div class="text-gray-400 text-sm">{{ "%.1f"|format(daily_pnl|abs) }}% today</div>
+                    </div>
+                </div>
+
+                <!-- Live Price Chart -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-white">Portfolio Performance</h3>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm">1D</button>
+                            <button class="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm hover:bg-gray-600">7D</button>
+                            <button class="px-3 py-1 bg-gray-700 text-gray-300 rounded text-sm hover:bg-gray-600">1M</button>
+                        </div>
+                    </div>
+                    <div class="h-64">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Current Positions -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Current Positions</h3>
+                    <div class="space-y-3" id="positionsList">
+                        <!-- Positions will be loaded here -->
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <div>Loading live positions...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="space-y-6">
+                <!-- Alert Signals -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5 cursor-pointer hover:bg-slate-800/30 transition-all" 
+                     onclick="openModal('alertModal')">
+                    <h3 class="text-base font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-bell text-yellow-400 mr-2"></i>
+                        Alert Signals
+                        <span class="ml-auto text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded animate-pulse">LIVE</span>
+                        <i class="fas fa-expand-arrows-alt ml-2 text-slate-400 text-sm"></i>
+                    </h3>
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
+                        {% if alerts %}
+                            {% for alert in alerts %}
+                            <div class="p-2 rounded-lg bg-slate-800/50 border border-slate-700 hover:border-{{ alert.severity_color }}-500/50 transition-all">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex items-start space-x-2">
+                                        <span class="text-lg">{{ alert.action_icon }}</span>
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-xs px-2 py-0.5 rounded bg-{{ alert.severity_color }}-500/20 text-{{ alert.severity_color }}-400">
+                                                    {{ alert.severity|upper }}
+                                                </span>
+                                                <span class="text-xs text-slate-500">{{ alert.source }}</span>
+                                            </div>
+                                            <p class="text-xs text-white mt-1">{{ alert.message[:80] }}...</p>
+                                            <div class="flex items-center space-x-3 mt-1">
+                                                <span class="text-xs text-slate-400">Action: {{ alert.action|replace("_", " ")|title }}</span>
+                                                <span class="text-xs text-slate-500">{{ alert.time|default("Just now") }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-check-circle text-green-400 text-2xl mb-2"></i>
+                                <p class="text-sm text-slate-400">No active alerts</p>
+                                <p class="text-xs text-slate-500">All systems normal</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button onclick="event.stopPropagation(); fetchAlerts()" class="w-full mt-3 px-3 py-1.5 text-xs rounded-lg bg-slate-700/50 text-slate-400 hover:bg-slate-700 transition-all">
+                        <i class="fas fa-sync-alt mr-1"></i> Refresh Alerts
+                    </button>
+                </div>
+
+                <!-- Market Sentiment -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5 cursor-pointer hover:bg-slate-800/30 transition-all" 
+                     onclick="openModal('sentimentModal')">
+                    <h3 class="text-base font-semibold text-white mb-4 flex items-center">
+                        Market Sentiment
+                        <i class="fas fa-expand-arrows-alt ml-auto text-slate-400 text-sm"></i>
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-slate-400">Fear & Greed</span>
+                                <span class="text-green-400">72 - Greed</span>
+                            </div>
+                            <div class="w-full bg-slate-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style="width: 72%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-slate-400">Market Cap</span>
+                                <span class="text-white">$2.43T</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Movers -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-5">
+                    <h3 class="text-base font-semibold text-white mb-4">Top Movers (24h)</h3>
+                    <div class="space-y-3" id="topMovers">
+                        <!-- Will be populated with live data -->
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin text-blue-400"></i>
+                            <div class="text-sm text-gray-400 mt-2">Loading top movers...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include all modals from original homepage -->
+    <!-- Alert Signals Modal -->
+    <div id="alertModal" class="modal-overlay" onclick="closeModal('alertModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-bell text-yellow-400 mr-3"></i>
+                    Alert Signals - Detailed Analysis
+                </h2>
+                <button onclick="closeModal('alertModal')" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="stat-card">
+                        <h3 class="text-sm text-slate-400 mb-2">Total Alerts (24h)</h3>
+                        <div class="text-2xl font-bold text-white">73</div>
+                        <div class="text-sm text-green-400">+12 from yesterday</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="text-sm text-slate-400 mb-2">High Priority</h3>
+                        <div class="text-2xl font-bold text-red-400">23</div>
+                        <div class="text-sm text-red-300">Requires attention</div>
+                    </div>
+                </div>
+                
+                <div class="alert-analysis mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">AI Analysis Summary</h3>
+                    <div class="bg-slate-800/50 p-4 rounded-lg">
+                        <div class="flex items-start space-x-3 mb-3">
+                            <div class="w-2 h-2 bg-green-400 rounded-full mt-2"></div>
+                            <div>
+                                <p class="text-white font-medium">Market Sentiment: Bullish</p>
+                                <p class="text-slate-400 text-sm">Recent news analysis shows 67% positive sentiment</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3 mb-3">
+                            <div class="w-2 h-2 bg-yellow-400 rounded-full mt-2"></div>
+                            <div>
+                                <p class="text-white font-medium">Whale Activity: Moderate</p>
+                                <p class="text-slate-400 text-sm">3 large transactions detected in last 4 hours</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="w-2 h-2 bg-blue-400 rounded-full mt-2"></div>
+                            <div>
+                                <p class="text-white font-medium">Technical Indicators: Mixed</p>
+                                <p class="text-slate-400 text-sm">RSI: 67, MACD: Bullish divergence</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Sentiment Modal -->
+    <div id="sentimentModal" class="modal-overlay" onclick="closeModal('sentimentModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-chart-pie text-blue-400 mr-3"></i>
+                    Market Sentiment Analysis
+                </h2>
+                <button onclick="closeModal('sentimentModal')" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="sentiment-overview mb-6">
+                    <div class="text-center mb-4">
+                        <div class="text-6xl font-bold text-green-400 mb-2">72</div>
+                        <div class="text-white text-lg">Fear & Greed Index</div>
+                        <div class="text-green-300">Extreme Greed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    display: none;
+    z-index: 1000;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 16px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.stat-card {
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 12px;
+    padding: 1rem;
+}
+</style>
+
+<script>
+// Modal functions
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// Live data updates
+async function fetchAlerts() {
+    try {
+        const response = await fetch('/api/alerts?limit=5');
+        const data = await response.json();
+        console.log('Alerts refreshed:', data.count);
+    } catch (error) {
+        console.error('Error fetching alerts:', error);
+    }
+}
+
+// Initialize portfolio chart
+function initPortfolioChart() {
+    const ctx = document.getElementById('portfolioChart').getContext('2d');
+    
+    // Generate sample portfolio data
+    const labels = [];
+    const data = [];
+    const baseValue = {{ total_balance }};
+    
+    for (let i = 23; i >= 0; i--) {
+        const hour = (new Date().getHours() - i + 24) % 24;
+        labels.push(hour + ':00');
+        
+        const volatility = 0.02;
+        const change = (Math.random() - 0.5) * volatility;
+        const value = baseValue * (1 + change * (i / 24) + {{ daily_pnl }}/100);
+        data.push(value);
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Portfolio Value',
+                data: data,
+                borderColor: '{% if daily_pnl >= 0 %}#10b981{% else %}#ef4444{% endif %}',
+                backgroundColor: '{% if daily_pnl >= 0 %}rgba(16, 185, 129, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %}',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                    ticks: { color: '#64748b' }
+                },
+                y: {
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                    ticks: {
+                        color: '#64748b',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Load live positions
+async function loadPositions() {
+    try {
+        const response = await fetch('/api/trading/positions');
+        const data = await response.json();
+        
+        const container = document.getElementById('positionsList');
+        
+        if (data.positions && Object.keys(data.positions).length > 0) {
+            let html = '';
+            Object.values(data.positions).forEach(position => {
+                const pnlClass = position.unrealized_pnl >= 0 ? 'text-green-400' : 'text-red-400';
+                const pnlSign = position.unrealized_pnl >= 0 ? '+' : '';
+                
+                html += `
+                    <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                        <div>
+                            <div class="text-white font-medium">${position.symbol}</div>
+                            <div class="text-xs text-gray-400">${position.side.toUpperCase()} â€¢ ${position.size}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-white">$${position.current_price}</div>
+                            <div class="${pnlClass} text-sm">${pnlSign}${Math.abs(position.unrealized_pnl).toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-line text-gray-500 text-2xl mb-2"></i>
+                    <div class="text-sm text-gray-400">No active positions</div>
+                    <div class="text-xs text-gray-500">Start trading to see positions here</div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading positions:', error);
+    }
+}
+
+// Load top movers
+async function loadTopMovers() {
+    try {
+        const response = await fetch('/api/market-data-extended');
+        const data = await response.json();
+        
+        const topGainers = data.cryptos
+            .filter(c => c.price_change_percentage_24h > 0)
+            .sort((a, b) => b.price_change_percentage_24h - a.price_change_percentage_24h)
+            .slice(0, 3);
+        
+        const container = document.getElementById('topMovers');
+        let html = '';
+        
+        topGainers.forEach(coin => {
+            html += `
+                <div class="flex items-center justify-between p-2 bg-slate-800/30 rounded">
+                    <div class="flex items-center space-x-2">
+                        <img src="${coin.image}" alt="${coin.name}" class="w-6 h-6 rounded-full">
+                        <div>
+                            <div class="text-white text-sm font-medium">${coin.symbol.toUpperCase()}</div>
+                            <div class="text-xs text-gray-400">$${coin.current_price.toFixed(4)}</div>
+                        </div>
+                    </div>
+                    <div class="text-green-400 text-sm">+${coin.price_change_percentage_24h.toFixed(1)}%</div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading top movers:', error);
+    }
+}
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initPortfolioChart();
+    loadPositions();
+    loadTopMovers();
+    
+    // Auto-refresh data every 30 seconds
+    setInterval(() => {
+        loadPositions();
+        loadTopMovers();
+        fetchAlerts();
+    }, 30000);
+});
+</script>
+{% endblock %}

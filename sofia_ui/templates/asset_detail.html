@@ -1,0 +1,322 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950" x-data="assetDetailApp()">
+    <!-- Header -->
+    <div class="px-6 py-4 border-b border-gray-800/50 backdrop-blur-xl bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button onclick="history.back()" class="p-2 text-gray-400 hover:text-white transition-all">
+                        <i class="fas fa-arrow-left text-lg"></i>
+                    </button>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-yellow-600 flex items-center justify-center shadow-lg">
+                            <i class="fab fa-bitcoin text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-white">{{ coin.name }}</h1>
+                            <p class="text-gray-400">{{ coin.symbol }} â€¢ Rank #1</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-shopping-cart mr-2"></i>Buy
+                    </button>
+                    <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-hand-holding-usd mr-2"></i>Sell
+                    </button>
+                    <button class="p-2 text-gray-400 hover:text-white border border-gray-700 rounded-lg transition-all">
+                        <i class="fas fa-star"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <!-- Main Chart Area -->
+            <div class="xl:col-span-2 space-y-6">
+                <!-- Price Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-3xl font-bold text-white">${{ "%.2f"|format(coin.price) }}</div>
+                        <div class="flex items-center space-x-2 mt-1">
+                            {% if coin.change_24h >= 0 %}
+                                <i class="fas fa-arrow-up text-green-400"></i>
+                                <span class="text-green-400">+{{ "%.2f"|format(coin.change_24h) }}%</span>
+                            {% else %}
+                                <i class="fas fa-arrow-down text-red-400"></i>
+                                <span class="text-red-400">{{ "%.2f"|format(coin.change_24h) }}%</span>
+                            {% endif %}
+                            <span class="text-gray-400 text-sm">24h</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-sm text-gray-400 mb-1">Market Cap</div>
+                        <div class="text-lg font-bold text-white">${{ coin.market_cap }}</div>
+                        <div class="text-xs text-gray-500">Rank #1</div>
+                    </div>
+                    
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-sm text-gray-400 mb-1">24h Volume</div>
+                        <div class="text-lg font-bold text-white">${{ coin.volume }}</div>
+                        <div class="text-xs text-green-400">+15.2%</div>
+                    </div>
+                    
+                    <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4">
+                        <div class="text-sm text-gray-400 mb-1">Circulating Supply</div>
+                        <div class="text-lg font-bold text-white">{{ coin.supply }}</div>
+                        <div class="text-xs text-gray-500">{{ coin.max_supply }} max</div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-semibold text-white">Price Chart</h2>
+                        <div class="flex items-center space-x-2">
+                            <button class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg">1D</button>
+                            <button class="px-3 py-1.5 text-sm text-gray-400 hover:text-white rounded-lg">7D</button>
+                            <button class="px-3 py-1.5 text-sm text-gray-400 hover:text-white rounded-lg">1M</button>
+                            <button class="px-3 py-1.5 text-sm text-gray-400 hover:text-white rounded-lg">3M</button>
+                            <button class="px-3 py-1.5 text-sm text-gray-400 hover:text-white rounded-lg">1Y</button>
+                        </div>
+                    </div>
+                    <div class="h-96">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- About -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h2 class="text-lg font-semibold text-white mb-4">About {{ coin.name }}</h2>
+                    <p class="text-gray-300 mb-4">{{ coin.description }}</p>
+                    <div class="flex items-center space-x-4">
+                        <a href="{{ coin.website }}" target="_blank" class="text-blue-400 hover:text-blue-300 flex items-center">
+                            <i class="fas fa-external-link-alt mr-2"></i>Official Website
+                        </a>
+                        <button class="text-gray-400 hover:text-white flex items-center">
+                            <i class="fas fa-file-alt mr-2"></i>Whitepaper
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Quick Stats -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Stats</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">All-Time High</span>
+                            <div class="text-right">
+                                <div class="text-white font-medium">${{ "%.2f"|format(coin.all_time_high) }}</div>
+                                <div class="text-red-400 text-xs">-10.3%</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">All-Time Low</span>
+                            <div class="text-right">
+                                <div class="text-white font-medium">${{ "%.2f"|format(coin.all_time_low) }}</div>
+                                <div class="text-green-400 text-xs">+142,739%</div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Market Dominance</span>
+                            <span class="text-white font-medium">52.4%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Market Rank</span>
+                            <span class="text-white font-medium">#1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sofia AI Analysis -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+                        <i class="fas fa-robot text-blue-400 mr-2"></i>
+                        Sofia AI Analysis
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span class="text-green-400 font-medium text-sm">BULLISH SIGNAL</span>
+                                <span class="text-xs text-gray-400">87% Confidence</span>
+                            </div>
+                            <p class="text-gray-300 text-sm">
+                                Strong technical indicators suggest continued upward momentum. 
+                                RSI at 67 shows room for growth.
+                            </p>
+                        </div>
+
+                        <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                <span class="text-blue-400 font-medium text-sm">WHALE ACTIVITY</span>
+                                <span class="text-xs text-gray-400">Moderate</span>
+                            </div>
+                            <p class="text-gray-300 text-sm">
+                                3 large transactions detected in the last 4 hours. 
+                                Net flow is neutral.
+                            </p>
+                        </div>
+
+                        <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                                <span class="text-yellow-400 font-medium text-sm">NEWS SENTIMENT</span>
+                                <span class="text-xs text-gray-400">+0.73 Score</span>
+                            </div>
+                            <p class="text-gray-300 text-sm">
+                                Recent news coverage is 67% positive. ETF approval rumors 
+                                driving optimistic sentiment.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-gray-700">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-400 mb-1">BUY</div>
+                            <div class="text-sm text-gray-400">AI Recommendation</div>
+                            <div class="text-xs text-gray-500 mt-1">Target: $105,000 | Stop: $92,000</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent News -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Recent News</h3>
+                    <div class="space-y-3">
+                        <div class="border-l-2 border-green-400 pl-3">
+                            <h4 class="text-sm font-medium text-white">Bitcoin ETF Sees Record Inflows</h4>
+                            <p class="text-xs text-gray-400 mt-1">Institutional interest continues to grow with $2.1B inflows...</p>
+                            <div class="text-xs text-gray-500 mt-1">2 hours ago</div>
+                        </div>
+                        <div class="border-l-2 border-blue-400 pl-3">
+                            <h4 class="text-sm font-medium text-white">MicroStrategy Buys More BTC</h4>
+                            <p class="text-xs text-gray-400 mt-1">Corporate treasury adds another 5,262 Bitcoin to holdings...</p>
+                            <div class="text-xs text-gray-500 mt-1">6 hours ago</div>
+                        </div>
+                        <div class="border-l-2 border-yellow-400 pl-3">
+                            <h4 class="text-sm font-medium text-white">Mining Difficulty Adjustment</h4>
+                            <p class="text-xs text-gray-400 mt-1">Network difficulty increases by 3.8% as hashrate hits ATH...</p>
+                            <div class="text-xs text-gray-500 mt-1">1 day ago</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trading Actions -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Quick Trade</h3>
+                    <div class="space-y-3">
+                        <button class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all flex items-center justify-center">
+                            <i class="fas fa-arrow-up mr-2"></i>
+                            Buy {{ coin.symbol }}
+                        </button>
+                        <button class="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-all flex items-center justify-center">
+                            <i class="fas fa-arrow-down mr-2"></i>
+                            Sell {{ coin.symbol }}
+                        </button>
+                        <button class="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-all flex items-center justify-center">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Add to Watchlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function assetDetailApp() {
+    return {
+        init() {
+            this.initChart();
+        },
+        
+        initChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // Generate fake price data
+            const labels = [];
+            const data = [];
+            const basePrice = {{ coin.price }};
+            
+            for (let i = 23; i >= 0; i--) {
+                const hour = (new Date().getHours() - i + 24) % 24;
+                labels.push(hour + ':00');
+                
+                // Generate realistic price movement
+                const volatility = 0.02;
+                const change = (Math.random() - 0.5) * volatility;
+                const price = basePrice * (1 + change * (i / 24));
+                data.push(price);
+            }
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '{{ coin.symbol }} Price',
+                        data: data,
+                        borderColor: '{% if coin.change_24h >= 0 %}#10b981{% else %}#ef4444{% endif %}',
+                        backgroundColor: '{% if coin.change_24h >= 0 %}rgba(16, 185, 129, 0.1){% else %}rgba(239, 68, 68, 0.1){% endif %}',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#64748b'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0,
+                            hoverRadius: 6
+                        }
+                    }
+                }
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

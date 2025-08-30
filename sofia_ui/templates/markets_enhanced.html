@@ -1,0 +1,320 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markets - Sofia V2</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .glass {
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
+    <!-- Top Navbar -->
+    
+    
+    <!-- Main Content -->
+    <div class="pt-20 px-6 py-6 max-w-7xl mx-auto" x-data="marketsApp()">
+        <!-- Page Header -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-white mb-2">
+                <i class="fas fa-chart-line mr-3 text-blue-400"></i>
+                Markets Overview
+            </h1>
+            <p class="text-gray-400">Real-time prices for crypto and equity markets</p>
+        </div>
+        
+        <!-- Search and Filters -->
+        <div class="glass rounded-xl p-4 mb-6">
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <input 
+                        type="text" 
+                        x-model="searchQuery"
+                        placeholder="Search symbols..."
+                        class="w-full px-4 py-2 bg-gray-800/50 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div class="flex gap-2">
+                    <button 
+                        @click="activeTab = 'all'"
+                        :class="activeTab === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'"
+                        class="px-4 py-2 rounded-lg transition-colors"
+                    >
+                        All Assets
+                    </button>
+                    <button 
+                        @click="activeTab = 'crypto'"
+                        :class="activeTab === 'crypto' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'"
+                        class="px-4 py-2 rounded-lg transition-colors"
+                    >
+                        Crypto
+                    </button>
+                    <button 
+                        @click="activeTab = 'equity'"
+                        :class="activeTab === 'equity' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'"
+                        class="px-4 py-2 rounded-lg transition-colors"
+                    >
+                        Equities
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Watchlist -->
+        <div class="glass rounded-xl p-6 mb-6" x-show="watchlist.length > 0">
+            <h3 class="text-lg font-semibold text-white mb-4">
+                <i class="fas fa-star text-yellow-400 mr-2"></i>
+                Watchlist
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <template x-for="item in watchlist" :key="item.symbol">
+                    <div class="bg-gray-800/50 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <div class="font-semibold text-white" x-text="item.symbol"></div>
+                                <div class="text-xs text-gray-400" x-text="item.type"></div>
+                            </div>
+                            <button @click="removeFromWatchlist(item.symbol)" class="text-gray-400 hover:text-red-400">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="text-2xl font-bold text-white" x-text="formatPrice(item.price)"></div>
+                        <div 
+                            class="text-sm"
+                            :class="item.change >= 0 ? 'text-green-400' : 'text-red-400'"
+                            x-text="formatChange(item.change)"
+                        ></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        
+        <!-- Markets Table -->
+        <div class="glass rounded-xl p-6">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="text-left py-3 px-4 text-gray-400 font-medium">Symbol</th>
+                            <th class="text-left py-3 px-4 text-gray-400 font-medium">Name</th>
+                            <th class="text-right py-3 px-4 text-gray-400 font-medium">Price</th>
+                            <th class="text-right py-3 px-4 text-gray-400 font-medium">24h Change</th>
+                            <th class="text-right py-3 px-4 text-gray-400 font-medium">Volume</th>
+                            <th class="text-center py-3 px-4 text-gray-400 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="asset in filteredAssets" :key="asset.symbol">
+                            <tr class="border-b border-gray-800 hover:bg-gray-800/30">
+                                <td class="py-3 px-4">
+                                    <div class="font-semibold text-white" x-text="asset.symbol"></div>
+                                    <div class="text-xs text-gray-400" x-text="asset.type"></div>
+                                </td>
+                                <td class="py-3 px-4 text-gray-300" x-text="asset.name"></td>
+                                <td class="py-3 px-4 text-right text-white font-medium" x-text="formatPrice(asset.price)"></td>
+                                <td class="py-3 px-4 text-right">
+                                    <span 
+                                        :class="asset.change >= 0 ? 'text-green-400' : 'text-red-400'"
+                                        x-text="formatChange(asset.change)"
+                                    ></span>
+                                </td>
+                                <td class="py-3 px-4 text-right text-gray-300" x-text="formatVolume(asset.volume)"></td>
+                                <td class="py-3 px-4 text-center">
+                                    <button 
+                                        @click="toggleWatchlist(asset)"
+                                        class="px-3 py-1 rounded text-sm transition-colors"
+                                        :class="isInWatchlist(asset.symbol) ? 'bg-yellow-600/20 text-yellow-400' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'"
+                                    >
+                                        <i class="fas fa-star mr-1"></i>
+                                        <span x-text="isInWatchlist(asset.symbol) ? 'Remove' : 'Watch'"></span>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                
+                <!-- Loading State -->
+                <div x-show="loading" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl text-blue-400"></i>
+                    <div class="text-gray-400 mt-2">Loading market data...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Portfolio Service -->
+    <script src="/static/js/portfolio-service.js"></script>
+    
+    <!-- Markets App -->
+    <script>
+        function marketsApp() {
+            return {
+                assets: [],
+                watchlist: [],
+                searchQuery: '',
+                activeTab: 'all',
+                loading: true,
+                
+                init() {
+                    // Load watchlist from localStorage
+                    const saved = localStorage.getItem('watchlist');
+                    if (saved) {
+                        this.watchlist = JSON.parse(saved);
+                    }
+                    
+                    // Load market data
+                    this.loadMarketData();
+                    
+                    // Auto-refresh every 30 seconds
+                    setInterval(() => this.loadMarketData(), 30000);
+                },
+                
+                async loadMarketData() {
+                    try {
+                        // Load all assets
+                        const response = await fetch('http://127.0.0.1:8023/market/assets/list');
+                        const data = await response.json();
+                        
+                        // Get quotes for all assets
+                        const symbols = data.assets.map(a => a.symbol).join(',');
+                        const quotesResponse = await fetch(`http://127.0.0.1:8023/market/quotes?symbols=${symbols}`);
+                        const quotes = await quotesResponse.json();
+                        
+                        // Merge asset info with quotes
+                        this.assets = data.assets.map(asset => {
+                            const quote = quotes[asset.symbol] || {};
+                            return {
+                                ...asset,
+                                price: parseFloat(quote.price || 0),
+                                change: parseFloat(quote.change_24h || 0),
+                                volume: parseFloat(quote.volume || 0)
+                            };
+                        });
+                        
+                        // Update watchlist prices
+                        this.watchlist = this.watchlist.map(item => {
+                            const asset = this.assets.find(a => a.symbol === item.symbol);
+                            return asset || item;
+                        });
+                        
+                        this.loading = false;
+                    } catch (error) {
+                        console.error('Error loading market data:', error);
+                        // Use mock data
+                        this.loadMockData();
+                    }
+                },
+                
+                loadMockData() {
+                    this.assets = [
+                        { symbol: 'BTC/USDT', name: 'Bitcoin', type: 'crypto', price: 67500, change: 2.5, volume: 25000000000 },
+                        { symbol: 'ETH/USDT', name: 'Ethereum', type: 'crypto', price: 3200, change: -1.2, volume: 12000000000 },
+                        { symbol: 'SOL/USDT', name: 'Solana', type: 'crypto', price: 145.50, change: 5.8, volume: 2500000000 },
+                        { symbol: 'AAPL', name: 'Apple Inc.', type: 'equity', price: 175.50, change: 0.8, volume: 65000000 },
+                        { symbol: 'MSFT', name: 'Microsoft Corp.', type: 'equity', price: 420.75, change: -0.5, volume: 22000000 },
+                        { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'equity', price: 850.00, change: 3.2, volume: 45000000 },
+                    ];
+                    this.loading = false;
+                },
+                
+                get filteredAssets() {
+                    let filtered = this.assets;
+                    
+                    // Filter by tab
+                    if (this.activeTab !== 'all') {
+                        filtered = filtered.filter(a => a.type === this.activeTab);
+                    }
+                    
+                    // Filter by search
+                    if (this.searchQuery) {
+                        const query = this.searchQuery.toLowerCase();
+                        filtered = filtered.filter(a => 
+                            a.symbol.toLowerCase().includes(query) ||
+                            a.name.toLowerCase().includes(query)
+                        );
+                    }
+                    
+                    return filtered;
+                },
+                
+                isInWatchlist(symbol) {
+                    return this.watchlist.some(item => item.symbol === symbol);
+                },
+                
+                toggleWatchlist(asset) {
+                    if (this.isInWatchlist(asset.symbol)) {
+                        this.removeFromWatchlist(asset.symbol);
+                    } else {
+                        this.addToWatchlist(asset);
+                    }
+                },
+                
+                addToWatchlist(asset) {
+                    this.watchlist.push(asset);
+                    this.saveWatchlist();
+                },
+                
+                removeFromWatchlist(symbol) {
+                    this.watchlist = this.watchlist.filter(item => item.symbol !== symbol);
+                    this.saveWatchlist();
+                },
+                
+                saveWatchlist() {
+                    localStorage.setItem('watchlist', JSON.stringify(this.watchlist));
+                },
+                
+                formatPrice(price) {
+                    if (!price) return '$0.00';
+                    if (price > 1000) {
+                        return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                    return '$' + price.toFixed(price < 1 ? 4 : 2);
+                },
+                
+                formatChange(change) {
+                    const sign = change >= 0 ? '+' : '';
+                    return sign + change.toFixed(2) + '%';
+                },
+                
+                formatVolume(volume) {
+                    if (volume > 1e9) return '$' + (volume / 1e9).toFixed(2) + 'B';
+                    if (volume > 1e6) return '$' + (volume / 1e6).toFixed(2) + 'M';
+                    if (volume > 1e3) return '$' + (volume / 1e3).toFixed(2) + 'K';
+                    return '$' + volume.toFixed(0);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
+{% endblock %}

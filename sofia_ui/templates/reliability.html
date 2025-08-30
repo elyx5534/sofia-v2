@@ -1,0 +1,424 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<div class="pt-20"> <!-- Add top padding for fixed navbar -->
+    <!-- Page Header -->
+    <div class="px-6 py-6 border-b border-gray-800/50 bg-gray-900/40">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-3xl font-bold text-white flex items-center">
+                <i class="fas fa-shield-alt mr-3 text-green-400"></i>
+                Veri GÃ¼venilirliÄŸi ve KaynaklarÄ±
+                <span class="ml-3 text-sm bg-green-500/20 text-green-400 px-3 py-1 rounded-full">
+                    %95 GÃ¼venilir
+                </span>
+            </h1>
+            <p class="text-gray-400 mt-2">Sofia V2'nin kullandÄ±ÄŸÄ± veri kaynaklarÄ± ve gÃ¼venilirlik kriterleri</p>
+        </div>
+    </div>
+
+    <div class="px-6 py-6 max-w-7xl mx-auto">
+        <!-- Ana Veri KaynaklarÄ± -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-6">ğŸŒ Ana Veri KaynaklarÄ±</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- CoinGecko -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                            <i class="fas fa-coins text-green-400 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">CoinGecko API</h3>
+                            <div class="text-sm text-green-400">Ana Fiyat KaynaÄŸÄ±</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼venilirlik:</span>
+                            <span class="text-green-400 font-bold">%98</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼ncelleme:</span>
+                            <span class="text-white">GerÃ§ek zamanlÄ±</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Coin SayÄ±sÄ±:</span>
+                            <span class="text-white">10,000+</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-3">
+                            DÃ¼nyanÄ±n en gÃ¼venilir kripto para veri saÄŸlayÄ±cÄ±sÄ±. 
+                            Binance, Coinbase gibi 500+ borsadan toplanan veriler.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Finnhub -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                            <i class="fas fa-newspaper text-blue-400 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Finnhub</h3>
+                            <div class="text-sm text-blue-400">Haber ve Sentiment</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼venilirlik:</span>
+                            <span class="text-blue-400 font-bold">%92</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼ncelleme:</span>
+                            <span class="text-white">60 saniyede bir</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Haber SayÄ±sÄ±:</span>
+                            <span class="text-white">100+ gÃ¼nlÃ¼k</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-3">
+                            Profesyonel finansal haber kaynaÄŸÄ±. 
+                            Reuters, Bloomberg, CoinDesk gibi gÃ¼venilir kaynaklardan.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alpha Vantage -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                            <i class="fas fa-chart-pie text-purple-400 text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Alpha Vantage</h3>
+                            <div class="text-sm text-purple-400">Sentiment Analizi</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼venilirlik:</span>
+                            <span class="text-purple-400 font-bold">%89</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼ncelleme:</span>
+                            <span class="text-white">5 dakikada bir</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">AI Analiz:</span>
+                            <span class="text-white">GeliÅŸmiÅŸ NLP</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-3">
+                            GeliÅŸmiÅŸ sentiment analizi ve piyasa psikolojisi. 
+                            Sosyal medya ve haber analizi ile.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GÃ¼venilirlik Kriterleri -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-6">ğŸ“Š GÃ¼venilirlik Kriterleri</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Tier Sistemi -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">ğŸ† Tier Sistemi</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                            <div>
+                                <div class="text-green-400 font-bold">Tier 1 (1-10. sÄ±ra)</div>
+                                <div class="text-xs text-gray-400">Bitcoin, Ethereum, Solana gibi</div>
+                            </div>
+                            <div class="text-green-400 font-bold">%90-95</div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                            <div>
+                                <div class="text-blue-400 font-bold">Tier 2 (11-50. sÄ±ra)</div>
+                                <div class="text-xs text-gray-400">Chainlink, Polygon, Uniswap gibi</div>
+                            </div>
+                            <div class="text-blue-400 font-bold">%80-90</div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                            <div>
+                                <div class="text-yellow-400 font-bold">Tier 3 (51-100. sÄ±ra)</div>
+                                <div class="text-xs text-gray-400">Orta bÃ¼yÃ¼klÃ¼k projeler</div>
+                            </div>
+                            <div class="text-yellow-400 font-bold">%70-80</div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                            <div>
+                                <div class="text-red-400 font-bold">Emerging (100+)</div>
+                                <div class="text-xs text-gray-400">Yeni ve riskli projeler</div>
+                            </div>
+                            <div class="text-red-400 font-bold">%60-70</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teknik GÃ¶stergeler -->
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">ğŸ“ˆ Teknik Analiz</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-white font-medium mb-2">RSI (Relative Strength Index)</h4>
+                            <div class="text-sm text-gray-400">
+                                â€¢ <span class="text-red-400">70+ = AÅŸÄ±rÄ± AlÄ±m</span> (SatÄ±ÅŸ sinyali)<br>
+                                â€¢ <span class="text-green-400">30- = AÅŸÄ±rÄ± SatÄ±m</span> (AlÄ±ÅŸ sinyali)<br>
+                                â€¢ <span class="text-yellow-400">30-70 = Normal</span> (NÃ¶tr)
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-white font-medium mb-2">MACD (Moving Average)</h4>
+                            <div class="text-sm text-gray-400">
+                                â€¢ <span class="text-green-400">Bullish</span> = YÃ¼kseliÅŸ trendi<br>
+                                â€¢ <span class="text-red-400">Bearish</span> = DÃ¼ÅŸÃ¼ÅŸ trendi
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-white font-medium mb-2">Whale Activity</h4>
+                            <div class="text-sm text-gray-400">
+                                â€¢ <span class="text-red-400">High</span> = BÃ¼yÃ¼k iÅŸlemler var<br>
+                                â€¢ <span class="text-yellow-400">Moderate</span> = Normal aktivite<br>
+                                â€¢ <span class="text-green-400">Low</span> = Sakin piyasa
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk UyarÄ±sÄ± -->
+        <div class="mb-8">
+            <div class="bg-red-900/20 border border-red-500/30 rounded-xl p-6">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-3 text-red-400"></i>
+                    âš ï¸ Ã–nemli Risk UyarÄ±sÄ±
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                    <div>
+                        <h3 class="text-white font-bold mb-2">Bu Platform:</h3>
+                        <ul class="space-y-1 text-gray-300">
+                            <li>â€¢ <strong>EÄŸitim amaÃ§lÄ±dÄ±r</strong> - GerÃ§ek para kullanÄ±lmaz</li>
+                            <li>â€¢ <strong>Paper trading</strong> - SimÃ¼lasyon modu</li>
+                            <li>â€¢ <strong>AI analizler</strong> teknik gÃ¶sterge bazlÄ±dÄ±r</li>
+                            <li>â€¢ <strong>Finansal tavsiye deÄŸildir</strong></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-bold mb-2">GerÃ§ek Trading Ä°Ã§in:</h3>
+                        <ul class="space-y-1 text-gray-300">
+                            <li>â€¢ <strong>Profesyonel danÄ±ÅŸman</strong> gÃ¶rÃ¼ÅŸÃ¼ alÄ±n</li>
+                            <li>â€¢ <strong>Risk yÃ¶netimi</strong> uygulayÄ±n</li>
+                            <li>â€¢ <strong>Sadece kaybedebileceÄŸiniz</strong> para ile iÅŸlem yapÄ±n</li>
+                            <li>â€¢ <strong>Ã‡eÅŸitlendirme</strong> ilkesini unutmayÄ±n</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Veri Kalitesi Metrikleri -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-6">ğŸ“Š Veri Kalitesi Metrikleri</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">ğŸ“¡ Fiyat Verileri</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Kaynak:</span>
+                            <span class="text-green-400">CoinGecko</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼ncelleme:</span>
+                            <span class="text-white">GerÃ§ek zamanlÄ±</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">DoÄŸruluk:</span>
+                            <span class="text-green-400">%99.8</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Borsa SayÄ±sÄ±:</span>
+                            <span class="text-white">500+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">ğŸ“° Haber Verileri</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Kaynak:</span>
+                            <span class="text-blue-400">Finnhub</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼ncelleme:</span>
+                            <span class="text-white">60 saniye</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">DoÄŸruluk:</span>
+                            <span class="text-blue-400">%95.2</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Haber/GÃ¼n:</span>
+                            <span class="text-white">100+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                    <h3 class="text-lg font-bold text-white mb-4">ğŸ¤– AI Analizler</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Model:</span>
+                            <span class="text-purple-400">Sofia AI v2</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¼ncelleme:</span>
+                            <span class="text-white">30 saniye</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">DoÄŸruluk:</span>
+                            <span class="text-purple-400">%73.5</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">GÃ¶sterge:</span>
+                            <span class="text-white">15+ teknik</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Durumu -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-6">ğŸ”Œ API Durumu (CanlÄ±)</h2>
+            <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="text-center">
+                        <div class="w-3 h-3 bg-green-400 rounded-full mx-auto mb-2 animate-pulse"></div>
+                        <div class="text-white font-bold">CoinGecko API</div>
+                        <div class="text-green-400 text-sm">Aktif</div>
+                        <div class="text-xs text-gray-500">Son gÃ¼ncelleme: ÅŸimdi</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-3 h-3 bg-green-400 rounded-full mx-auto mb-2 animate-pulse"></div>
+                        <div class="text-white font-bold">Alert Stack</div>
+                        <div class="text-green-400 text-sm">Aktif</div>
+                        <div class="text-xs text-gray-500">50+ canlÄ± sinyal</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-3 h-3 bg-green-400 rounded-full mx-auto mb-2 animate-pulse"></div>
+                        <div class="text-white font-bold">Data Hub</div>
+                        <div class="text-green-400 text-sm">Aktif</div>
+                        <div class="text-xs text-gray-500">Portfolio sync</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="w-3 h-3 bg-green-400 rounded-full mx-auto mb-2 animate-pulse"></div>
+                        <div class="text-white font-bold">Trading Engine</div>
+                        <div class="text-green-400 text-sm">Aktif</div>
+                        <div class="text-xs text-gray-500">Strategy sync</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AÃ§Ä±k Kaynak ve ÅeffaflÄ±k -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-white mb-6">ğŸ” ÅeffaflÄ±k ve Hesap Verebilirlik</h2>
+            <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-3">âœ… GerÃ§ek Veriler</h3>
+                        <ul class="space-y-2 text-sm text-gray-300">
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-400 mr-2"></i>
+                                Fiyat verileri CoinGecko API'sinden
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-400 mr-2"></i>
+                                Market cap ve volume gerÃ§ek
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-400 mr-2"></i>
+                                24 saatlik deÄŸiÅŸimler canlÄ±
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-400 mr-2"></i>
+                                Haber verileri Finnhub'dan
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-3">âš ï¸ SimÃ¼le Edilenler</h3>
+                        <ul class="space-y-2 text-sm text-gray-300">
+                            <li class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                                AI trading sinyalleri (teknik analiz bazlÄ±)
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                                Whale activity tahmini
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                                Price target hesaplamalarÄ±
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-exclamation-triangle text-yellow-400 mr-2"></i>
+                                Risk assessment skorlarÄ±
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-6 pt-6 border-t border-gray-700">
+                    <div class="text-center">
+                        <div class="text-white font-bold text-lg mb-2">ğŸ“ Yasal UyarÄ±</div>
+                        <div class="text-gray-400 text-sm max-w-4xl mx-auto">
+                            Sofia V2 platformu eÄŸitim ve demo amaÃ§lÄ±dÄ±r. Sunulan analizler, Ã¶neriler ve sinyaller 
+                            finansal tavsiye deÄŸildir. Kripto para yatÄ±rÄ±mlarÄ± yÃ¼ksek risklidir ve deÄŸerleri 
+                            Ã¶nemli Ã¶lÃ§Ã¼de dalgalanabilir. YatÄ±rÄ±m kararlarÄ±nÄ±zÄ± vermeden Ã¶nce profesyonel 
+                            finansal danÄ±ÅŸman gÃ¶rÃ¼ÅŸÃ¼ alÄ±nÄ±z. Platform geliÅŸtiricileri finansal kayÄ±plardan 
+                            sorumlu deÄŸildir.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Son GÃ¼ncelleme -->
+        <div class="text-center">
+            <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-4 inline-block">
+                <div class="text-sm text-gray-400">
+                    <i class="fas fa-clock mr-2"></i>
+                    Son gÃ¼ncelleme: {{ current_time }} â€¢ 
+                    Sistem sÃ¼rÃ¼mÃ¼: Sofia V2.0 â€¢ 
+                    <a href="https://github.com/sofia-ai" class="text-blue-400 hover:text-blue-300">GitHub</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update current time
+function updateTime() {
+    const now = new Date();
+    document.getElementById('currentTime').textContent = now.toLocaleTimeString('tr-TR');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateTime();
+    setInterval(updateTime, 1000);
+});
+</script>
+{% endblock %}

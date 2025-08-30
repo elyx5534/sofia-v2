@@ -1,0 +1,87 @@
+# News-Driven Trading Rules Configuration
+
+sentiment_k_adjustment:
+  enabled: true
+  description: "Adjust K-factor based on sentiment direction and strength"
+  sentiment_threshold_pos: 0.5
+  sentiment_threshold_neg: -0.5
+  confidence_min: 0.6
+  volume_min: 5
+  k_factor_adjustment: 0.1
+  
+event_execution_override:
+  enabled: true
+  description: "Override execution style for major news events"
+  confidence_min: 0.7
+  volume_min: 10
+  event_types: ['earnings', 'regulatory', 'partnership', 'product']
+  execution_override:
+    force_twap: true
+    max_order_size_usd: 1000
+    slippage_band_tightening: 0.5
+    
+regulatory_earnings_caution:
+  enabled: true
+  description: "Apply cautious execution for regulatory and earnings news"
+  event_types: ['regulatory', 'earnings']
+  confidence_min: 0.5
+  volume_min: 3
+  execution_override:
+    maker_first_only: true
+    order_size_cap_usd: 500
+    post_only_timeout_extend: 2.0
+    
+news_anomaly_twap:
+  enabled: true
+  description: "Force TWAP execution during news volume anomalies"
+  anomaly_threshold: 1.5
+  volume_multiplier: 2.0
+  confidence_min: 0.4
+  execution_override:
+    force_twap: true
+    twap_slots_increase: 2.0
+    slippage_band_tightening: 0.3
+    
+crypto_specific_sentiment:
+  enabled: true
+  description: "Crypto-specific sentiment adjustments"
+  asset_filter: ['BTC/USDT', 'ETH/USDT']
+  sentiment_threshold_pos: 0.4
+  sentiment_threshold_neg: -0.4
+  k_factor_adjustment: 0.15
+  strategy_bias_strength: 0.2
+  
+equity_earnings_focus:
+  enabled: true
+  description: "Enhanced rules for equity earnings events"
+  asset_filter: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
+  event_types: ['earnings']
+  confidence_min: 0.6
+  execution_override:
+    maker_first_only: true
+    order_size_cap_usd: 1000
+    slippage_tolerance_reduce: 0.5
+
+# Global rule settings
+global_settings:
+  max_k_factor_adjustment: 0.2
+  hysteresis_threshold: 0.02
+  adjustment_ttl_hours: 1.0
+  cleanup_interval_minutes: 30
+  
+# Sentiment thresholds by asset class  
+asset_class_thresholds:
+  crypto:
+    sentiment_threshold_pos: 0.4
+    sentiment_threshold_neg: -0.4
+    k_factor_adjustment: 0.15
+    
+  equity:
+    sentiment_threshold_pos: 0.5
+    sentiment_threshold_neg: -0.5
+    k_factor_adjustment: 0.1
+    
+  commodity:
+    sentiment_threshold_pos: 0.6
+    sentiment_threshold_neg: -0.6
+    k_factor_adjustment: 0.05

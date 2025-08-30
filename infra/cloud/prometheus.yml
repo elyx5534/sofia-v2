@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'sofia-api'
+    static_configs:
+      - targets: ['api:8023']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node_exporter:9100']
+    scrape_interval: 30s
+
+  - job_name: 'ray-cluster'
+    static_configs:
+      - targets: ['rayhead:8265']
+    metrics_path: '/api/metrics'
+    scrape_interval: 30s

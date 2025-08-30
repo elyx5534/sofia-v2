@@ -1,0 +1,65 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Paper Trading Quick Check</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .header { background: #3498db; color: white; padding: 20px; border-radius: 5px; }
+        .result-box { background: white; padding: 20px; margin: 20px 0; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .profitable { color: #27ae60; font-size: 24px; font-weight: bold; }
+        .unprofitable { color: #e74c3c; font-size: 24px; font-weight: bold; }
+        .metric { margin: 10px 0; padding: 10px; background: #ecf0f1; border-radius: 3px; }
+        .metric-label { font-weight: bold; color: #34495e; }
+        .metric-value { float: right; color: #2c3e50; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Paper Trading Quick Profitability Check</h1>
+        <p>Simulation Period: 1h | Generated: 2025-08-29 23:08:45</p>
+    </div>
+    
+    <div class="result-box">
+        <h2>Quick Answer: Is it Profitable?</h2>
+        <p class="unprofitable">
+            NO ✗
+        </p>
+        <p>Total P&L: $-1.22 (-0.01%)</p>
+    </div>
+    
+    <div class="result-box">
+        <h3>Key Metrics</h3>
+        <div class="metric">
+            <span class="metric-label">Trades Executed:</span>
+            <span class="metric-value">5</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Win Rate:</span>
+            <span class="metric-value">20.0%</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Expected Daily P&L:</span>
+            <span class="metric-value">$-29.30</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Expected Monthly Return:</span>
+            <span class="metric-value">-8.79%</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Total Fees:</span>
+            <span class="metric-value">$4.80</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Fee Impact:</span>
+            <span class="metric-value">0.05%</span>
+        </div>
+    </div>
+    
+    <div class="result-box">
+        <h3>Recommendation</h3>
+        <p>⚠️ Strategy needs optimization. Review signal generation and risk parameters.</p>
+    </div>
+</body>
+</html>
+        
