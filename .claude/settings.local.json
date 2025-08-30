@@ -21,7 +21,12 @@
       "Bash(curl:*)",
       "Bash(git checkout:*)",
       "Bash(gh pr create:*)",
-      "Bash(npx tailwindcss:*)"
+      "Bash(npx tailwindcss:*)",
+      "Bash(git fetch:*)",
+      "Bash(git branch:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git rebase:*)"
     ],
     "deny": [],
     "ask": []
