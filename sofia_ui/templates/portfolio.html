@@ -1,3 +1,5 @@
+﻿{% extends "base.html" %}
+{% block content %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -141,29 +143,7 @@
                 </div>
             </div>
 
-            <nav class="p-4 space-y-2">
-                <a href="/" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-th-large w-5"></i>
-                    <span class="ml-3">Dashboard</span>
-                </a>
-                <a href="/portfolio" class="flex items-center px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 text-blue-400">
-                    <i class="fas fa-briefcase w-5"></i>
-                    <span class="ml-3">Portfolio</span>
-                    <span class="ml-auto w-2 h-2 bg-blue-400 rounded-full animate-pulse"></span>
-                </a>
-                <a href="/assets/BTC-USD" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-coins w-5"></i>
-                    <span class="ml-3">Markets</span>
-                </a>
-                <a href="/backtest" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-flask w-5"></i>
-                    <span class="ml-3">Backtest</span>
-                </a>
-                <a href="/strategies" class="flex items-center px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800/50 transition-all">
-                    <i class="fas fa-robot w-5"></i>
-                    <span class="ml-3">AI Strategies</span>
-                </a>
-            </nav>
+            
         </aside>
 
         <!-- Main Content -->
@@ -378,7 +358,7 @@
                                 <div class="w-2 h-2 rounded-full bg-green-400"></div>
                                 <div>
                                     <p class="text-sm text-white">Bought 0.5 BTC</p>
-                                    <p class="text-xs text-slate-400">@ $65,432 • 2 hours ago</p>
+                                    <p class="text-xs text-slate-400">@ $65,432 â€¢ 2 hours ago</p>
                                 </div>
                             </div>
                             <span class="text-sm text-green-400">+$1,234</span>
@@ -388,7 +368,7 @@
                                 <div class="w-2 h-2 rounded-full bg-red-400"></div>
                                 <div>
                                     <p class="text-sm text-white">Sold 2.5 ETH</p>
-                                    <p class="text-xs text-slate-400">@ $3,521 • 5 hours ago</p>
+                                    <p class="text-xs text-slate-400">@ $3,521 â€¢ 5 hours ago</p>
                                 </div>
                             </div>
                             <span class="text-sm text-red-400">-$432</span>
@@ -398,7 +378,7 @@
                                 <div class="w-2 h-2 rounded-full bg-green-400"></div>
                                 <div>
                                     <p class="text-sm text-white">Bought 50 SOL</p>
-                                    <p class="text-xs text-slate-400">@ $138.50 • Yesterday</p>
+                                    <p class="text-xs text-slate-400">@ $138.50 â€¢ Yesterday</p>
                                 </div>
                             </div>
                             <span class="text-sm text-green-400">+$892</span>
@@ -500,3 +480,5 @@
     </script>
 </body>
 </html>
+
+{% endblock %}

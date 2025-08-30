@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}AI Trading - Sofia V2{% endblock %}
 
@@ -92,19 +92,19 @@
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <span class="text-gray-300 text-sm">Daily P&L</span>
-                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">✓ PASS</span>
+                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">âœ“ PASS</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-gray-300 text-sm">Max Drawdown</span>
-                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">✓ PASS</span>
+                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">âœ“ PASS</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-gray-300 text-sm">Error Rate</span>
-                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">✓ PASS</span>
+                        <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">âœ“ PASS</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-gray-300 text-sm">Slippage</span>
-                        <span class="bg-yellow-600 px-2 py-1 rounded text-xs text-white">⚠ WATCH</span>
+                        <span class="bg-yellow-600 px-2 py-1 rounded text-xs text-white">âš  WATCH</span>
                     </div>
                 </div>
             </div>
@@ -159,10 +159,10 @@
                             <span class="bg-green-600 px-2 py-1 rounded text-xs text-white">BUY SIGNAL</span>
                         </div>
                         <div class="text-sm text-gray-300">
-                            SuperTrend breakout detected • Confidence: 0.84 • K-Factor: 0.28
+                            SuperTrend breakout detected â€¢ Confidence: 0.84 â€¢ K-Factor: 0.28
                         </div>
                         <div class="text-xs text-gray-400 mt-1">
-                            2 minutes ago • News sentiment: +0.73
+                            2 minutes ago â€¢ News sentiment: +0.73
                         </div>
                     </div>
                     
@@ -172,10 +172,10 @@
                             <span class="bg-red-600 px-2 py-1 rounded text-xs text-white">SELL SIGNAL</span>
                         </div>
                         <div class="text-sm text-gray-300">
-                            RSI overbought (78.4) • Confidence: 0.67 • K-Factor: 0.22
+                            RSI overbought (78.4) â€¢ Confidence: 0.67 â€¢ K-Factor: 0.22
                         </div>
                         <div class="text-xs text-gray-400 mt-1">
-                            5 minutes ago • News sentiment: -0.12
+                            5 minutes ago â€¢ News sentiment: -0.12
                         </div>
                     </div>
                     
@@ -185,10 +185,10 @@
                             <span class="bg-gray-600 px-2 py-1 rounded text-xs text-white">NEUTRAL</span>
                         </div>
                         <div class="text-sm text-gray-300">
-                            No clear signal • Waiting for breakout • K-Factor: 0.15
+                            No clear signal â€¢ Waiting for breakout â€¢ K-Factor: 0.15
                         </div>
                         <div class="text-xs text-gray-400 mt-1">
-                            8 minutes ago • News sentiment: +0.23
+                            8 minutes ago â€¢ News sentiment: +0.23
                         </div>
                     </div>
                 </div>
@@ -304,7 +304,7 @@
         const timeElements = feed.querySelectorAll('.text-xs.text-gray-400');
         timeElements.forEach((el, index) => {
             const minutesAgo = Math.floor(Math.random() * 10) + 1;
-            el.textContent = `${minutesAgo} minutes ago • News sentiment: ${(Math.random() - 0.5).toFixed(2)}`;
+            el.textContent = `${minutesAgo} minutes ago â€¢ News sentiment: ${(Math.random() - 0.5).toFixed(2)}`;
         });
     }
     

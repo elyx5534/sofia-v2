@@ -1,3 +1,5 @@
+﻿{% extends "base.html" %}
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,7 +82,7 @@
     <!-- Header -->
     <div class="bg-gray-800 p-4">
         <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-bold">🔴 Live Trading Grid</h1>
+            <h1 class="text-2xl font-bold">ğŸ”´ Live Trading Grid</h1>
             
             <div class="flex items-center space-x-4">
                 <div id="universe-stats" class="text-sm text-gray-400"></div>
@@ -470,9 +472,9 @@
             // News badges
             let newsBadges = '';
             if (rowData.news.score_1h > 0.3) {
-                newsBadges += '<span class="badge news-up">NEWS↑</span>';
+                newsBadges += '<span class="badge news-up">NEWSâ†‘</span>';
             } else if (rowData.news.score_1h < -0.3) {
-                newsBadges += '<span class="badge news-down">NEWS↓</span>';
+                newsBadges += '<span class="badge news-down">NEWSâ†“</span>';
             }
             if (rowData.news.volume > 8) {
                 newsBadges += '<span class="badge news-event">EVENT!</span>';
@@ -481,7 +483,7 @@
             // Gates status
             const gatesPassing = Object.values(rowData.gates).every(g => g);
             const gatesClass = gatesPassing ? 'gate-pass' : 'gate-fail';
-            const gatesText = gatesPassing ? '✓' : Object.keys(rowData.gates).filter(k => !rowData.gates[k]).join(',');
+            const gatesText = gatesPassing ? 'âœ“' : Object.keys(rowData.gates).filter(k => !rowData.gates[k]).join(',');
             
             // P&L coloring
             const pnlDailyClass = rowData.pnl_daily >= 0 ? 'positive' : 'negative';
@@ -826,3 +828,4 @@
     </script>
 </body>
 </html>
+{% endblock %}

@@ -19,7 +19,9 @@
       "Bash(taskkill:*)",
       "Bash(pkill:*)",
       "Bash(curl:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(gh pr create:*)",
+      "Bash(npx tailwindcss:*)"
     ],
     "deny": [],
     "ask": []

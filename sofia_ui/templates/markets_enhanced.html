@@ -1,3 +1,5 @@
+﻿{% extends "base.html" %}
+{% block content %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -37,40 +39,7 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
     <!-- Top Navbar -->
-    <nav class="fixed top-0 left-0 right-0 z-50 glass">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
-                <div class="flex items-center">
-                    <a href="/" class="text-xl font-bold text-white">
-                        <i class="fas fa-robot text-blue-400 mr-2"></i>
-                        Sofia V2
-                    </a>
-                </div>
-                
-                <!-- Nav Links -->
-                <div class="hidden md:flex items-center space-x-6">
-                    <a href="/dashboard" class="text-gray-300 hover:text-white">Dashboard</a>
-                    <a href="/strategies" class="text-gray-300 hover:text-white">Strategies</a>
-                    <a href="/backtests" class="text-gray-300 hover:text-white">Backtests</a>
-                    <a href="/signals" class="text-gray-300 hover:text-white">Signals</a>
-                    <a href="/markets" class="text-white font-semibold">Markets</a>
-                    <a href="/settings" class="text-gray-300 hover:text-white">Settings</a>
-                    <a href="/status" class="text-gray-300 hover:text-white">Status</a>
-                </div>
-                
-                <!-- Right Actions -->
-                <div class="flex items-center space-x-4">
-                    <button class="text-gray-300 hover:text-white">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                    <button class="text-gray-300 hover:text-white">
-                        <i class="fas fa-user-circle text-xl"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
+    
     
     <!-- Main Content -->
     <div class="pt-20 px-6 py-6 max-w-7xl mx-auto" x-data="marketsApp()">
@@ -348,3 +317,4 @@
     </script>
 </body>
 </html>
+{% endblock %}

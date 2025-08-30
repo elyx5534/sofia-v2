@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -19,7 +19,7 @@
                         </div>
                         <span class="text-xs text-slate-400">Total Balance</span>
                     </div>
-                    <div class="text-3xl font-bold text-white mb-1">${{ "%.2f"|format(total_balance) if total_balance else "125,430.67" }}</div>
+                    <div class="text-3xl font-bold text-white mb-1">{{ total_balance|currency("$") }}</div>
                     <div class="flex items-center text-emerald-400 text-sm">
                         <i class="fas fa-arrow-up mr-1 text-xs"></i>
                         <span>{{ "+%.1f"|format(pnl_percentage) if pnl_percentage else "+12.5" }}%</span>
@@ -58,7 +58,7 @@
                     <div class="text-3xl font-bold text-white mb-1">187</div>
                     <div class="flex items-center text-slate-400 text-sm">
                         <span class="text-amber-400">23 Loss</span>
-                        <span class="mx-2">•</span>
+                        <span class="mx-2">â€¢</span>
                         <span class="text-emerald-400">164 Win</span>
                     </div>
                 </div>
@@ -205,7 +205,7 @@
                         <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800/70 transition-all cursor-pointer">
                             <div class="flex items-center space-x-3">
                                 <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
-                                    <span class="text-green-500 font-bold">₮</span>
+                                    <span class="text-green-500 font-bold">â‚®</span>
                                 </div>
                                 <div>
                                     <div class="text-white font-semibold">Tether</div>
@@ -781,7 +781,7 @@ function updateDashboardUI() {
     const balanceEl = document.querySelector('.text-3xl.font-bold.text-white');
     if (balanceEl) {
         const totalValue = dashboardData.totalBalance + dashboardData.dailyPnl;
-        balanceEl.textContent = `₺${totalValue.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+        balanceEl.textContent = `â‚º${totalValue.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
     }
     
     // Update Daily P&L
@@ -791,7 +791,7 @@ function updateDashboardUI() {
         const pnlClass = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
         const pnlSign = pnl >= 0 ? '+' : '';
         pnlEl.className = `text-3xl font-bold ${pnlClass}`;
-        pnlEl.textContent = `${pnlSign}₺${pnl.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
+        pnlEl.textContent = `${pnlSign}â‚º${pnl.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`;
     }
     
     // Update Active Trades
@@ -834,3 +834,4 @@ setInterval(fetchTradingData, 10000); // Update every 10 seconds
 initWebSocket();
 </script>
 {% endblock %}
+

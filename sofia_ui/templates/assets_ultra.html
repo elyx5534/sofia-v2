@@ -1,3 +1,5 @@
+﻿{% extends "base.html" %}
+{% block content %}
 {% extends "base_modern.html" %}
 
 {% block title %}Assets - Sofia V2{% endblock %}
@@ -118,7 +120,7 @@
                     <span class="text-red-400 text-xs">-1.2%</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <span class="text-cyan-500 font-bold">◈</span>
+                    <span class="text-cyan-500 font-bold">â—ˆ</span>
                     <span class="text-white font-mono">AVAX</span>
                     <span class="text-green-400">$42.18</span>
                     <span class="text-green-400 text-xs">+5.7%</span>
@@ -145,7 +147,7 @@
                     <span class="text-red-400 text-xs">-1.2%</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <span class="text-cyan-500 font-bold">◈</span>
+                    <span class="text-cyan-500 font-bold">â—ˆ</span>
                     <span class="text-white font-mono">AVAX</span>
                     <span class="text-green-400">$42.18</span>
                     <span class="text-green-400 text-xs">+5.7%</span>
@@ -426,15 +428,15 @@
                 <div class="space-y-3">
                     <div class="pb-3 border-b border-gray-800">
                         <p class="text-white text-sm mb-1">Bitcoin ETF Sees Record Inflows</p>
-                        <p class="text-gray-400 text-xs">2 hours ago • CoinDesk</p>
+                        <p class="text-gray-400 text-xs">2 hours ago â€¢ CoinDesk</p>
                     </div>
                     <div class="pb-3 border-b border-gray-800">
                         <p class="text-white text-sm mb-1">Ethereum Upgrade Successfully Deployed</p>
-                        <p class="text-gray-400 text-xs">4 hours ago • The Block</p>
+                        <p class="text-gray-400 text-xs">4 hours ago â€¢ The Block</p>
                     </div>
                     <div>
                         <p class="text-white text-sm mb-1">Fed Meeting Minutes Impact Crypto</p>
-                        <p class="text-gray-400 text-xs">6 hours ago • Reuters</p>
+                        <p class="text-gray-400 text-xs">6 hours ago â€¢ Reuters</p>
                     </div>
                 </div>
             </div>
@@ -527,4 +529,6 @@ setInterval(() => {
     });
 }, 5000);
 </script>
+{% endblock %}
+
 {% endblock %}

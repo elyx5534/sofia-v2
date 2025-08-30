@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}AI Strategies - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-bold mb-8 text-center">AI Trading Strategies</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="card p-6">
+            <h3 class="text-xl font-semibold mb-2">SMA Crossover</h3>
+            <p class="text-muted mb-4">Simple Moving Average strategy</p>
+            <div class="flex justify-between items-center">
+                <span class="text-green-400 font-bold">+23.4%</span>
+                <button class="btn-primary px-4 py-2 rounded-lg">Deploy</button>
+            </div>
+        </div>
+        
+        <div class="card p-6">
+            <h3 class="text-xl font-semibold mb-2">RSI Momentum</h3>
+            <p class="text-muted mb-4">Relative Strength Index strategy</p>
+            <div class="flex justify-between items-center">
+                <span class="text-green-400 font-bold">+18.7%</span>
+                <button class="btn-primary px-4 py-2 rounded-lg">Deploy</button>
+            </div>
+        </div>
+        
+        <div class="card p-6">
+            <h3 class="text-xl font-semibold mb-2">ML Predictor</h3>
+            <p class="text-muted mb-4">Machine learning based predictions</p>
+            <div class="flex justify-between items-center">
+                <span class="text-blue-400 font-bold">Testing</span>
+                <button class="btn-primary px-4 py-2 rounded-lg opacity-50" disabled>Coming Soon</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

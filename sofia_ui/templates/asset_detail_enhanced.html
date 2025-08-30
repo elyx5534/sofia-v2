@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950">
@@ -20,7 +20,7 @@
                         </div>
                         <div>
                             <h1 class="text-2xl font-bold text-white">{{ coin.name }}</h1>
-                            <p class="text-gray-400">{{ coin.symbol.upper() }} • Rank #{{ coin.market_cap_rank }}</p>
+                            <p class="text-gray-400">{{ coin.symbol.upper() }} â€¢ Rank #{{ coin.market_cap_rank }}</p>
                         </div>
                     </div>
                 </div>
@@ -212,7 +212,7 @@
                         border rounded-lg">
                         <div class="text-center">
                             <div class="text-lg font-bold text-white mb-2">
-                                🤖 Sofia's Recommendation: {{ ai_analysis.signal }}
+                                ğŸ¤– Sofia's Recommendation: {{ ai_analysis.signal }}
                             </div>
                             <div class="text-sm text-gray-300 mb-3">
                                 {% if ai_analysis.signal.startswith('BUY') %}
@@ -303,7 +303,7 @@
                         <div class="text-center">
                             <i class="fas fa-chart-line text-4xl text-gray-500 mb-2"></i>
                             <div class="text-gray-400">Interactive Chart</div>
-                            <div class="text-gray-500 text-sm">1D • 7D • 1M • 3M • 1Y</div>
+                            <div class="text-gray-500 text-sm">1D â€¢ 7D â€¢ 1M â€¢ 3M â€¢ 1Y</div>
                         </div>
                     </div>
                 </div>

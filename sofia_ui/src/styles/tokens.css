@@ -1,0 +1,24 @@
+/* Sofia V2 Glass Dark Theme Tokens - Single Source of Truth */
+
+:root {
+  /* Glass surfaces */
+  --surface: #0f0b1a;
+  --surface-2: #111427;
+  --card: rgba(255,255,255,.05);
+  --border: rgba(255,255,255,.06);
+  --ring: rgba(168,85,247,.35);
+  --text: #e6edf3;
+  --muted: #9aa4b2;
+  
+  /* Purple brand scale */
+  --brand-50: #faf5ff;
+  --brand-100: #f3e8ff;
+  --brand-200: #e9d5ff;
+  --brand-300: #d8b4fe;
+  --brand-400: #c084fc;
+  --brand-500: #a855f7;
+  --brand-600: #9333ea;
+  --brand-700: #7e22ce;
+  --brand-800: #6b21a8;
+  --brand-900: #581c87;
+}

@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
-{% block title %}BIST - Borsa İstanbul | Sofia V2{% endblock %}
+{% block title %}BIST - Borsa Ä°stanbul | Sofia V2{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -11,9 +11,9 @@
                 <div>
                     <h1 class="text-3xl font-bold text-white mb-2">
                         <i class="fas fa-chart-line text-red-500 mr-3"></i>
-                        Borsa İstanbul
+                        Borsa Ä°stanbul
                     </h1>
-                    <p class="text-gray-400">{{ stocks|length }} Hisse Senedi • Canlı Fiyatlar</p>
+                    <p class="text-gray-400">{{ stocks|length }} Hisse Senedi â€¢ CanlÄ± Fiyatlar</p>
                 </div>
                 <div class="text-right">
                     <div class="bg-gray-800 rounded-lg p-4">
@@ -28,22 +28,22 @@
                             <span class="text-red-500">{{ "{:,.2f}".format(bist100.change) }} (%{{ bist100.change_percent }})</span>
                             {% endif %}
                         </div>
-                        <div class="text-xs text-gray-400 mt-1">Son Güncelleme: <span id="last-update">{{ bist100.last_updated }}</span></div>
+                        <div class="text-xs text-gray-400 mt-1">Son GÃ¼ncelleme: <span id="last-update">{{ bist100.last_updated }}</span></div>
                     </div>
                 </div>
             </div>
             
-            <!-- Gerçek Veri Butonu -->
+            <!-- GerÃ§ek Veri Butonu -->
             <div class="mt-4">
                 <button onclick="fetchRealData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
                     <i class="fas fa-sync-alt mr-2" id="refresh-icon"></i>
-                    Gerçek Verileri Yükle
+                    GerÃ§ek Verileri YÃ¼kle
                 </button>
                 <span id="loading-status" class="ml-3 text-yellow-400 hidden">
-                    <i class="fas fa-spinner fa-spin mr-2"></i>Veriler yükleniyor...
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Veriler yÃ¼kleniyor...
                 </span>
                 <span id="success-status" class="ml-3 text-green-400 hidden">
-                    <i class="fas fa-check-circle mr-2"></i>Gerçek veriler yüklendi!
+                    <i class="fas fa-check-circle mr-2"></i>GerÃ§ek veriler yÃ¼klendi!
                 </span>
             </div>
         </div>
@@ -53,19 +53,19 @@
     <div class="container mx-auto px-4 py-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
-                <div class="text-sm text-gray-400 mb-1">İşlem Hacmi</div>
+                <div class="text-sm text-gray-400 mb-1">Ä°ÅŸlem Hacmi</div>
                 <div class="text-xl font-bold text-white" id="total-volume">{{ bist100.volume }}</div>
             </div>
             <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
-                <div class="text-sm text-gray-400 mb-1">Yükselen</div>
+                <div class="text-sm text-gray-400 mb-1">YÃ¼kselen</div>
                 <div class="text-xl font-bold text-green-500" id="rising-count">{{ stocks|selectattr('change_percent', '>', 0)|list|length }}</div>
             </div>
             <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
-                <div class="text-sm text-gray-400 mb-1">Düşen</div>
+                <div class="text-sm text-gray-400 mb-1">DÃ¼ÅŸen</div>
                 <div class="text-xl font-bold text-red-500" id="falling-count">{{ stocks|selectattr('change_percent', '<', 0)|list|length }}</div>
             </div>
             <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
-                <div class="text-sm text-gray-400 mb-1">Veri Kaynağı</div>
+                <div class="text-sm text-gray-400 mb-1">Veri KaynaÄŸÄ±</div>
                 <div class="text-xl font-bold text-white" id="data-source">Mock Data</div>
             </div>
         </div>
@@ -76,7 +76,7 @@
             <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
                 <h3 class="text-lg font-bold text-white mb-4">
                     <i class="fas fa-trending-up text-green-500 mr-2"></i>
-                    En Çok Yükselenler
+                    En Ã‡ok YÃ¼kselenler
                 </h3>
                 <div class="space-y-3" id="top-gainers">
                     {% for stock in top_gainers %}
@@ -86,7 +86,7 @@
                             <span class="text-sm text-gray-400 ml-2">{{ stock.name[:20] }}</span>
                         </div>
                         <div class="text-right">
-                            <div class="text-white">₺{{ "{:,.2f}".format(stock.price) }}</div>
+                            <div class="text-white">â‚º{{ "{:,.2f}".format(stock.price) }}</div>
                             <div class="text-green-500 text-sm">+%{{ "{:.2f}".format(stock.change_percent) }}</div>
                         </div>
                     </div>
@@ -98,7 +98,7 @@
             <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
                 <h3 class="text-lg font-bold text-white mb-4">
                     <i class="fas fa-trending-down text-red-500 mr-2"></i>
-                    En Çok Düşenler
+                    En Ã‡ok DÃ¼ÅŸenler
                 </h3>
                 <div class="space-y-3" id="top-losers">
                     {% for stock in top_losers %}
@@ -108,7 +108,7 @@
                             <span class="text-sm text-gray-400 ml-2">{{ stock.name[:20] }}</span>
                         </div>
                         <div class="text-right">
-                            <div class="text-white">₺{{ "{:,.2f}".format(stock.price) }}</div>
+                            <div class="text-white">â‚º{{ "{:,.2f}".format(stock.price) }}</div>
                             <div class="text-red-500 text-sm">%{{ "{:.2f}".format(stock.change_percent) }}</div>
                         </div>
                     </div>
@@ -122,7 +122,7 @@
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-white">
                     <i class="fas fa-table mr-2"></i>
-                    Tüm Hisseler
+                    TÃ¼m Hisseler
                 </h3>
                 <input type="text" id="stockSearch" placeholder="Hisse ara..." 
                        class="bg-gray-900 text-white px-4 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
@@ -133,15 +133,15 @@
                     <thead class="text-left text-gray-400 border-b border-gray-700">
                         <tr>
                             <th class="pb-3">Sembol</th>
-                            <th class="pb-3">Şirket</th>
-                            <th class="pb-3">Sektör</th>
-                            <th class="pb-3 text-right">Fiyat (₺)</th>
-                            <th class="pb-3 text-right">Değişim</th>
-                            <th class="pb-3 text-right">Değişim %</th>
+                            <th class="pb-3">Åirket</th>
+                            <th class="pb-3">SektÃ¶r</th>
+                            <th class="pb-3 text-right">Fiyat (â‚º)</th>
+                            <th class="pb-3 text-right">DeÄŸiÅŸim</th>
+                            <th class="pb-3 text-right">DeÄŸiÅŸim %</th>
                             <th class="pb-3 text-right">Hacim</th>
-                            <th class="pb-3 text-right">Piyasa Değeri (M₺)</th>
+                            <th class="pb-3 text-right">Piyasa DeÄŸeri (Mâ‚º)</th>
                             <th class="pb-3 text-right">F/K</th>
-                            <th class="pb-3 text-right">Temettü %</th>
+                            <th class="pb-3 text-right">TemettÃ¼ %</th>
                         </tr>
                     </thead>
                     <tbody class="text-white" id="stocks-tbody">
@@ -192,15 +192,15 @@
         <div class="mt-8 flex gap-4 justify-center">
             <a href="/bist/analysis" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors">
                 <i class="fas fa-chart-bar mr-2"></i>
-                Günlük Analiz
+                GÃ¼nlÃ¼k Analiz
             </a>
             <a href="/portfolio" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors">
                 <i class="fas fa-briefcase mr-2"></i>
-                Portföyüm
+                PortfÃ¶yÃ¼m
             </a>
             <button onclick="fetchRealData()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors">
                 <i class="fas fa-sync-alt mr-2"></i>
-                Verileri Güncelle
+                Verileri GÃ¼ncelle
             </button>
         </div>
     </div>
@@ -224,7 +224,7 @@ document.getElementById('stockSearch').addEventListener('input', function(e) {
     });
 });
 
-// Gerçek veri çekme fonksiyonu
+// GerÃ§ek veri Ã§ekme fonksiyonu
 async function fetchRealData() {
     const loadingStatus = document.getElementById('loading-status');
     const successStatus = document.getElementById('success-status');
@@ -236,32 +236,32 @@ async function fetchRealData() {
         refreshIcon.classList.add('fa-spin');
     }
     
-    // UI durumunu güncelle
+    // UI durumunu gÃ¼ncelle
     loadingStatus.classList.remove('hidden');
     successStatus.classList.add('hidden');
     refreshIcon.classList.add('fa-spin');
     
     try {
-        // Gerçek veri API'sini çağır
+        // GerÃ§ek veri API'sini Ã§aÄŸÄ±r
         const response = await fetch('/api/bist/real-data');
         const data = await response.json();
         
         if (data.stocks && data.stocks.length > 0) {
-            // Tabloyu güncelle
+            // Tabloyu gÃ¼ncelle
             updateStocksTable(data.stocks);
             
-            // BIST 100 güncelle
+            // BIST 100 gÃ¼ncelle
             if (data.bist100) {
                 updateBIST100(data.bist100);
             }
             
-            // Top movers güncelle
+            // Top movers gÃ¼ncelle
             updateTopMovers(data.stocks);
             
-            // İstatistikleri güncelle
+            // Ä°statistikleri gÃ¼ncelle
             updateStats(data.stocks);
             
-            // Başarı mesajı
+            // BaÅŸarÄ± mesajÄ±
             loadingStatus.classList.add('hidden');
             successStatus.classList.remove('hidden');
             dataSource.textContent = 'Yahoo Finance';
@@ -271,8 +271,8 @@ async function fetchRealData() {
             }, 3000);
         }
     } catch (error) {
-        console.error('Veri çekme hatası:', error);
-        loadingStatus.textContent = 'Veri çekilemedi!';
+        console.error('Veri Ã§ekme hatasÄ±:', error);
+        loadingStatus.textContent = 'Veri Ã§ekilemedi!';
         loadingStatus.classList.remove('text-yellow-400');
         loadingStatus.classList.add('text-red-400');
         
@@ -280,7 +280,7 @@ async function fetchRealData() {
             loadingStatus.classList.add('hidden');
             loadingStatus.classList.remove('text-red-400');
             loadingStatus.classList.add('text-yellow-400');
-            loadingStatus.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Veriler yükleniyor...';
+            loadingStatus.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Veriler yÃ¼kleniyor...';
         }, 3000);
     } finally {
         refreshIcon.classList.remove('fa-spin');
@@ -293,11 +293,11 @@ function updateStocksTable(stocks) {
     stocks.forEach(stock => {
         const row = tbody.querySelector(`tr[data-symbol="${stock.symbol}"]`);
         if (row) {
-            // Fiyat güncelle
+            // Fiyat gÃ¼ncelle
             const priceCell = row.querySelector('.stock-price');
             if (priceCell) priceCell.textContent = stock.price.toFixed(2);
             
-            // Değişim güncelle
+            // DeÄŸiÅŸim gÃ¼ncelle
             const changeCell = row.querySelector('.stock-change');
             if (changeCell) {
                 const changeSpan = stock.change > 0 
@@ -306,7 +306,7 @@ function updateStocksTable(stocks) {
                 changeCell.innerHTML = changeSpan;
             }
             
-            // Yüzde değişim güncelle
+            // YÃ¼zde deÄŸiÅŸim gÃ¼ncelle
             const percentCell = row.querySelector('.stock-change-percent');
             if (percentCell) {
                 const percentSpan = stock.change_percent > 0
@@ -315,7 +315,7 @@ function updateStocksTable(stocks) {
                 percentCell.innerHTML = percentSpan;
             }
             
-            // Hacim güncelle
+            // Hacim gÃ¼ncelle
             const volumeCell = row.querySelector('.stock-volume');
             if (volumeCell) volumeCell.textContent = stock.volume.toLocaleString();
         }
@@ -335,12 +335,12 @@ function updateBIST100(bist100) {
 }
 
 function updateTopMovers(stocks) {
-    // Sırala
+    // SÄ±rala
     const sorted = [...stocks].sort((a, b) => b.change_percent - a.change_percent);
     const gainers = sorted.slice(0, 5);
     const losers = sorted.slice(-5).reverse();
     
-    // Top gainers güncelle
+    // Top gainers gÃ¼ncelle
     const gainersDiv = document.getElementById('top-gainers');
     gainersDiv.innerHTML = gainers.map(stock => `
         <div class="flex justify-between items-center bg-gray-900/50 rounded p-3">
@@ -349,13 +349,13 @@ function updateTopMovers(stocks) {
                 <span class="text-sm text-gray-400 ml-2">${stock.name.substring(0, 20)}</span>
             </div>
             <div class="text-right">
-                <div class="text-white">₺${stock.price.toFixed(2)}</div>
+                <div class="text-white">â‚º${stock.price.toFixed(2)}</div>
                 <div class="text-green-500 text-sm">+${stock.change_percent.toFixed(2)}%</div>
             </div>
         </div>
     `).join('');
     
-    // Top losers güncelle
+    // Top losers gÃ¼ncelle
     const losersDiv = document.getElementById('top-losers');
     losersDiv.innerHTML = losers.map(stock => `
         <div class="flex justify-between items-center bg-gray-900/50 rounded p-3">
@@ -364,7 +364,7 @@ function updateTopMovers(stocks) {
                 <span class="text-sm text-gray-400 ml-2">${stock.name.substring(0, 20)}</span>
             </div>
             <div class="text-right">
-                <div class="text-white">₺${stock.price.toFixed(2)}</div>
+                <div class="text-white">â‚º${stock.price.toFixed(2)}</div>
                 <div class="text-red-500 text-sm">${stock.change_percent.toFixed(2)}%</div>
             </div>
         </div>
@@ -383,25 +383,25 @@ function updateStats(stocks) {
 let autoRefreshInterval;
 
 function startAutoRefresh() {
-    // İlk yükleme
+    // Ä°lk yÃ¼kleme
     fetchRealData();
     
-    // 30 saniyede bir güncelle
+    // 30 saniyede bir gÃ¼ncelle
     autoRefreshInterval = setInterval(() => {
-        console.log('Otomatik veri güncelleme...');
+        console.log('Otomatik veri gÃ¼ncelleme...');
         fetchRealData();
     }, 30000); // 30 saniye
 }
 
-// Sayfa yüklendiğinde otomatik olarak gerçek veri çek
+// Sayfa yÃ¼klendiÄŸinde otomatik olarak gerÃ§ek veri Ã§ek
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-        console.log('Gerçek veriler yükleniyor ve otomatik güncelleme başlatılıyor...');
+        console.log('GerÃ§ek veriler yÃ¼kleniyor ve otomatik gÃ¼ncelleme baÅŸlatÄ±lÄ±yor...');
         startAutoRefresh();
     }, 1000);
 });
 
-// Sayfa kapanırken interval'i temizle
+// Sayfa kapanÄ±rken interval'i temizle
 window.addEventListener('beforeunload', () => {
     if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
