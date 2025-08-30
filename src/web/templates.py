@@ -57,7 +57,12 @@ CANON_MAP = {
     'strategies.html': 'strategies.html',
     'assets_detail.html': 'assets_detail.html',
     'homepage.html': 'homepage.html',
-    'base.html': 'base.html'
+    'homepage_glass_dark_stable.html': 'homepage_glass_dark_stable.html',
+    'base.html': 'base.html',
+    
+    # Stable UI aliases  
+    'glass_dark': 'homepage_glass_dark_stable.html',
+    'stable_ui': 'homepage_glass_dark_stable.html'
 }
 
 
@@ -85,9 +90,12 @@ class TemplateResolver:
         
         logger.info(f"Template resolver initialized with paths: {self.existing_paths}")
         
-        # Create Jinja environment with multi-path loader
+        # Create Jinja environment with multi-path loader and custom filters
         loader = FileSystemLoader(self.existing_paths)
         self.jinja_env = Environment(loader=loader, autoescape=True)
+        
+        # Add custom filters
+        self.jinja_env.filters['format_currency'] = self._format_currency
         
         # FastAPI templates instance for compatibility
         self.templates = Jinja2Templates(directory=self.existing_paths[0])
@@ -95,6 +103,28 @@ class TemplateResolver:
         # Template cache
         self.template_cache: Dict[str, str] = {}
         self.resolution_log: List[Dict[str, Any]] = []
+    
+    def _format_currency(self, value, symbol="$"):
+        """Format currency with proper formatting for TOTAL BALANCE GUARANTEE"""
+        try:
+            if value is None:
+                return f"{symbol}0.00"
+            
+            # Handle string inputs
+            if isinstance(value, str):
+                # Remove existing currency symbols and spaces
+                clean_value = value.replace("$", "").replace(",", "").strip()
+                if clean_value == "":
+                    return f"{symbol}0.00"
+                value = float(clean_value)
+            
+            # Format as currency with commas and 2 decimal places
+            formatted = f"{symbol}{value:,.2f}"
+            return formatted
+            
+        except (ValueError, TypeError):
+            logger.warning(f"Currency formatting failed for value: {value}")
+            return f"{symbol}0.00"
     
     def resolve_template(self, template_name: str) -> str:
         """Resolve template name to canonical version"""

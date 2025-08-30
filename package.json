@@ -1,0 +1,16 @@
+{
+  "name": "sofia-v2",
+  "version": "2.0.0",
+  "description": "Sofia V2 - AI Trading Platform",
+  "scripts": {
+    "build:css": "tailwindcss -i ./sofia_ui/static/styles/app.css -o ./sofia_ui/static/styles/app.css --watch",
+    "build:css:prod": "tailwindcss -i ./sofia_ui/static/styles/app.css -o ./sofia_ui/static/styles/app.css --minify",
+    "test:e2e": "playwright test",
+    "test:a11y": "playwright test --config=playwright-a11y.config.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@axe-core/playwright": "^4.8.0",
+    "tailwindcss": "^3.3.0"
+  }
+}

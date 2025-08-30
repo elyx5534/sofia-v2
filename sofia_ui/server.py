@@ -14,8 +14,8 @@ import random
 from datetime import datetime
 import os
 import sys
-from sofia_ui.live_data import live_data_service
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from sofia_ui.live_data import live_data_service
 
 # Import template resolver
 from src.web.templates import render, get_templates_instance, get_resolution_report
@@ -137,28 +137,27 @@ def get_mock_strategies():
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def homepage(request: Request):
-    """Ana sayfa"""
+    """Ana sayfa - Sofia V2 Glass Dark UI"""
     try:
-        btc_data = await get_live_btc_data()
-    except:
-        btc_data = {
-            "symbol": "BTC/USDT",
-            "name": "Bitcoin",
-            "price": 67845.32,
-            "change": 2.45,
-            "change_percent": 3.74,
-            "volume": "28.5B",
-            "last_updated": datetime.now().strftime("%H:%M:%S")
-        }
-    
-    context = {
-        "request": request,
-        "page_title": "Sofia V2 - Trading Platform",
-        "btc_data": btc_data,
-        "featured_strategies": get_mock_strategies()[:2],
-        "latest_news": get_mock_news()[:3]
-    }
-    return render(request, "homepage.html", context)
+        # Always use stable Glass Dark template for production
+        homepage_path = Path("templates/homepage_glass_dark_stable.html")
+        if homepage_path.exists():
+            content = homepage_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            # Fallback to regular homepage
+            fallback_path = Path("templates/homepage.html")
+            if fallback_path.exists():
+                content = fallback_path.read_text(encoding='utf-8')
+                return HTMLResponse(content=content)
+            return HTMLResponse(content="<h1>No homepage template found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading homepage: {str(e)}</h1>")
+
+@app.get("/test", response_class=HTMLResponse)
+async def test_page():
+    """Test sayfası"""
+    return HTMLResponse(content="<h1>Test Page Working! Server Updated!</h1>")
 
 
 @app.get("/showcase/{symbol}", response_class=HTMLResponse)
@@ -520,9 +519,13 @@ async def settings_page(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
     """Paper trading dashboard with live metrics"""
+    # Mock total balance - in production would come from database/API
+    total_balance = 12500.75  # Example balance
+    
     context = {
         "request": request,
-        "page_title": "Paper Trading Dashboard"
+        "page_title": "Trading Dashboard",
+        "total_balance": total_balance
     }
     return render(request, "dashboard.html", context)
 
@@ -581,6 +584,117 @@ async def run_backtest(request: Request):
         }
     }
 
+
+# Missing main pages
+@app.get("/portfolio", response_class=HTMLResponse)
+async def portfolio_page(request: Request):
+    """Portfolio sayfası - ROUTES ALWAYS OPEN guarantee"""
+    total_balance = 12500.75  # Mock data
+    
+    context = {
+        "request": request,
+        "page_title": "Portfolio",
+        "total_balance": total_balance
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "portfolio.html", context)
+    except:
+        return render(request, "portfolio_stub.html", context)
+
+@app.get("/markets", response_class=HTMLResponse) 
+async def markets_page(request: Request):
+    """Markets sayfası - ROUTES ALWAYS OPEN guarantee"""
+    context = {
+        "request": request,
+        "page_title": "Crypto Markets"
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "markets.html", context)
+    except:
+        return render(request, "markets_stub.html", context)
+
+@app.get("/bist", response_class=HTMLResponse)
+async def bist_page(request: Request):
+    """BIST sayfası - ROUTES ALWAYS OPEN guarantee"""
+    context = {
+        "request": request,
+        "page_title": "BIST Markets"
+    }
+    
+    # Try main template first, fallback to stub
+    try:
+        return render(request, "bist_markets.html", context)
+    except:
+        return render(request, "bist_stub.html", context)
+
+@app.get("/bist/analysis", response_class=HTMLResponse)
+async def bist_analysis_page(request: Request):
+    """BIST analiz sayfası"""
+    try:
+        template_path = Path("templates/bist_analysis.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>BIST Analysis template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading BIST Analysis: {str(e)}</h1>")
+
+@app.get("/data-collection", response_class=HTMLResponse)
+async def data_collection_page(request: Request):
+    """Data collection sayfası"""
+    try:
+        template_path = Path("templates/data_collection.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>Data Collection template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading Data Collection: {str(e)}</h1>")
+
+@app.get("/trading", response_class=HTMLResponse)
+async def ai_trading_page(request: Request):
+    """AI Trading sayfası"""
+    try:
+        template_path = Path("templates/ai_trading.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>AI Trading template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading AI Trading: {str(e)}</h1>")
+
+@app.get("/manual-trading", response_class=HTMLResponse)
+async def manual_trading_page(request: Request):
+    """Manuel trading sayfası"""
+    try:
+        template_path = Path("templates/manual_trading.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>Manual Trading template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading Manual Trading: {str(e)}</h1>")
+
+@app.get("/reliability", response_class=HTMLResponse)
+async def reliability_page(request: Request):
+    """Güvenilirlik sayfası"""
+    try:
+        template_path = Path("templates/reliability.html")
+        if template_path.exists():
+            content = template_path.read_text(encoding='utf-8')
+            return HTMLResponse(content=content)
+        else:
+            return HTMLResponse(content="<h1>Reliability template not found</h1>")
+    except Exception as e:
+        return HTMLResponse(content=f"<h1>Error loading Reliability: {str(e)}</h1>")
 
 @app.get("/api/template-resolution")
 async def get_template_resolution():

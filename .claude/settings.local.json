@@ -11,7 +11,15 @@
       "Bash(playwright install:*)",
       "Bash(playwright test:*)",
       "Bash(npm init:*)",
-      "Bash(start:*)"
+      "Bash(start:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(python:*)",
+      "Bash(taskkill:*)",
+      "Bash(pkill:*)",
+      "Bash(curl:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

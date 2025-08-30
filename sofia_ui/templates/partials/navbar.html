@@ -1,0 +1,89 @@
+<!-- ONE-BAR ONLY navbar - DO NOT DUPLICATE -->
+<nav class="app-navbar fixed top-0 left-0 right-0 z-100 glass-ultra border-b border-gray-800/50 overflow-x-auto whitespace-nowrap" 
+     style="background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);">
+    <div class="px-6 py-3">
+        <div class="flex items-center justify-between min-w-max">
+            <!-- Left Section -->
+            <div class="flex items-center space-x-6">
+                <!-- Logo -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">S</span>
+                    </div>
+                    <div>
+                        <div class="text-white font-bold text-lg">SOFIA V2</div>
+                        <div class="text-xs text-gray-400">AI Trading Platform</div>
+                    </div>
+                </div>
+
+                <!-- Main Navigation -->
+                <div class="flex items-center space-x-1">
+                    <a href="/dashboard" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-chart-line mr-2"></i>Dashboard
+                    </a>
+                    <a href="/portfolio" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-wallet mr-2"></i>Portfolio
+                    </a>
+                    <a href="/markets" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-coins mr-2"></i>Markets
+                        <span class="ml-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Live</span>
+                    </a>
+                    <a href="/bist" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-chart-line mr-2"></i>BIST
+                        <span class="ml-1 text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">TR</span>
+                    </a>
+                    <a href="/bist/analysis" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-analytics mr-2"></i>BIST Analysis
+                        <span class="ml-1 text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded">Daily</span>
+                    </a>
+                    <a href="/data-collection" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-database mr-2"></i>Data Collection
+                        <span class="ml-1 text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">$2K Save</span>
+                    </a>
+                    <a href="/trading" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-brain mr-2"></i>AI Trading
+                        <span class="ml-1 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">AI</span>
+                    </a>
+                    <a href="/manual-trading" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-hand-paper mr-2"></i>Manual Trading
+                        <span class="ml-1 text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Manual</span>
+                    </a>
+                    <a href="/reliability" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <i class="fas fa-shield-alt mr-2"></i>Reliability
+                        <span class="ml-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">%95</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Section -->
+            <div class="flex items-center space-x-4">
+                <!-- Search -->
+                <div class="hidden md:block">
+                    <div class="relative">
+                        <input type="text" placeholder="Search coins..."
+                               class="w-64 px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-sm">
+                        <i class="fas fa-search absolute right-3 top-2.5 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="relative">
+                    <button class="p-2 rounded-lg hover:bg-gray-800/50 transition-all relative">
+                        <i class="fas fa-bell text-gray-400"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    </button>
+                </div>
+
+                <!-- Profile -->
+                <div class="relative">
+                    <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">U</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
