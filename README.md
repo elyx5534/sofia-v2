@@ -26,6 +26,23 @@ uvicorn src.api.main:app --port 8000 --workers 4
 - `http://localhost:8000/api/health` - Health check (returns `{"status": "ok"}`)
 - `http://localhost:8000/live-proof?symbol=BTC/USDT` - Live Binance data proof
 - `http://localhost:8000/health` - Detailed health with service status
+- `http://localhost:8000/dashboard` - **P&L Dashboard** with real-time charts and trading stats
+
+### 📊 P&L Dashboard
+
+Access the real-time dashboard at `http://localhost:8000/dashboard` after starting the API server.
+
+**Features:**
+- **Today's P&L** - Real-time profit/loss tracking with percentage returns
+- **Equity Chart** - Live equity curve visualization using Chart.js
+- **Trading Stats** - Total trades, win rate, current equity
+- **Live Market Data** - Real-time BTC/USDT bid/ask/last prices from Binance
+- **Recent Trades** - Table showing last 10 executed trades
+- **Auto-refresh** - Updates every 5 seconds
+
+The dashboard automatically reads from:
+- `logs/pnl_summary.json` - Session P&L summary (if available)
+- `logs/paper_audit.log` - Trade-by-trade audit log
 
 ### Smoke Tests
 

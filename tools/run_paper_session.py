@@ -209,6 +209,24 @@ async def run_paper_session(duration_minutes: int = 30):
     with open(summary_path, 'w') as f:
         json.dump(summary, f, indent=2)
     
+    # Also write pnl_summary.json for dashboard
+    pnl_summary_path = Path("logs/pnl_summary.json")
+    pnl_summary = {
+        "initial_capital": initial_capital,
+        "final_capital": final_capital,
+        "realized_pnl": realized_pnl,
+        "unrealized_pnl": unrealized_pnl,
+        "total_pnl": pnl,
+        "pnl_percentage": pnl_pct,
+        "total_trades": final_stats['total_trades'],
+        "win_rate": final_stats['success_rate'],
+        "start_timestamp": datetime.now().isoformat(),
+        "end_timestamp": datetime.now().isoformat()
+    }
+    
+    with open(pnl_summary_path, 'w') as f:
+        json.dump(pnl_summary, f, indent=2)
+    
     print(f"\n💾 Summary saved to: {summary_path}")
     
     # Shutdown

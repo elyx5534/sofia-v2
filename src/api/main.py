@@ -14,6 +14,8 @@ from src.optimizer.optimizer_queue import optimizer_queue, JobPriority
 from src.ml.price_predictor import PricePredictor
 from src.data_hub.providers.multi_source import MultiSourceDataProvider
 from src.api.live_proof import router as live_router
+from src.api.pnl import router as pnl_router
+from src.api.dashboard import router as dashboard_router
 import yfinance as yf
 import pandas as pd
 
@@ -42,6 +44,8 @@ ml_predictor = PricePredictor()
 
 # Include routers
 app.include_router(live_router)
+app.include_router(pnl_router)
+app.include_router(dashboard_router)
 
 @app.on_event("startup")
 async def startup_event():
