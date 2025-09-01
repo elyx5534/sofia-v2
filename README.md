@@ -52,6 +52,25 @@ Turkish exchange arbitrage system is ready but currently disabled:
 - **Status**: Skeleton ready, will be activated tomorrow
 - **Fees**: Configured (Binance 0.10%, BTCTurk 0.25%, Paribu 0.20%)
 
+## 🔒 Security & Hygiene
+
+### Environment Setup
+1. Copy `.env.example` to `.env`
+2. Add your API keys (never commit `.env` files!)
+3. See `SECURITY/ROTATE.md` for key rotation guide
+
+### Important Directories
+- `logs/` - Auto-generated logs (gitignored)
+- `backups/` - Database backups (gitignored)
+- `node_modules/` - Dependencies (gitignored)
+
+### Security Checklist
+- ✅ All `.env` files gitignored
+- ✅ Database files (`*.db`) gitignored
+- ✅ Log files (`*.log`) gitignored
+- ✅ API keys use environment variables
+- ✅ Regular key rotation recommended
+
 ## 🌟 Overview
 
 Sofia V2 is an enterprise-grade algorithmic trading platform that combines:

@@ -1,5 +1,14 @@
-# Byte-compiled / optimized / DLL files
+# Critical: Must be ignored
+node_modules/
+*.db
+*.log
+logs/
 __pycache__/
+.env*
+!.env.example
+*.exe
+
+# Byte-compiled / optimized / DLL files
 *.py[codz]
 *$py.class
 
