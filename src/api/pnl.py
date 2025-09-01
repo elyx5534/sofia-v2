@@ -176,6 +176,50 @@ async def get_pnl_summary() -> Dict[str, Any]:
     }
 
 
+@router.get("/logs/trades")
+async def get_trade_logs(n: int = Query(50, ge=1, le=500)) -> Dict[str, Any]:
+    """
+    Get last n trades from paper_audit.jsonl
+    Returns clean JSON list of trade records
+    """
+    jsonl_path = Path("logs/paper_audit.jsonl")
+    
+    if not jsonl_path.exists():
+        return {
+            "items": [],
+            "count": 0,
+            "message": "No trades logged yet"
+        }
+    
+    try:
+        trades = []
+        with open(jsonl_path, 'r') as f:
+            lines = f.readlines()
+        
+        # Get last n lines
+        recent_lines = lines[-n:] if len(lines) > n else lines
+        
+        # Parse each JSONL line
+        for line in recent_lines:
+            try:
+                trade = json.loads(line.strip())
+                trades.append(trade)
+            except json.JSONDecodeError:
+                continue  # Skip malformed lines
+        
+        # Sort by timestamp descending (most recent first)
+        trades.sort(key=lambda x: x.get('ts_ms', 0), reverse=True)
+        
+        return {
+            "items": trades,
+            "count": len(trades),
+            "total_trades": len(lines)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reading trade logs: {str(e)}")
+
+
 @router.get("/logs/tail")
 async def get_log_tail(n: int = Query(200, ge=1, le=1000)) -> Dict[str, Any]:
     """

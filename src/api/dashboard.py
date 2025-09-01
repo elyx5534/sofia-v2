@@ -423,32 +423,25 @@ DASHBOARD_HTML = """
         // Update Trades Table
         async function updateTrades() {
             try {
-                const response = await fetch('/api/pnl/logs/tail?n=10');
+                const response = await fetch('/api/pnl/logs/trades?n=10');
                 if (!response.ok) throw new Error('Failed to fetch trades');
                 
                 const data = await response.json();
                 const tbody = document.getElementById('tradesBody');
                 
-                if (data.lines && data.lines.length > 0) {
+                if (data.items && data.items.length > 0) {
                     tbody.innerHTML = '';
                     
-                    // Show only trade entries
-                    const trades = data.lines.filter(l => l.type === 'trade').slice(-10).reverse();
-                    
-                    if (trades.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; opacity: 0.5;">No trades yet</td></tr>';
-                        return;
-                    }
-                    
-                    trades.forEach(trade => {
+                    // Display trades (already sorted by most recent)
+                    data.items.slice(0, 10).forEach(trade => {
                         const row = tbody.insertRow();
                         
                         // Time
-                        const time = trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString() : '-';
+                        const time = trade.ts_ms ? new Date(trade.ts_ms).toLocaleTimeString() : '-';
                         row.insertCell(0).textContent = time;
                         
                         // Symbol
-                        row.insertCell(1).textContent = trade.symbol || '-';
+                        row.insertCell(1).textContent = trade.symbol || 'BTC/USDT';
                         
                         // Side
                         const sideCell = row.insertCell(2);
@@ -456,15 +449,25 @@ DASHBOARD_HTML = """
                         sideCell.className = trade.side === 'buy' ? 'trade-buy' : 'trade-sell';
                         
                         // Quantity
-                        row.insertCell(3).textContent = (trade.qty || 0).toFixed(6);
+                        row.insertCell(3).textContent = (trade.qty || 0).toFixed(8);
                         
                         // Price
                         row.insertCell(4).textContent = '$' + (trade.price || 0).toFixed(2);
                     });
+                    
+                    // Update trade count indicator
+                    const tradeCountEl = document.getElementById('totalTrades');
+                    if (tradeCountEl && data.total_trades) {
+                        tradeCountEl.textContent = data.total_trades;
+                    }
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; opacity: 0.5;">No trades yet</td></tr>';
                 }
                 
             } catch (error) {
                 console.error('Error updating trades:', error);
+                const tbody = document.getElementById('tradesBody');
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; opacity: 0.5; color: #ff4444;">Error loading trades</td></tr>';
             }
         }
         
