@@ -11,11 +11,16 @@ Features:
 
 import asyncio
 import json
+import time
+import logging
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel
+
+# Setup paper trading logger
+paper_logger = logging.getLogger('paper_trading')
 
 
 class PaperOrderStatus(str, Enum):
@@ -197,6 +202,19 @@ class PaperTradingEngine:
         order.average_price = market_price
         order.status = PaperOrderStatus.FILLED
         order.filled_at = datetime.utcnow()
+        
+        # Log paper execution with audit trail
+        paper_logger.info(
+            "paper_exec",
+            extra={
+                "symbol": order.symbol,
+                "side": order.side,
+                "qty": float(order.quantity),
+                "price_used": float(market_price),
+                "price_source": "ccxt.binance.fetch_ticker",
+                "ts_ms": int(time.time() * 1000)
+            }
+        )
         
         # Update position
         await self._update_position(order)
