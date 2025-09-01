@@ -1,0 +1,26 @@
+# Grid Monster Strategy Configuration
+# Binance Spot Grid Trading - Paper Mode
+
+symbols:
+  - "BTC/USDT"
+  - "SOL/USDT"
+
+# Grid parameters
+grid_levels: 30
+grid_spacing_pct: 0.25
+maker_only: true
+cancel_unfilled_sec: 60
+
+# Risk management
+max_position_pct: 5
+daily_max_drawdown_pct: 1.0
+
+# Fees and costs
+fee_pct: 0.10  # Binance VIP0 approx
+
+# Trade gates
+spread_gate_multiplier: 2.0
+
+# Paper trading settings
+paper_mode: true
+initial_balance: 1000  # USDT

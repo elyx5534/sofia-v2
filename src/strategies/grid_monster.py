@@ -14,6 +14,9 @@ from enum import Enum
 import numpy as np
 from collections import deque
 import time
+import yaml
+import ccxt
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -96,11 +99,29 @@ class ActiveGrid:
 class GridMonster:
     """High-frequency grid trading system"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any] = None):
+        # Load config from file if not provided
+        if config is None:
+            config_path = Path("config/strategies/grid_monster.yaml")
+            if config_path.exists():
+                with open(config_path, 'r') as f:
+                    config = yaml.safe_load(f)
+            else:
+                config = {}
+        
         # Selection criteria
         self.min_atr_percentage = config.get("min_atr_percentage", 3.0)
         self.min_volume_24h = config.get("min_volume_24h", 50000000)
         self.max_trend_strength = config.get("max_trend_strength", 0.7)
+        
+        # Paper mode settings
+        self.paper_mode = config.get("paper_mode", True)
+        self.maker_only = config.get("maker_only", True)
+        self.cancel_unfilled_sec = config.get("cancel_unfilled_sec", 60)
+        self.max_position_pct = config.get("max_position_pct", 5)
+        self.daily_max_drawdown_pct = config.get("daily_max_drawdown_pct", 1.0)
+        self.fee_pct = config.get("fee_pct", 0.10)
+        self.spread_gate_multiplier = config.get("spread_gate_multiplier", 2.0)
         
         # Grid parameters
         self.default_num_levels = config.get("default_num_levels", 20)
@@ -145,6 +166,11 @@ class GridMonster:
         
         self.running = False
         self.tasks = []
+        
+        # Daily tracking for DD kill-switch
+        self.daily_pnl = Decimal("0")
+        self.daily_start_balance = Decimal("1000")  # Paper balance
+        self.kill_switch_active = False
     
     async def initialize(self):
         """Initialize the grid monster"""
@@ -475,29 +501,93 @@ class GridMonster:
                 await asyncio.sleep(0.1)  # Rate limiting
     
     async def _place_limit_order(self, symbol: str, side: str, price: Decimal, size: Decimal) -> str:
-        """Place limit order (mock)"""
+        """Place limit order with maker-only and spread checks"""
+        
+        # Trade gate: Check spread
+        if self.paper_mode:
+            # Get current spread from exchange
+            try:
+                exchange = ccxt.binance({'enableRateLimit': True})
+                ticker = exchange.fetch_ticker(symbol.replace('/', ''))
+                bid = ticker['bid']
+                ask = ticker['ask']
+                mid = (bid + ask) / 2
+                spread_pct = (ask - bid) / mid * 100
+                
+                # Check spread gate
+                min_spread = self.spread_gate_multiplier * self.fee_pct
+                if spread_pct < min_spread:
+                    logger.warning(f"Spread too tight: {spread_pct:.3f}% < {min_spread:.3f}%")
+                    return None
+                    
+            except Exception as e:
+                logger.error(f"Error checking spread: {e}")
+        
+        # Use LIMIT_MAKER for real orders (paper mode simulates this)
+        order_type = "LIMIT_MAKER" if self.maker_only else "LIMIT"
+        
         order_id = f"order_{symbol}_{side}_{int(time.time() * 1000)}"
-        logger.debug(f"Placed {side} order {order_id}: {size:.4f} @ {price:.2f}")
+        logger.info(f"Placed {order_type} {side} order {order_id}: {size:.4f} @ {price:.2f}")
+        
+        # Schedule cancellation if unfilled
+        if self.cancel_unfilled_sec > 0:
+            asyncio.create_task(self._cancel_unfilled_after(order_id, self.cancel_unfilled_sec))
+        
         return order_id
+    
+    async def _cancel_unfilled_after(self, order_id: str, seconds: int):
+        """Cancel unfilled order after timeout"""
+        await asyncio.sleep(seconds)
+        
+        # Check if order still pending
+        if order_id in self.order_map:
+            grid_id, level_id = self.order_map[order_id]
+            if grid_id in self.active_grids:
+                grid = self.active_grids[grid_id]
+                for level in grid.levels:
+                    if level.level_id == level_id and not level.filled:
+                        logger.info(f"Cancelling unfilled order {order_id} after {seconds}s")
+                        await self._cancel_order(order_id)
+                        # Reposition order
+                        new_price = await self._get_current_price(grid.symbol)
+                        adjustment = Decimal("0.001") if level.side == "buy" else Decimal("-0.001")
+                        level.price = new_price * (Decimal("1") + adjustment)
+                        new_order_id = await self._place_limit_order(
+                            grid.symbol, level.side, level.price, level.size
+                        )
+                        if new_order_id:
+                            level.order_id = new_order_id
+                            self.order_map[new_order_id] = (grid_id, level_id)
     
     async def _grid_monitor(self):
         """Monitor active grids"""
         while self.running:
             try:
-                for symbol, grid in list(self.active_grids.items()):
-                    if grid.state == GridState.ACTIVE:
-                        # Check if price left range
-                        current_price = await self._get_current_price(symbol)
-                        
-                        if current_price > grid.setup.upper_price * Decimal("1.02") or \
-                           current_price < grid.setup.lower_price * Decimal("0.98"):
-                            logger.info(f"Price left range for {symbol}, resetting grid")
-                            await self._reset_grid(grid)
-                        
-                        # Check profitability
-                        if grid.profit_realized > grid.setup.total_capital * Decimal("0.1"):
-                            logger.info(f"Grid {grid.grid_id} reached profit target")
-                            await self._close_grid(grid)
+                # Check daily DD kill-switch
+                current_dd_pct = float(self.daily_pnl / self.daily_start_balance * 100)
+                if current_dd_pct < -self.daily_max_drawdown_pct and not self.kill_switch_active:
+                    logger.error(f"Daily DD limit hit: {current_dd_pct:.2f}%")
+                    self.kill_switch_active = True
+                    # Close all positions
+                    for grid in list(self.active_grids.values()):
+                        await self._close_grid(grid)
+                    logger.info("Kill switch activated - all grids closed")
+                    
+                if not self.kill_switch_active:
+                    for symbol, grid in list(self.active_grids.items()):
+                        if grid.state == GridState.ACTIVE:
+                            # Check if price left range
+                            current_price = await self._get_current_price(symbol)
+                            
+                            if current_price > grid.setup.upper_price * Decimal("1.02") or \
+                               current_price < grid.setup.lower_price * Decimal("0.98"):
+                                logger.info(f"Price left range for {symbol}, resetting grid")
+                                await self._reset_grid(grid)
+                            
+                            # Check profitability
+                            if grid.profit_realized > grid.setup.total_capital * Decimal("0.1"):
+                                logger.info(f"Grid {grid.grid_id} reached profit target")
+                                await self._close_grid(grid)
                 
                 await asyncio.sleep(5)
                 
@@ -687,6 +777,7 @@ class GridMonster:
             profit = level.size * level.price * grid.setup.spacing_percentage
             grid.profit_realized += profit
             self.total_profit += profit
+            self.daily_pnl += profit  # Track daily P&L
     
     async def _reset_grid(self, grid: ActiveGrid):
         """Reset grid when price exits range"""
