@@ -274,3 +274,40 @@ coverage_reports/
 *.backup
 *.old
 backup/
+
+# Executables
+*.exe
+*.dll
+*.so
+*.dylib
+tailwindcss.exe
+
+# Environment files
+.env*
+!.env.example
+!.env.template
+!.env.tpl
+
+# Output directories
+output/
+results/
+reports/
+backtest_results/
+optimization_results/
+
+# Trading Data
+market_data/
+historical_data/
+tick_data/
+*.parquet
+
+# Models
+models/*.pkl
+models/*.h5
+models/*.joblib
+checkpoints/
+
+# Project specific
+sofia_ui/static/mock/
+D:BORSA2sofia-v2*
+NUL
