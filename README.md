@@ -57,6 +57,29 @@ pytest tests/smoke/test_live_proof.py -v
 pytest tests/smoke/test_orderbook_sanity.py -v
 ```
 
+### UI Smoke Tests
+
+Run end-to-end tests for the dashboard:
+
+```bash
+# First, start the API server
+uvicorn src.api.main:app --port 8000
+
+# In a separate terminal, run dashboard E2E tests
+npm run test:e2e:dash
+
+# Or run all E2E tests
+npm run test:e2e
+```
+
+The dashboard E2E tests verify:
+- ✅ Today's P&L card is displayed
+- ✅ Live market data (BID/ASK/LAST) is visible
+- ✅ Last trades table renders correctly
+- ✅ Equity chart container is present
+- ✅ Auto-refresh functionality works
+- ✅ Responsive design on mobile/tablet
+
 ### Paper Trading Proof Session (30 minutes)
 
 Run a complete paper trading session with Grid Monster strategy:
