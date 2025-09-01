@@ -1,0 +1,326 @@
+version: '3.9'
+
+# Multi-VPS Scaling Configuration
+# Use with Docker Swarm or Kubernetes
+
+services:
+  # HAProxy Load Balancer
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: sofia-haproxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8404:8404"  # Stats page
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./haproxy/ssl:/etc/ssl/certs
+    networks:
+      - sofia-network
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  # Application (scaled)
+  app:
+    image: ${REGISTRY}/sofia-app:${VERSION:-latest}
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    environment:
+      - DATABASE_URL=postgresql://sofia:${DB_PASSWORD}@postgres-primary:5432/sofia
+      - REDIS_SENTINEL=redis-sentinel:26379
+      - RABBITMQ_CLUSTER=rabbitmq-1:5672,rabbitmq-2:5672,rabbitmq-3:5672
+    networks:
+      - sofia-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`api.sofia.com`)"
+      - "traefik.http.services.app.loadbalancer.server.port=8000"
+
+  # Worker (scaled)
+  worker:
+    image: ${REGISTRY}/sofia-worker:${VERSION:-latest}
+    deploy:
+      replicas: 5
+      placement:
+        max_replicas_per_node: 2
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    environment:
+      - DATABASE_URL=postgresql://sofia:${DB_PASSWORD}@postgres-primary:5432/sofia
+      - REDIS_SENTINEL=redis-sentinel:26379
+      - RABBITMQ_CLUSTER=rabbitmq-1:5672,rabbitmq-2:5672,rabbitmq-3:5672
+    networks:
+      - sofia-network
+
+  # PostgreSQL Primary (Master)
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: sofia-postgres-primary
+    environment:
+      - POSTGRES_USER=sofia
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=sofia
+      - POSTGRES_REPLICATION_MODE=master
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${REPLICATION_PASSWORD}
+    volumes:
+      - postgres-primary-data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    networks:
+      - sofia-network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.postgres == primary
+
+  # PostgreSQL Replica 1
+  postgres-replica-1:
+    image: postgres:15-alpine
+    container_name: sofia-postgres-replica-1
+    environment:
+      - POSTGRES_REPLICATION_MODE=slave
+      - POSTGRES_MASTER_HOST=postgres-primary
+      - POSTGRES_MASTER_PORT=5432
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${REPLICATION_PASSWORD}
+    volumes:
+      - postgres-replica-1-data:/var/lib/postgresql/data
+    networks:
+      - sofia-network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.postgres == replica1
+
+  # PostgreSQL Replica 2
+  postgres-replica-2:
+    image: postgres:15-alpine
+    container_name: sofia-postgres-replica-2
+    environment:
+      - POSTGRES_REPLICATION_MODE=slave
+      - POSTGRES_MASTER_HOST=postgres-primary
+      - POSTGRES_MASTER_PORT=5432
+      - POSTGRES_REPLICATION_USER=replicator
+      - POSTGRES_REPLICATION_PASSWORD=${REPLICATION_PASSWORD}
+    volumes:
+      - postgres-replica-2-data:/var/lib/postgresql/data
+    networks:
+      - sofia-network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.postgres == replica2
+
+  # PgBouncer (Connection Pooler)
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: sofia-pgbouncer
+    environment:
+      - DATABASES_HOST=postgres-primary
+      - DATABASES_PORT=5432
+      - DATABASES_DBNAME=sofia
+      - DATABASES_USER=sofia
+      - DATABASES_PASSWORD=${DB_PASSWORD}
+      - POOL_MODE=transaction
+      - MAX_CLIENT_CONN=1000
+      - DEFAULT_POOL_SIZE=25
+    networks:
+      - sofia-network
+    deploy:
+      replicas: 2
+
+  # Redis Sentinel (HA)
+  redis-master:
+    image: redis:7-alpine
+    container_name: sofia-redis-master
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-master-data:/data
+    networks:
+      - sofia-network
+
+  redis-slave-1:
+    image: redis:7-alpine
+    container_name: sofia-redis-slave-1
+    command: redis-server --slaveof redis-master 6379 --masterauth ${REDIS_PASSWORD} --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-slave-1-data:/data
+    networks:
+      - sofia-network
+
+  redis-slave-2:
+    image: redis:7-alpine
+    container_name: sofia-redis-slave-2
+    command: redis-server --slaveof redis-master 6379 --masterauth ${REDIS_PASSWORD} --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-slave-2-data:/data
+    networks:
+      - sofia-network
+
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: sofia-redis-sentinel
+    command: redis-sentinel /etc/redis/sentinel.conf
+    volumes:
+      - ./redis/sentinel.conf:/etc/redis/sentinel.conf
+    networks:
+      - sofia-network
+    deploy:
+      replicas: 3
+
+  # RabbitMQ Cluster
+  rabbitmq-1:
+    image: rabbitmq:3-management-alpine
+    hostname: rabbitmq-1
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=${ERLANG_COOKIE}
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-1-data:/var/lib/rabbitmq
+    networks:
+      - sofia-network
+
+  rabbitmq-2:
+    image: rabbitmq:3-management-alpine
+    hostname: rabbitmq-2
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=${ERLANG_COOKIE}
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-2-data:/var/lib/rabbitmq
+    networks:
+      - sofia-network
+    depends_on:
+      - rabbitmq-1
+    command: |
+      sh -c "rabbitmq-server & sleep 30 && 
+             rabbitmqctl stop_app && 
+             rabbitmqctl join_cluster rabbit@rabbitmq-1 && 
+             rabbitmqctl start_app && 
+             tail -f /dev/null"
+
+  rabbitmq-3:
+    image: rabbitmq:3-management-alpine
+    hostname: rabbitmq-3
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=${ERLANG_COOKIE}
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-3-data:/var/lib/rabbitmq
+    networks:
+      - sofia-network
+    depends_on:
+      - rabbitmq-1
+    command: |
+      sh -c "rabbitmq-server & sleep 30 && 
+             rabbitmqctl stop_app && 
+             rabbitmqctl join_cluster rabbit@rabbitmq-1 && 
+             rabbitmqctl start_app && 
+             tail -f /dev/null"
+
+  # MinIO (S3-compatible storage)
+  minio:
+    image: minio/minio:latest
+    container_name: sofia-minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - sofia-network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.storage == true
+
+  # Elasticsearch (for logs)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: sofia-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - sofia-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # Kibana (log visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: sofia-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - sofia-network
+    depends_on:
+      - elasticsearch
+
+  # Logstash (log processing)
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: sofia-logstash
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logs:/logs
+    networks:
+      - sofia-network
+    depends_on:
+      - elasticsearch
+
+networks:
+  sofia-network:
+    driver: overlay
+    attachable: true
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres-primary-data:
+  postgres-replica-1-data:
+  postgres-replica-2-data:
+  redis-master-data:
+  redis-slave-1-data:
+  redis-slave-2-data:
+  rabbitmq-1-data:
+  rabbitmq-2-data:
+  rabbitmq-3-data:
+  minio-data:
+  elasticsearch-data:

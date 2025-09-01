@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofia V2 - Developer Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>Sofia V2 Developer Dashboard</h1>
+            <div class="header-status">
+                <span id="connection-status" class="status-badge connected">Connected</span>
+                <span id="current-time"></span>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="dashboard-grid">
+            <!-- System Monitor (Top Left) -->
+            <div class="card system-monitor">
+                <h2>System Monitor</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <label>CPU</label>
+                        <div class="progress-bar">
+                            <div id="cpu-bar" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="cpu-value">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Memory</label>
+                        <div class="progress-bar">
+                            <div id="memory-bar" class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span id="memory-value">0 GB / 0 GB</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Network</label>
+                        <span id="network-value">↓ 0 MB ↑ 0 MB</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>Active Strategies</label>
+                        <span id="active-strategies" class="highlight">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <label>WebSocket Connections</label>
+                        <span id="ws-connections" class="highlight">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- P&L Tracker (Top Right) -->
+            <div class="card pnl-tracker">
+                <h2>P&L Tracker</h2>
+                <div class="pnl-tabs">
+                    <button class="tab-btn active" data-type="paper">Paper Trading</button>
+                    <button class="tab-btn" data-type="real">Real Trading</button>
+                </div>
+                <div class="pnl-stats">
+                    <div class="pnl-item">
+                        <label>Today</label>
+                        <span id="pnl-today" class="pnl-value">$0.00</span>
+                    </div>
+                    <div class="pnl-item">
+                        <label>Week</label>
+                        <span id="pnl-week" class="pnl-value">$0.00</span>
+                    </div>
+                    <div class="pnl-item">
+                        <label>Month</label>
+                        <span id="pnl-month" class="pnl-value">$0.00</span>
+                    </div>
+                    <div class="pnl-item">
+                        <label>All Time</label>
+                        <span id="pnl-all-time" class="pnl-value">$0.00</span>
+                    </div>
+                </div>
+                <canvas id="pnl-chart"></canvas>
+            </div>
+
+            <!-- Strategy Cards (Middle) -->
+            <div class="card strategies-container">
+                <h2>Active Strategies</h2>
+                <div id="strategy-cards" class="strategy-grid">
+                    <!-- Strategy cards will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Exchange Status (Bottom) -->
+            <div class="card exchange-status">
+                <h2>Exchange Status</h2>
+                <div id="exchange-list" class="exchange-grid">
+                    <!-- Exchange status will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Logs Sidebar -->
+        <aside class="logs-sidebar">
+            <div class="logs-header">
+                <h3>Real-time Logs</h3>
+                <div class="logs-controls">
+                    <select id="log-filter-level">
+                        <option value="">All Levels</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="error">Error</option>
+                    </select>
+                    <select id="log-filter-source">
+                        <option value="">All Sources</option>
+                    </select>
+                    <input type="text" id="log-search" placeholder="Search logs...">
+                </div>
+            </div>
+            <div id="logs-container" class="logs-list">
+                <!-- Logs will be populated by JavaScript -->
+            </div>
+        </aside>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
