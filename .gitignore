@@ -288,6 +288,10 @@ tailwindcss.exe
 !.env.template
 !.env.tpl
 
+# Logs
+logs/
+*.log
+
 # Output directories
 output/
 results/
