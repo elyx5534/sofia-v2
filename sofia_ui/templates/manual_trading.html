@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿{% extends "base.html" %}
+=======
+{% extends "base.html" %}
+>>>>>>> 96de1d9
 
 {% block content %}
 <div class="pt-20"> <!-- Add top padding for fixed navbar -->
@@ -8,7 +12,11 @@
             <div class="flex items-center justify-between mb-4">
                 <h1 class="text-3xl font-bold text-white flex items-center">
                     <i class="fas fa-hand-paper mr-3 text-orange-400"></i>
+<<<<<<< HEAD
                     Manuel Al/Sat Ä°ÅŸlemleri
+=======
+                    Manuel Al/Sat İşlemleri
+>>>>>>> 96de1d9
                     <span class="ml-3 text-sm bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full">
                         Manual Trading
                     </span>
@@ -38,11 +46,19 @@
                     <div class="text-2xl font-bold text-blue-400">
                         +2.3%
                     </div>
+<<<<<<< HEAD
                     <div class="text-sm text-blue-300">Ortalama DeÄŸiÅŸim</div>
                 </div>
                 <div class="bg-purple-900/30 backdrop-blur-xl rounded-xl border border-purple-500/30 p-4 text-center">
                     <div class="text-2xl font-bold text-purple-400">CanlÄ±</div>
                     <div class="text-sm text-purple-300">GerÃ§ek Veriler</div>
+=======
+                    <div class="text-sm text-blue-300">Ortalama Değişim</div>
+                </div>
+                <div class="bg-purple-900/30 backdrop-blur-xl rounded-xl border border-purple-500/30 p-4 text-center">
+                    <div class="text-2xl font-bold text-purple-400">Canlı</div>
+                    <div class="text-sm text-purple-300">Gerçek Veriler</div>
+>>>>>>> 96de1d9
                 </div>
             </div>
         </div>
@@ -56,26 +72,44 @@
                 <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6 sticky top-6">
                     <h2 class="text-xl font-bold text-white mb-6 flex items-center">
                         <i class="fas fa-exchange-alt mr-3 text-green-400"></i>
+<<<<<<< HEAD
                         Ä°ÅŸlem Paneli
+=======
+                        İşlem Paneli
+>>>>>>> 96de1d9
                     </h2>
                     
                     <!-- Buy/Sell Tabs -->
                     <div class="flex mb-6">
                         <button onclick="setTradeType('buy')" id="buyTab" 
                                 class="flex-1 py-3 bg-green-600 text-white rounded-l-lg font-medium transition-all">
+<<<<<<< HEAD
                             <i class="fas fa-arrow-up mr-2"></i>AlÄ±ÅŸ
                         </button>
                         <button onclick="setTradeType('sell')" id="sellTab"
                                 class="flex-1 py-3 bg-gray-700 text-gray-300 rounded-r-lg font-medium transition-all">
                             <i class="fas fa-arrow-down mr-2"></i>SatÄ±ÅŸ
+=======
+                            <i class="fas fa-arrow-up mr-2"></i>Alış
+                        </button>
+                        <button onclick="setTradeType('sell')" id="sellTab"
+                                class="flex-1 py-3 bg-gray-700 text-gray-300 rounded-r-lg font-medium transition-all">
+                            <i class="fas fa-arrow-down mr-2"></i>Satış
+>>>>>>> 96de1d9
                         </button>
                     </div>
                     
                     <!-- Coin Selection -->
                     <div class="mb-4">
+<<<<<<< HEAD
                         <label class="text-sm text-gray-400 mb-2 block">Kripto Para SeÃ§in</label>
                         <select id="coinSelect" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
                             <option value="">Coin seÃ§iniz...</option>
+=======
+                        <label class="text-sm text-gray-400 mb-2 block">Kripto Para Seçin</label>
+                        <select id="coinSelect" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
+                            <option value="">Coin seçiniz...</option>
+>>>>>>> 96de1d9
                             {% for coin in top_coins %}
                             <option value="{{ coin.id }}" data-price="{{ coin.current_price }}" data-symbol="{{ coin.symbol }}">
                                 {{ coin.name }} ({{ coin.symbol.upper() }}) - ${{ "%.4f"|format(coin.current_price) }}
@@ -104,7 +138,11 @@
                     <div class="mb-4">
                         <label class="text-sm text-gray-400 mb-2 block">Emir Tipi</label>
                         <select id="orderType" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
+<<<<<<< HEAD
                             <option value="market">Market (AnÄ±nda)</option>
+=======
+                            <option value="market">Market (Anında)</option>
+>>>>>>> 96de1d9
                             <option value="limit">Limit (Belirli Fiyat)</option>
                             <option value="stop">Stop Loss</option>
                         </select>
@@ -112,14 +150,22 @@
                     
                     <!-- Limit Price (hidden by default) -->
                     <div id="limitPriceDiv" class="mb-4 hidden">
+<<<<<<< HEAD
                         <label class="text-sm text-gray-400 mb-2 block">Limit FiyatÄ±</label>
+=======
+                        <label class="text-sm text-gray-400 mb-2 block">Limit Fiyatı</label>
+>>>>>>> 96de1d9
                         <input type="number" id="limitPrice" placeholder="0.00" 
                                class="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500">
                     </div>
                     
                     <!-- Order Summary -->
                     <div id="orderSummary" class="mb-6 p-4 bg-slate-800/50 rounded-lg hidden">
+<<<<<<< HEAD
                         <h3 class="text-sm font-medium text-white mb-2">Ä°ÅŸlem Ã–zeti</h3>
+=======
+                        <h3 class="text-sm font-medium text-white mb-2">İşlem Özeti</h3>
+>>>>>>> 96de1d9
                         <div class="space-y-1 text-xs">
                             <div class="flex justify-between">
                                 <span class="text-gray-400">Coin:</span>
@@ -145,11 +191,19 @@
                             class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed" 
                             disabled>
                         <i class="fas fa-rocket mr-2"></i>
+<<<<<<< HEAD
                         Ä°ÅŸlemi GerÃ§ekleÅŸtir
                     </button>
                     
                     <div class="mt-3 text-xs text-center text-gray-500">
                         âš ï¸ Bu paper trading modudur. GerÃ§ek para kullanÄ±lmaz.
+=======
+                        İşlemi Gerçekleştir
+                    </button>
+                    
+                    <div class="mt-3 text-xs text-center text-gray-500">
+                        ⚠️ Bu paper trading modudur. Gerçek para kullanılmaz.
+>>>>>>> 96de1d9
                     </div>
                 </div>
             </div>
@@ -174,7 +228,11 @@
                                     </div>
                                     <div>
                                         <div class="text-white font-semibold">{{ coin.name }}</div>
+<<<<<<< HEAD
                                         <div class="text-sm text-gray-400">{{ coin.symbol.upper() }} â€¢ #{{ coin.market_cap_rank }}</div>
+=======
+                                        <div class="text-sm text-gray-400">{{ coin.symbol.upper() }} • #{{ coin.market_cap_rank }}</div>
+>>>>>>> 96de1d9
                                     </div>
                                 </div>
                                 
@@ -240,12 +298,21 @@
         <!-- Recent Trades -->
         <div class="mt-6">
             <div class="bg-gray-900/60 backdrop-blur-xl rounded-xl border border-gray-800/50 p-6">
+<<<<<<< HEAD
                 <h2 class="text-xl font-bold text-white mb-4">Son Ä°ÅŸlemler</h2>
                 <div id="recentTrades" class="space-y-2">
                     <div class="text-center py-8 text-gray-400">
                         <i class="fas fa-clipboard-list text-3xl mb-2"></i>
                         <div>HenÃ¼z iÅŸlem yapmadÄ±nÄ±z</div>
                         <div class="text-sm">Ä°lk iÅŸleminizi yapmak iÃ§in yukarÄ±daki coinlerden birini seÃ§in</div>
+=======
+                <h2 class="text-xl font-bold text-white mb-4">Son İşlemler</h2>
+                <div id="recentTrades" class="space-y-2">
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-clipboard-list text-3xl mb-2"></i>
+                        <div>Henüz işlem yapmadınız</div>
+                        <div class="text-sm">İlk işleminizi yapmak için yukarıdaki coinlerden birini seçin</div>
+>>>>>>> 96de1d9
                     </div>
                 </div>
             </div>
@@ -324,29 +391,48 @@ function updateExecuteButton() {
     const executeBtn = document.getElementById('executeBtn');
     if (currentTradeType === 'buy') {
         executeBtn.className = 'w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed';
+<<<<<<< HEAD
         executeBtn.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>AlÄ±ÅŸ Ä°ÅŸlemi Yap';
     } else {
         executeBtn.className = 'w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed';
         executeBtn.innerHTML = '<i class="fas fa-hand-holding-usd mr-2"></i>SatÄ±ÅŸ Ä°ÅŸlemi Yap';
+=======
+        executeBtn.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>Alış İşlemi Yap';
+    } else {
+        executeBtn.className = 'w-full py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-lg transition-all disabled:bg-gray-600 disabled:cursor-not-allowed';
+        executeBtn.innerHTML = '<i class="fas fa-hand-holding-usd mr-2"></i>Satış İşlemi Yap';
+>>>>>>> 96de1d9
     }
 }
 
 async function executeManualTrade() {
     if (!selectedCoin) {
+<<<<<<< HEAD
         alert('LÃ¼tfen bir coin seÃ§in');
+=======
+        alert('Lütfen bir coin seçin');
+>>>>>>> 96de1d9
         return;
     }
     
     const amount = parseFloat(document.getElementById('amountInput').value);
     if (!amount || amount <= 0) {
+<<<<<<< HEAD
         alert('LÃ¼tfen geÃ§erli bir miktar girin');
+=======
+        alert('Lütfen geçerli bir miktar girin');
+>>>>>>> 96de1d9
         return;
     }
     
     // Disable button during execution
     const executeBtn = document.getElementById('executeBtn');
     executeBtn.disabled = true;
+<<<<<<< HEAD
     executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Ä°ÅŸlem yapÄ±lÄ±yor...';
+=======
+    executeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>İşlem yapılıyor...';
+>>>>>>> 96de1d9
     
     try {
         // Call real trading API
@@ -372,7 +458,11 @@ async function executeManualTrade() {
                 coinAmount: amount / selectedCoin.price,
                 price: selectedCoin.price,
                 timestamp: new Date().toLocaleString('tr-TR'),
+<<<<<<< HEAD
                 status: 'TamamlandÄ± (GerÃ§ek)',
+=======
+                status: 'Tamamlandı (Gerçek)',
+>>>>>>> 96de1d9
                 real: true
             };
             
@@ -390,7 +480,11 @@ async function executeManualTrade() {
         }
         
     } catch (error) {
+<<<<<<< HEAD
         showNotification('Ä°ÅŸlem hatasÄ±: ' + error.message, 'error');
+=======
+        showNotification('İşlem hatası: ' + error.message, 'error');
+>>>>>>> 96de1d9
     }
     
     // Re-enable button
@@ -410,14 +504,22 @@ function quickTrade(coinId, type, amount) {
         coinAmount: amount / coin.current_price,
         price: coin.current_price,
         timestamp: new Date().toLocaleString('tr-TR'),
+<<<<<<< HEAD
         status: 'TamamlandÄ±'
+=======
+        status: 'Tamamlandı'
+>>>>>>> 96de1d9
     };
     
     tradeHistory.unshift(trade);
     updateRecentTrades();
     
     showNotification(
+<<<<<<< HEAD
         `HÄ±zlÄ± ${type === 'buy' ? 'alÄ±ÅŸ' : 'satÄ±ÅŸ'}: $${amount} ${coin.symbol.toUpperCase()}`,
+=======
+        `Hızlı ${type === 'buy' ? 'alış' : 'satış'}: $${amount} ${coin.symbol.toUpperCase()}`,
+>>>>>>> 96de1d9
         'success'
     );
 }
@@ -429,7 +531,11 @@ function updateRecentTrades() {
         container.innerHTML = `
             <div class="text-center py-8 text-gray-400">
                 <i class="fas fa-clipboard-list text-3xl mb-2"></i>
+<<<<<<< HEAD
                 <div>HenÃ¼z iÅŸlem yapmadÄ±nÄ±z</div>
+=======
+                <div>Henüz işlem yapmadınız</div>
+>>>>>>> 96de1d9
             </div>
         `;
         return;
@@ -441,7 +547,11 @@ function updateRecentTrades() {
                 <div class="w-2 h-2 rounded-full ${trade.type === 'buy' ? 'bg-green-400' : 'bg-red-400'}"></div>
                 <div>
                     <div class="text-white font-medium">
+<<<<<<< HEAD
                         ${trade.type === 'buy' ? 'AlÄ±ÅŸ' : 'SatÄ±ÅŸ'}: ${trade.coinAmount.toFixed(6)} ${trade.coin.symbol.toUpperCase()}
+=======
+                        ${trade.type === 'buy' ? 'Alış' : 'Satış'}: ${trade.coinAmount.toFixed(6)} ${trade.coin.symbol.toUpperCase()}
+>>>>>>> 96de1d9
                     </div>
                     <div class="text-xs text-gray-400">${trade.timestamp}</div>
                 </div>
@@ -510,4 +620,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+<<<<<<< HEAD
 {% endblock %}
+=======
+{% endblock %}
+>>>>>>> 96de1d9

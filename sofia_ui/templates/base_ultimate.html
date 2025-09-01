@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 ﻿{% extends "base.html" %}
 {% block content %}
+=======
+>>>>>>> 96de1d9
 <!DOCTYPE html>
 <html lang="tr" class="h-full">
 <head>
@@ -270,7 +273,43 @@
             </div>
 
             <!-- Navigation -->
+<<<<<<< HEAD
             
+=======
+            <nav class="flex-1 p-3 space-y-1">
+                <a href="/" class="sidebar-item flex items-center px-3 py-2.5" :class="currentPage === 'dashboard' ? 'active' : ''">
+                    <i class="fas fa-th-large w-5"></i>
+                    <span class="ml-3" x-show="sidebarOpen">Dashboard</span>
+                </a>
+
+                <a href="/portfolio" class="sidebar-item flex items-center px-3 py-2.5" :class="currentPage === 'portfolio' ? 'active' : ''">
+                    <i class="fas fa-briefcase w-5"></i>
+                    <span class="ml-3" x-show="sidebarOpen">Portfolio</span>
+                </a>
+
+                <a href="/assets/BTC-USD" class="sidebar-item flex items-center px-3 py-2.5" :class="currentPage === 'assets' ? 'active' : ''">
+                    <i class="fas fa-coins w-5"></i>
+                    <span class="ml-3" x-show="sidebarOpen">Markets</span>
+                </a>
+
+                <a href="/backtest" class="sidebar-item flex items-center px-3 py-2.5" :class="currentPage === 'backtest' ? 'active' : ''">
+                    <i class="fas fa-flask w-5"></i>
+                    <span class="ml-3" x-show="sidebarOpen">Backtest</span>
+                </a>
+
+                <a href="/strategies" class="sidebar-item flex items-center px-3 py-2.5" :class="currentPage === 'strategies' ? 'active' : ''">
+                    <i class="fas fa-robot w-5"></i>
+                    <span class="ml-3" x-show="sidebarOpen">Strategies</span>
+                </a>
+
+                <div class="border-t pt-3 mt-3" style="border-color: var(--border);">
+                    <a href="#" class="sidebar-item flex items-center px-3 py-2.5">
+                        <i class="fas fa-cog w-5"></i>
+                        <span class="ml-3" x-show="sidebarOpen">Settings</span>
+                    </a>
+                </div>
+            </nav>
+>>>>>>> 96de1d9
 
             <!-- Live Prices (Bottom) -->
             <div class="p-3 border-t" style="border-color: var(--border);" x-show="sidebarOpen">
@@ -355,5 +394,8 @@
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>
+<<<<<<< HEAD
 
 {% endblock %}
+=======
+>>>>>>> 96de1d9

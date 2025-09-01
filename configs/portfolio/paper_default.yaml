@@ -1,0 +1,38 @@
+# Paper Trading Portfolio Configuration
+
+portfolio:
+  name: "Default Paper Portfolio"
+  target_equity: 1000.0  # Target equity in USDT
+  rebalance_threshold: 0.05  # Rebalance when allocation drifts by 5%
+  
+allocations:
+  BTCUSDT:
+    weight: 0.40  # 40%
+    strategy: "trend"
+    config_profile: "default"
+    
+  ETHUSDT:
+    weight: 0.30  # 30%
+    strategy: "grid"
+    config_profile: "default"
+    
+  BNBUSDT:
+    weight: 0.15  # 15%
+    strategy: "grid"
+    config_profile: "conservative"
+    
+  SOLUSDT:
+    weight: 0.15  # 15%
+    strategy: "trend"
+    config_profile: "aggressive"
+
+risk_limits:
+  max_drawdown: 0.15  # 15% maximum drawdown
+  daily_var: 0.05     # 5% daily Value at Risk
+  position_limit: 0.25 # No single position > 25% of portfolio
+  
+monitoring:
+  health_check_interval: 60  # seconds
+  rebalance_interval: 3600   # 1 hour
+  alert_on_drawdown: true
+  alert_webhook: ""  # Optional webhook for alerts

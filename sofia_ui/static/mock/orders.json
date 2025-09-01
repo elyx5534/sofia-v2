@@ -1,0 +1,22 @@
+[
+  {
+    "id": "order_001",
+    "symbol": "BTC-USD",
+    "side": "buy",
+    "type": "limit",
+    "qty": 0.1,
+    "price": 67000.00,
+    "status": "pending",
+    "ts": 1693456789000
+  },
+  {
+    "id": "order_002", 
+    "symbol": "ETH-USD",
+    "side": "sell",
+    "type": "market",
+    "qty": 2.0,
+    "price": 3456.78,
+    "status": "filled",
+    "ts": 1693456689000
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "trade_001",
+    "symbol": "BTC-USD",
+    "side": "buy",
+    "qty": 0.025,
+    "price": 67845.32,
+    "ts": 1693456789000
+  },
+  {
+    "id": "trade_002",
+    "symbol": "ETH-USD", 
+    "side": "sell",
+    "qty": 1.5,
+    "price": 3456.78,
+    "ts": 1693456689000
+  },
+  {
+    "id": "trade_003",
+    "symbol": "SOL-USD",
+    "side": "buy",
+    "qty": 25.0,
+    "price": 145.31,
+    "ts": 1693456589000
+  }
+]

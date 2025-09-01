@@ -1,0 +1,57 @@
+# Sofia V2 Realtime DataHub - Environment Template
+# Copy to .env and customize
+
+# Core Symbols (comma-separated, no spaces)
+SYMBOLS=BTCUSDT,ETHUSDT,BCHUSDT,ADAUSDT,SOLUSDT,XRPUSDT,DOGEUSDT,MATICUSDT,LINKUSDT,UNIUSDT
+
+# Database Configuration
+USE_TIMESCALE=false
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/sofia_datahub
+
+# Storage Configuration  
+DATA_DIR=./data
+PARQUET_ROTATION_HOURS=24
+MAX_RETENTION_DAYS=30
+
+# Exchange Configuration
+BINANCE_SPOT=true
+BINANCE_FUTURES=true
+OKX_ENABLED=true
+BYBIT_ENABLED=true
+COINBASE_ENABLED=true
+
+# News Configuration
+CRYPTOPANIC_ENABLED=true
+NEWS_POLL_SECONDS_DAY=30
+NEWS_POLL_SECONDS_NIGHT=90
+
+# Thresholds
+BIG_TRADE_USD_MIN=250000
+LIQ_SPIKE_SIGMA=3.0
+
+# Fallback Market Data
+COINGECKO_FALLBACK=true
+CMC_FALLBACK=false
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=8000
+DEBUG=false
+
+# Logging
+LOG_LEVEL=INFO
+LOG_FORMAT=json
+
+# Metrics
+ENABLE_METRICS=true
+METRICS_PORT=9090
+
+# Rate Limiting & Reconnects
+MAX_RECONNECT_DELAY=15
+PING_INTERVAL=30
+CONNECTION_TIMEOUT=10
+
+# Performance Tuning
+WS_BUFFER_SIZE=1048576
+MAX_CONCURRENT_CONNECTIONS=1000
+BACKPRESSURE_LIMIT=10000

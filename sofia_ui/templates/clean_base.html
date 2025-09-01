@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sofia V2 - AI Trading Platform{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'dark-bg': '#0a0e1a',
+                        'card-bg': '#141824',
+                        'accent-blue': '#4a9eff',
+                        'accent-green': '#00ff88',
+                        'accent-purple': '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 100%);
+        }
+        .glass-card {
+            background: rgba(20, 24, 36, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .nav-active {
+            background: rgba(74, 158, 255, 0.1);
+            border-left: 3px solid #4a9eff;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="text-white min-h-screen">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 glass-card border-r border-gray-800">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-accent-purple rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold">S</span>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold">Sofia V2</h1>
+                        <p class="text-xs text-gray-400">AI Trading Platform</p>
+                    </div>
+                </div>
+                
+                <nav class="space-y-2">
+                    <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition {% if current_page == 'dashboard' %}nav-active{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <a href="/portfolio" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition {% if current_page == 'portfolio' %}nav-active{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        <span>Portfolio</span>
+                    </a>
+                    
+                    <a href="/markets" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition {% if current_page == 'markets' %}nav-active{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                        <span>Markets</span>
+                        <span class="ml-auto text-xs bg-green-500 text-white px-2 py-0.5 rounded">Live</span>
+                    </a>
+                    
+                    <a href="/backtest" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition {% if current_page == 'backtest' %}nav-active{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Backtest</span>
+                    </a>
+                    
+                    <a href="/strategies" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition {% if current_page == 'strategies' %}nav-active{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <span>AI Strategies</span>
+                        <span class="ml-auto text-xs text-purple-400">5 Active</span>
+                    </a>
+                    
+                    <a href="/trading-bot" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 transition {% if current_page == 'trading_bot' %}nav-active{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Trading Bot</span>
+                        <span class="ml-auto text-xs bg-green-500 text-white px-2 py-0.5 rounded">NEW</span>
+                    </a>
+                </nav>
+                
+                <!-- AI Assistant -->
+                <div class="mt-8 p-4 glass-card rounded-lg">
+                    <div class="flex items-center space-x-2 mb-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm font-semibold">AI Assistant</span>
+                    </div>
+                    <p class="text-xs text-gray-400">Market sentiment: Bullish</p>
+                    <p class="text-xs text-gray-400">Next signal in: 5 min</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <header class="glass-card border-b border-gray-800 px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-semibold">{% block page_title %}Trading Dashboard{% endblock %}</h2>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-400">Last update: <span id="last-update">2 seconds ago</span></span>
+                        <button class="px-4 py-2 bg-accent-blue text-white rounded-lg hover:bg-blue-600 transition">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <main class="p-8">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    
+    <script>
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('last-update').textContent = '2 seconds ago';
+        }
+        setInterval(updateTime, 5000);
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

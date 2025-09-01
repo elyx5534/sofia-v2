@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿{% extends "base.html" %}
+=======
+{% extends "base.html" %}
+>>>>>>> 96de1d9
 
 {% block content %}
 <!-- Asset Header -->
@@ -280,7 +284,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let price = basePrice;
             
             for (let i = 0; i < days; i++) {
+<<<<<<< HEAD
                 const change = (Math.random() - 0.5) * 0.05; // Â±5% change
+=======
+                const change = (Math.random() - 0.5) * 0.05; // ±5% change
+>>>>>>> 96de1d9
                 price = price * (1 + change);
                 data.push({
                     x: new Date(Date.now() - (days - i) * 24 * 60 * 60 * 1000),
@@ -362,4 +370,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+<<<<<<< HEAD
 
+=======
+>>>>>>> 96de1d9

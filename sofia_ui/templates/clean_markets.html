@@ -1,0 +1,411 @@
+{% extends "clean_base.html" %}
+
+{% block title %}Markets - Sofia V2{% endblock %}
+{% block page_title %}Live Markets{% endblock %}
+
+{% block content %}
+<!-- Market Overview -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+    <div class="glass-card rounded-lg p-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Market Cap</span>
+            <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">LIVE</span>
+        </div>
+        <div class="text-2xl font-bold">$2.45T</div>
+        <div class="text-sm text-green-400">+3.2% 24h</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">24h Volume</span>
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+        </div>
+        <div class="text-2xl font-bold">$124.5B</div>
+        <div class="text-sm text-green-400">+18.4%</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">BTC Dominance</span>
+            <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="text-2xl font-bold">52.3%</div>
+        <div class="text-sm text-red-400">-0.8%</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-gray-400 text-sm">Fear & Greed</span>
+            <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div class="text-2xl font-bold">72</div>
+        <div class="text-sm text-green-400">Greed</div>
+    </div>
+</div>
+
+<!-- Live Price Chart -->
+<div class="glass-card rounded-lg p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">BTC/USDT Live Chart</h3>
+        <div class="flex space-x-2">
+            <select class="bg-gray-700 rounded px-3 py-1 text-sm" id="chart-symbol">
+                <option value="BTC/USDT">BTC/USDT</option>
+                <option value="ETH/USDT">ETH/USDT</option>
+                <option value="SOL/USDT">SOL/USDT</option>
+            </select>
+            <button class="px-3 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600">1m</button>
+            <button class="px-3 py-1 text-xs rounded bg-accent-blue text-white">5m</button>
+            <button class="px-3 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600">15m</button>
+            <button class="px-3 py-1 text-xs rounded bg-gray-700 hover:bg-gray-600">1h</button>
+        </div>
+    </div>
+    <canvas id="priceChart" height="100"></canvas>
+</div>
+
+<!-- Cryptocurrency Markets -->
+<div class="glass-card rounded-lg p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Top Cryptocurrencies</h3>
+        <input type="text" placeholder="Search..." class="bg-gray-700 rounded px-3 py-1 text-sm">
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-700">
+                    <th class="text-left py-3 px-4">#</th>
+                    <th class="text-left py-3 px-4">Name</th>
+                    <th class="text-right py-3 px-4">Price</th>
+                    <th class="text-right py-3 px-4">24h %</th>
+                    <th class="text-right py-3 px-4">7d %</th>
+                    <th class="text-right py-3 px-4">Market Cap</th>
+                    <th class="text-right py-3 px-4">Volume(24h)</th>
+                    <th class="text-center py-3 px-4">Last 7 Days</th>
+                </tr>
+            </thead>
+            <tbody id="crypto-table">
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3 px-4">1</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-xs font-bold">BTC</div>
+                            <div>
+                                <p class="font-medium">Bitcoin</p>
+                                <p class="text-xs text-gray-400">BTC</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right py-3 px-4 font-bold" id="btc-price-row">$64,245.00</td>
+                    <td class="text-right py-3 px-4 text-green-400">+2.45%</td>
+                    <td class="text-right py-3 px-4 text-green-400">+8.32%</td>
+                    <td class="text-right py-3 px-4">$1.26T</td>
+                    <td class="text-right py-3 px-4">$32.4B</td>
+                    <td class="text-center py-3 px-4">
+                        <canvas id="btc-sparkline" width="100" height="30"></canvas>
+                    </td>
+                </tr>
+                
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3 px-4">2</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">ETH</div>
+                            <div>
+                                <p class="font-medium">Ethereum</p>
+                                <p class="text-xs text-gray-400">ETH</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right py-3 px-4 font-bold" id="eth-price-row">$3,245.00</td>
+                    <td class="text-right py-3 px-4 text-green-400">+3.12%</td>
+                    <td class="text-right py-3 px-4 text-red-400">-2.45%</td>
+                    <td class="text-right py-3 px-4">$390B</td>
+                    <td class="text-right py-3 px-4">$15.2B</td>
+                    <td class="text-center py-3 px-4">
+                        <canvas id="eth-sparkline" width="100" height="30"></canvas>
+                    </td>
+                </tr>
+                
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3 px-4">3</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-xs font-bold">SOL</div>
+                            <div>
+                                <p class="font-medium">Solana</p>
+                                <p class="text-xs text-gray-400">SOL</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right py-3 px-4 font-bold" id="sol-price-row">$152.45</td>
+                    <td class="text-right py-3 px-4 text-green-400">+5.67%</td>
+                    <td class="text-right py-3 px-4 text-green-400">+12.34%</td>
+                    <td class="text-right py-3 px-4">$68B</td>
+                    <td class="text-right py-3 px-4">$2.8B</td>
+                    <td class="text-center py-3 px-4">
+                        <canvas id="sol-sparkline" width="100" height="30"></canvas>
+                    </td>
+                </tr>
+                
+                <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                    <td class="py-3 px-4">4</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-xs font-bold">BNB</div>
+                            <div>
+                                <p class="font-medium">BNB</p>
+                                <p class="text-xs text-gray-400">BNB</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right py-3 px-4 font-bold">$612.34</td>
+                    <td class="text-right py-3 px-4 text-red-400">-1.23%</td>
+                    <td class="text-right py-3 px-4 text-green-400">+3.45%</td>
+                    <td class="text-right py-3 px-4">$91B</td>
+                    <td class="text-right py-3 px-4">$1.2B</td>
+                    <td class="text-center py-3 px-4">
+                        <canvas id="bnb-sparkline" width="100" height="30"></canvas>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Order Book -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="glass-card rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Order Book - BTC/USDT</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <h4 class="text-sm text-green-400 mb-2">Bids</h4>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span>64,244.50</span>
+                        <span class="text-gray-400">0.245</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span>64,243.00</span>
+                        <span class="text-gray-400">0.512</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span>64,241.50</span>
+                        <span class="text-gray-400">1.234</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-sm text-red-400 mb-2">Asks</h4>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span>64,245.50</span>
+                        <span class="text-gray-400">0.189</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span>64,247.00</span>
+                        <span class="text-gray-400">0.445</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span>64,248.50</span>
+                        <span class="text-gray-400">0.892</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-6">
+        <h3 class="text-lg font-semibold mb-4">Recent Trades</h3>
+        <div class="space-y-2">
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-400">17:44:23</span>
+                <span class="text-green-400">64,245.00</span>
+                <span>0.0234 BTC</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-400">17:44:21</span>
+                <span class="text-red-400">64,244.50</span>
+                <span>0.0512 BTC</span>
+            </div>
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-400">17:44:19</span>
+                <span class="text-green-400">64,245.50</span>
+                <span>0.0089 BTC</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Price Chart
+let priceChart;
+const ctx = document.getElementById('priceChart').getContext('2d');
+
+function initPriceChart(data) {
+    if (priceChart) {
+        priceChart.destroy();
+    }
+    
+    priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(d => new Date(d.timestamp).toLocaleTimeString()),
+            datasets: [{
+                label: 'Price',
+                data: data.map(d => d.close),
+                borderColor: '#4a9eff',
+                backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: { 
+                    display: true,
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        maxTicksLimit: 10
+                    }
+                },
+                y: {
+                    display: true,
+                    grid: { 
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Sparklines
+function drawSparkline(canvasId, data) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min;
+    
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = data[data.length - 1] > data[0] ? '#10b981' : '#ef4444';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    
+    data.forEach((value, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((value - min) / range) * height;
+        
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    
+    ctx.stroke();
+}
+
+// Generate mock sparkline data
+const mockSparklineData = () => Array.from({length: 20}, () => Math.random() * 100 + 50);
+
+// Draw sparklines
+drawSparkline('btc-sparkline', mockSparklineData());
+drawSparkline('eth-sparkline', mockSparklineData());
+drawSparkline('sol-sparkline', mockSparklineData());
+drawSparkline('bnb-sparkline', mockSparklineData());
+
+// Fetch real market data
+async function updateMarketData() {
+    try {
+        // BTC Data
+        const btcResponse = await fetch('http://127.0.0.1:8001/ohlcv?symbol=BTC/USDT&asset_type=crypto&timeframe=5m&limit=50');
+        if (btcResponse.ok) {
+            const btcData = await btcResponse.json();
+            if (btcData.data && btcData.data.length > 0) {
+                const latestPrice = btcData.data[btcData.data.length - 1].close;
+                document.getElementById('btc-price-row').textContent = '$' + latestPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
+                
+                // Update chart
+                initPriceChart(btcData.data);
+            }
+        }
+        
+        // ETH Data
+        const ethResponse = await fetch('http://127.0.0.1:8001/ohlcv?symbol=ETH/USDT&asset_type=crypto&timeframe=5m&limit=1');
+        if (ethResponse.ok) {
+            const ethData = await ethResponse.json();
+            if (ethData.data && ethData.data.length > 0) {
+                const latestPrice = ethData.data[ethData.data.length - 1].close;
+                document.getElementById('eth-price-row').textContent = '$' + latestPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
+            }
+        }
+        
+        // SOL Data
+        const solResponse = await fetch('http://127.0.0.1:8001/ohlcv?symbol=SOL/USDT&asset_type=crypto&timeframe=5m&limit=1');
+        if (solResponse.ok) {
+            const solData = await solResponse.json();
+            if (solData.data && solData.data.length > 0) {
+                const latestPrice = solData.data[solData.data.length - 1].close;
+                document.getElementById('sol-price-row').textContent = '$' + latestPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
+            }
+        }
+    } catch (error) {
+        console.log('Using mock data');
+        // Initialize with mock data
+        const mockData = Array.from({length: 50}, (_, i) => ({
+            timestamp: Date.now() - (50 - i) * 5 * 60 * 1000,
+            close: 64000 + Math.random() * 500
+        }));
+        initPriceChart(mockData);
+    }
+}
+
+// Symbol selector
+document.getElementById('chart-symbol').addEventListener('change', async (e) => {
+    const symbol = e.target.value;
+    try {
+        const response = await fetch(`http://127.0.0.1:8001/ohlcv?symbol=${symbol}&asset_type=crypto&timeframe=5m&limit=50`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.data && data.data.length > 0) {
+                initPriceChart(data.data);
+            }
+        }
+    } catch (error) {
+        console.log('Error fetching data for', symbol);
+    }
+});
+
+// Initial load and periodic updates
+updateMarketData();
+setInterval(updateMarketData, 10000);
+</script>
+{% endblock %}

@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 ﻿<!DOCTYPE html>
+=======
+<!DOCTYPE html>
+>>>>>>> 96de1d9
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< HEAD
     <title>{% block title %}Sofia V2 - Glass Dark{% endblock %}</title>
     
     <!-- Static CSS Lock - Glass Dark Theme -->
@@ -38,5 +43,384 @@
     </script>
     
     {% block extra_js %}{% endblock %}
+=======
+    <title>{% block title %}{{ page_title|default("Sofia V2 - Next Gen Trading Platform") }}{% endblock %}</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        dark: '#0f172a'
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Apex Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- Custom Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Premium glass effect */
+        .glass-ultra {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.8) 100%);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Neon glow effects */
+        .neon-glow {
+            filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 40px currentColor);
+        }
+
+        .text-neon-green {
+            color: #39ff14;
+            text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14, 0 0 30px #39ff14;
+        }
+
+        .text-neon-red {
+            color: #ff073a;
+            text-shadow: 0 0 10px #ff073a, 0 0 20px #ff073a, 0 0 30px #ff073a;
+        }
+
+        /* Holographic gradient */
+        .holographic {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #ffc107 100%);
+            background-size: 400% 400%;
+            animation: gradient-shift 15s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Matrix rain effect */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            z-index: 0;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+
+        /* Loading animation */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: #667eea;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Particle effect */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            display: block;
+            pointer-events: none;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float-up 15s infinite linear;
+        }
+
+        @keyframes float-up {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) scale(0);
+            }
+            10% {
+                opacity: 1;
+                transform: translateY(90vh) scale(1);
+            }
+            90% {
+                opacity: 1;
+                transform: translateY(10vh) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(0) scale(0);
+            }
+        }
+
+        /* 3D card effect */
+        .card-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+        }
+
+        .card-3d:hover {
+            transform: rotateY(5deg) rotateX(-5deg) translateZ(10px);
+        }
+
+        /* Cyber grid background */
+        .cyber-grid {
+            background-image:
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: grid-move 10s linear infinite;
+        }
+
+        @keyframes grid-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-white overflow-x-hidden">
+    <!-- Particle Background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Cyber Grid Background -->
+    <div class="fixed inset-0 cyber-grid opacity-10 pointer-events-none"></div>
+
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-ultra border-b border-gray-800/50" x-data="{ profileOpen: false, notificationOpen: false }">
+        <div class="px-6 py-3">
+            <div class="flex items-center justify-between">
+                <!-- Left Section -->
+                <div class="flex items-center space-x-6">
+                    <!-- Logo -->
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                            <span class="text-white font-bold text-lg">S</span>
+                        </div>
+                        <div>
+                            <div class="text-white font-bold text-lg">SOFIA V2</div>
+                            <div class="text-xs text-gray-400">AI Trading Platform</div>
+                        </div>
+                    </div>
+
+                    <!-- Main Navigation -->
+                    <div class="hidden lg:flex items-center space-x-1">
+                        <a href="/dashboard" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'dashboard' else '' }}">
+                            <i class="fas fa-chart-line mr-2"></i>Dashboard
+                        </a>
+                        <a href="/portfolio" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'portfolio' else '' }}">
+                            <i class="fas fa-wallet mr-2"></i>Portfolio
+                        </a>
+                        <a href="/markets" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'markets' else '' }}">
+                            <i class="fas fa-coins mr-2"></i>Markets
+                            <span class="ml-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Live</span>
+                        </a>
+                        <a href="/trading" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'trading' else '' }}">
+                            <i class="fas fa-brain mr-2"></i>AI Trading
+                            <span class="ml-1 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">AI</span>
+                        </a>
+                        <a href="/manual-trading" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'manual-trading' else '' }}">
+                            <i class="fas fa-hand-paper mr-2"></i>Manuel Al/Sat
+                            <span class="ml-1 text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded">Manual</span>
+                        </a>
+                        <a href="/reliability" class="px-4 py-2 rounded-lg hover:bg-gray-800/50 transition-all {{ 'bg-blue-600' if current_page == 'reliability' else '' }}">
+                            <i class="fas fa-shield-alt mr-2"></i>Güvenilirlik
+                            <span class="ml-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">%95</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Section -->
+                <div class="flex items-center space-x-4">
+                    <!-- Search -->
+                    <div class="hidden md:block">
+                        <div class="relative">
+                            <input type="text" placeholder="Search coins..."
+                                   class="w-64 px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500 text-sm">
+                            <i class="fas fa-search absolute right-3 top-2.5 text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <!-- Notifications -->
+                    <div class="relative" @click.outside="notificationOpen = false">
+                        <button @click="notificationOpen = !notificationOpen"
+                                class="p-2 rounded-lg hover:bg-gray-800/50 transition-all relative">
+                            <i class="fas fa-bell text-gray-400"></i>
+                            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                        </button>
+
+                        <div x-show="notificationOpen" x-transition
+                             class="absolute right-0 mt-2 w-80 glass-ultra rounded-xl shadow-2xl overflow-hidden">
+                            <div class="p-4 border-b border-gray-800">
+                                <h3 class="font-semibold">Notifications</h3>
+                            </div>
+                            <div class="max-h-96 overflow-y-auto">
+                                <div class="p-4 hover:bg-gray-800/30 cursor-pointer border-b border-gray-800/50">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-check text-green-500 text-xs"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-sm font-medium">Trade Executed</div>
+                                            <div class="text-xs text-gray-400">BTC buy order filled at $67,845</div>
+                                            <div class="text-xs text-gray-500 mt-1">2 minutes ago</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile -->
+                    <div class="relative" @click.outside="profileOpen = false">
+                        <button @click="profileOpen = !profileOpen"
+                                class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-800/50 transition-all">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                <span class="text-white font-bold text-sm">U</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                        </button>
+
+                        <div x-show="profileOpen" x-transition
+                             class="absolute right-0 mt-2 w-64 glass-ultra rounded-xl shadow-2xl overflow-hidden">
+                            <div class="p-4 border-b border-gray-800">
+                                <div class="font-semibold">User Account</div>
+                                <div class="text-xs text-gray-400">user@example.com</div>
+                            </div>
+                            <div class="p-2">
+                                <a href="#" class="block px-3 py-2 rounded-lg hover:bg-gray-800/50 transition-all text-sm">
+                                    <i class="fas fa-cog mr-2"></i>Settings
+                                </a>
+                                <a href="#" class="block px-3 py-2 rounded-lg hover:bg-gray-800/50 transition-all text-sm">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-20">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Global Scripts -->
+    <script>
+        // Create particle effect
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            if (!particlesContainer) return;
+
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('span');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+        });
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+>>>>>>> 96de1d9
 </body>
 </html>

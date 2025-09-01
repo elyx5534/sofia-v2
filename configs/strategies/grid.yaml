@@ -1,0 +1,37 @@
+# Grid Trading Strategy Configuration
+
+default:
+  base_qty: 20.0           # Base quantity per grid level (USD)
+  grid_step_pct: 0.45      # Distance between grid levels (%)
+  grid_levels: 5           # Number of grid levels above and below mid
+  take_profit_pct: 2.0     # Take profit threshold (%)
+  max_inventory: 200.0     # Maximum inventory in USD
+  cooldown_s: 5            # Cooldown between orders (seconds)
+  rebalance_threshold: 0.7 # Inventory imbalance threshold for rebalancing
+
+conservative:
+  base_qty: 10.0
+  grid_step_pct: 0.6
+  grid_levels: 3
+  take_profit_pct: 1.5
+  max_inventory: 100.0
+  cooldown_s: 10
+  rebalance_threshold: 0.5
+
+aggressive:
+  base_qty: 30.0
+  grid_step_pct: 0.3
+  grid_levels: 7
+  take_profit_pct: 3.0
+  max_inventory: 300.0
+  cooldown_s: 3
+  rebalance_threshold: 0.8
+
+scalping:
+  base_qty: 15.0
+  grid_step_pct: 0.15
+  grid_levels: 10
+  take_profit_pct: 0.5
+  max_inventory: 150.0
+  cooldown_s: 1
+  rebalance_threshold: 0.9

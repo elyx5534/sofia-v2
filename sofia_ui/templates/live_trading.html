@@ -1,0 +1,264 @@
+{% extends "clean_base.html" %}
+
+{% block title %}Live Trading - Sofia V2{% endblock %}
+{% block page_title %}Live Trading Activity{% endblock %}
+
+{% block content %}
+<!-- Real-Time Stats -->
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Balance</div>
+        <div class="text-xl font-bold" id="live-balance">₺100,000</div>
+        <div class="text-xs text-gray-400">Available</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Active Trades</div>
+        <div class="text-xl font-bold text-blue-400" id="active-trades">0</div>
+        <div class="text-xs text-gray-400">Positions</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Today's P&L</div>
+        <div class="text-xl font-bold text-green-400" id="today-pnl">₺0</div>
+        <div class="text-xs text-gray-400">Profit/Loss</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Win Rate</div>
+        <div class="text-xl font-bold text-purple-400" id="win-rate">0%</div>
+        <div class="text-xs text-gray-400">Success</div>
+    </div>
+    
+    <div class="glass-card rounded-lg p-4">
+        <div class="text-gray-400 text-sm mb-1">Total Trades</div>
+        <div class="text-xl font-bold" id="total-trades">0</div>
+        <div class="text-xs text-gray-400">Executed</div>
+    </div>
+</div>
+
+<!-- Active Positions Grid -->
+<div class="mb-6">
+    <h3 class="text-lg font-semibold mb-4">Active Positions</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="active-positions">
+        <!-- Positions will be added here dynamically -->
+    </div>
+</div>
+
+<!-- Live Trade Feed -->
+<div class="glass-card rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold">Live Trade Feed</h3>
+        <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span class="text-sm text-gray-400">Live</span>
+        </div>
+    </div>
+    
+    <div class="space-y-2 max-h-96 overflow-y-auto" id="trade-feed">
+        <!-- Trade feed items will be added here -->
+    </div>
+</div>
+
+<!-- Watching Coins -->
+<div class="glass-card rounded-lg p-6 mt-6">
+    <h3 class="text-lg font-semibold mb-4">Watching Coins</h3>
+    <div class="flex flex-wrap gap-2" id="watching-coins">
+        <!-- Coins will be added here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let updateInterval;
+let tradeHistory = [];
+
+// Format currency
+function formatCurrency(amount, currency = 'TRY') {
+    const symbol = currency === 'TRY' ? '₺' : '$';
+    return symbol + Math.abs(amount).toLocaleString('tr-TR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+// Create position card
+function createPositionCard(symbol, position) {
+    const pnlClass = position.unrealized_pnl_try >= 0 ? 'text-green-400' : 'text-red-400';
+    const pnlSign = position.unrealized_pnl_try >= 0 ? '+' : '';
+    
+    return `
+        <div class="glass-card rounded-lg p-4 border ${position.unrealized_pnl_try >= 0 ? 'border-green-500/20' : 'border-red-500/20'}">
+            <div class="flex items-center justify-between mb-2">
+                <div class="font-bold">${symbol.replace('/USDT', '')}</div>
+                <span class="${pnlClass} text-sm font-bold">${pnlSign}${((position.unrealized_pnl_try / position.value_try) * 100).toFixed(2)}%</span>
+            </div>
+            <div class="space-y-1 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Amount:</span>
+                    <span>${position.amount.toFixed(6)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Entry:</span>
+                    <span>₺${position.entry_price_try.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Current:</span>
+                    <span>₺${position.current_price_try.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">P&L:</span>
+                    <span class="${pnlClass} font-bold">${pnlSign}₺${Math.abs(position.unrealized_pnl_try).toFixed(2)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Create trade feed item
+function createTradeFeedItem(trade) {
+    const time = new Date(trade.timestamp).toLocaleTimeString('tr-TR');
+    const isB
+uy = trade.signal === 'BUY';
+    const icon = isBuy ? '📈' : '📉';
+    const bgColor = isBuy ? 'bg-green-500/10' : 'bg-red-500/10';
+    const textColor = isBuy ? 'text-green-400' : 'text-red-400';
+    
+    let pnlDisplay = '';
+    if (trade.pnl_try && trade.pnl_try !== 0) {
+        const pnlClass = trade.pnl_try >= 0 ? 'text-green-400' : 'text-red-400';
+        pnlDisplay = `<span class="${pnlClass} font-bold">${trade.pnl_try >= 0 ? '+' : ''}₺${Math.abs(trade.pnl_try).toFixed(2)}</span>`;
+    }
+    
+    return `
+        <div class="${bgColor} rounded-lg p-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">${icon}</span>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold">${trade.symbol.replace('/USDT', '')}</span>
+                        <span class="${textColor} text-sm font-bold">${trade.signal}</span>
+                        <span class="text-xs text-gray-400">${trade.confidence || 'medium'}</span>
+                    </div>
+                    <div class="text-xs text-gray-400">${time}</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="font-bold">₺${trade.price_try.toFixed(2)}</div>
+                ${pnlDisplay}
+            </div>
+        </div>
+    `;
+}
+
+// Update live trading data
+async function updateLiveTrading() {
+    try {
+        const response = await fetch('http://127.0.0.1:8080/api/bot/status');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        
+        // Update stats
+        document.getElementById('live-balance').textContent = formatCurrency(data.balance_try);
+        document.getElementById('active-trades').textContent = Object.keys(data.positions || {}).length;
+        document.getElementById('today-pnl').textContent = (data.daily_pnl_try >= 0 ? '+' : '') + formatCurrency(data.daily_pnl_try);
+        document.getElementById('today-pnl').className = data.daily_pnl_try >= 0 ? 'text-xl font-bold text-green-400' : 'text-xl font-bold text-red-400';
+        document.getElementById('win-rate').textContent = data.win_rate + '%';
+        document.getElementById('total-trades').textContent = data.total_trades || 0;
+        
+        // Update active positions
+        const positionsContainer = document.getElementById('active-positions');
+        if (data.positions && Object.keys(data.positions).length > 0) {
+            positionsContainer.innerHTML = '';
+            for (const [symbol, position] of Object.entries(data.positions)) {
+                positionsContainer.innerHTML += createPositionCard(symbol, position);
+            }
+        } else {
+            positionsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 py-8">No active positions</div>';
+        }
+        
+        // Update trade feed with recent trades
+        if (data.recent_trades && data.recent_trades.length > 0) {
+            const feedContainer = document.getElementById('trade-feed');
+            
+            // Check for new trades
+            const newTrades = data.recent_trades.filter(trade => 
+                !tradeHistory.some(t => t.timestamp === trade.timestamp && t.symbol === trade.symbol)
+            );
+            
+            if (newTrades.length > 0) {
+                // Add new trades to the top of the feed
+                newTrades.reverse().forEach(trade => {
+                    const tradeElement = document.createElement('div');
+                    tradeElement.innerHTML = createTradeFeedItem(trade);
+                    feedContainer.insertBefore(tradeElement.firstElementChild, feedContainer.firstChild);
+                    
+                    // Animate new trade
+                    feedContainer.firstChild.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        feedContainer.firstChild.classList.remove('animate-pulse');
+                    }, 2000);
+                });
+                
+                // Keep only last 50 trades in feed
+                while (feedContainer.children.length > 50) {
+                    feedContainer.removeChild(feedContainer.lastChild);
+                }
+                
+                // Update history
+                tradeHistory = data.recent_trades;
+            }
+        }
+        
+        // Update watching coins
+        if (data.watchlist_count) {
+            const coinsContainer = document.getElementById('watching-coins');
+            const coins = data.active_coins || [];
+            
+            if (coins.length > 0) {
+                coinsContainer.innerHTML = coins.map(coin => `
+                    <span class="px-3 py-1 bg-gray-700 rounded-full text-sm">${coin.replace('/USDT', '')}</span>
+                `).join('');
+            } else if (data.watchlist_count > 0) {
+                coinsContainer.innerHTML = `<span class="text-gray-400">Monitoring ${data.watchlist_count} coins</span>`;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error updating live trading:', error);
+    }
+}
+
+// Start bot if not running
+async function ensureBotRunning() {
+    try {
+        const response = await fetch('http://127.0.0.1:8080/api/bot/status');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status !== 'running') {
+                // Start the bot
+                await fetch('http://127.0.0.1:8080/api/bot/start', { method: 'POST' });
+                console.log('Bot started');
+            }
+        }
+    } catch (error) {
+        console.error('Error checking bot status:', error);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async () => {
+    await ensureBotRunning();
+    await updateLiveTrading();
+    
+    // Update every 2 seconds for real-time feel
+    updateInterval = setInterval(updateLiveTrading, 2000);
+});
+
+// Cleanup on page leave
+window.addEventListener('beforeunload', () => {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+});
+</script>
+{% endblock %}

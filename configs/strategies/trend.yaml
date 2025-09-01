@@ -1,0 +1,49 @@
+# Trend Following Strategy Configuration
+
+default:
+  fast_ma: 20              # Fast moving average period
+  slow_ma: 60              # Slow moving average period
+  vol_filter: 14           # ATR period for volatility filter
+  stop_pct: 2.0            # Stop loss percentage
+  trailing_pct: 1.5        # Trailing stop percentage
+  max_position: 100.0      # Maximum position size (USD)
+  atr_multiplier: 2.0      # ATR multiplier for stop distance
+  regime_threshold: 0.02   # Threshold for regime detection
+  kelly_fraction: 0.25     # Fraction of Kelly Criterion to use
+  min_win_prob: 0.45       # Minimum win probability to enter trade
+
+conservative:
+  fast_ma: 50
+  slow_ma: 200
+  vol_filter: 20
+  stop_pct: 1.5
+  trailing_pct: 1.0
+  max_position: 50.0
+  atr_multiplier: 2.5
+  regime_threshold: 0.03
+  kelly_fraction: 0.15
+  min_win_prob: 0.55
+
+aggressive:
+  fast_ma: 10
+  slow_ma: 30
+  vol_filter: 10
+  stop_pct: 3.0
+  trailing_pct: 2.0
+  max_position: 200.0
+  atr_multiplier: 1.5
+  regime_threshold: 0.01
+  kelly_fraction: 0.35
+  min_win_prob: 0.40
+
+scalping:
+  fast_ma: 5
+  slow_ma: 15
+  vol_filter: 7
+  stop_pct: 1.0
+  trailing_pct: 0.5
+  max_position: 150.0
+  atr_multiplier: 1.0
+  regime_threshold: 0.005
+  kelly_fraction: 0.20
+  min_win_prob: 0.50

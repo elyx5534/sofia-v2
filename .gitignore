@@ -205,3 +205,72 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+data_hub.db
+sofia.db
+
+# API Keys and Secrets
+.env.local
+secrets.json
+credentials.json
+
+# Cache directories
+cache/
+.cache/
+tmp/
+
+# Log files  
+logs/
+*.log
+
+# Node modules (for UI)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Sofia V2 specific
+artifacts/
+reports/*.csv
+reports/*.html
+data/*.parquet
+data/*.csv
+.env.paper
+.env.live
+.env.production
+
+# Docker volumes
+ch_data/
+nats_data/
+redis_data/
+grafana_data/
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Testing artifacts
+test_results/
+coverage_reports/
+.pytest_cache/
+.coverage.*
+
+# Backup files
+*.backup
+*.old
+backup/

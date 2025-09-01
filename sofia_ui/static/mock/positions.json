@@ -1,0 +1,29 @@
+[
+  {
+    "symbol": "BTC-USD",
+    "qty": 0.025,
+    "avgPrice": 65450.00,
+    "marketPrice": 67845.32,
+    "pnl": 59.88,
+    "pnlPct": 0.14,
+    "side": "long"
+  },
+  {
+    "symbol": "ETH-USD", 
+    "qty": 1.5,
+    "avgPrice": 3200.00,
+    "marketPrice": 3456.78,
+    "pnl": 384.00,
+    "pnlPct": 1.52,
+    "side": "long"
+  },
+  {
+    "symbol": "SOL-USD",
+    "qty": 25.0,
+    "avgPrice": 150.00,
+    "marketPrice": 145.31,
+    "pnl": -117.25,
+    "pnlPct": -0.70,
+    "side": "short"
+  }
+]

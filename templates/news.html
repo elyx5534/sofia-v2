@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+
+{% block title %}Crypto News - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-newspaper text-warning"></i> Crypto News</h2>
+                <div>
+                    <button class="btn btn-primary btn-sm" onclick="refreshNews()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- News Filters -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Filters</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Source</label>
+                            <select class="form-select" id="sourceFilter">
+                                <option value="">All Sources</option>
+                                <option value="CryptoPanic">CryptoPanic</option>
+                                <option value="GDELT">GDELT</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sentiment</label>
+                            <select class="form-select" id="sentimentFilter">
+                                <option value="">All Sentiment</option>
+                                <option value="positive">Positive</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="negative">Negative</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Statistics</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h4 text-info mb-0" id="totalNews">-</div>
+                            <small class="text-muted">Total Articles</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 text-success mb-0" id="positiveNews">-</div>
+                            <small class="text-muted">Positive</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 text-danger mb-0" id="negativeNews">-</div>
+                            <small class="text-muted">Negative</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- News Articles -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div id="newsContainer">
+                        <div class="d-flex justify-content-center align-items-center py-5">
+                            <div class="spinner-border text-warning" style="width: 3rem; height: 3rem;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Load More Button -->
+                    <div class="text-center mt-4" id="loadMoreContainer" style="display: none;">
+                        <button class="btn btn-outline-primary" onclick="loadMoreNews()">
+                            <i class="fas fa-plus"></i> Load More News
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.news-item {
+    border: 1px solid rgba(44, 47, 62, 0.5);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: rgba(44, 47, 62, 0.3);
+    transition: all 0.3s ease;
+}
+
+.news-item:hover {
+    background: rgba(44, 47, 62, 0.5);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
+}
+
+.news-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.news-title a {
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.news-title a:hover {
+    color: var(--accent-color);
+}
+
+.news-meta {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.news-domain {
+    background: rgba(240, 185, 11, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.sentiment-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.sentiment-positive { background: rgba(0, 212, 170, 0.2); color: #00d4aa; }
+.sentiment-neutral { background: rgba(138, 141, 179, 0.2); color: #8a8db3; }
+.sentiment-negative { background: rgba(255, 71, 87, 0.2); color: #ff4757; }
+
+.news-currencies {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.currency-tag {
+    background: rgba(156, 39, 176, 0.2);
+    color: #9c27b0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.source-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+.source-cryptopanic { background: rgba(240, 185, 11, 0.2); color: #f0b90b; }
+.source-gdelt { background: rgba(46, 125, 50, 0.2); color: #2e7d32; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allNews = [];
+let displayedCount = 0;
+const itemsPerPage = 20;
+
+async function loadNews() {
+    try {
+        showLoading();
+        
+        const response = await fetch('/api/news?limit=100');
+        const data = await response.json();
+        
+        allNews = data.news || [];
+        displayedCount = 0;
+        
+        updateNewsDisplay();
+        updateNewsStatistics();
+        
+    } catch (error) {
+        console.error('Error loading news:', error);
+        showNewsError('Failed to load news data');
+    } finally {
+        hideLoading();
+    }
+}
+
+function updateNewsDisplay() {
+    const container = document.getElementById('newsContainer');
+    const sourceFilter = document.getElementById('sourceFilter').value;
+    const sentimentFilter = document.getElementById('sentimentFilter').value;
+    
+    // Filter news
+    let filteredNews = allNews.filter(article => {
+        const matchesSource = !sourceFilter || article.source === sourceFilter;
+        const matchesSentiment = !sentimentFilter || getSentimentCategory(article) === sentimentFilter;
+        return matchesSource && matchesSentiment;
+    });
+    
+    if (filteredNews.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                <h5>No news articles found</h5>
+                <p class="text-muted">Try adjusting your filters or check back later</p>
+            </div>
+        `;
+        document.getElementById('loadMoreContainer').style.display = 'none';
+        return;
+    }
+    
+    // Show initial items
+    const itemsToShow = Math.min(filteredNews.length, itemsPerPage);
+    const newsItems = filteredNews.slice(0, itemsToShow);
+    
+    container.innerHTML = newsItems.map(createNewsItem).join('');
+    displayedCount = itemsToShow;
+    
+    // Show/hide load more button
+    if (displayedCount < filteredNews.length) {
+        document.getElementById('loadMoreContainer').style.display = 'block';
+    } else {
+        document.getElementById('loadMoreContainer').style.display = 'none';
+    }
+}
+
+function createNewsItem(article) {
+    const sentiment = getSentimentCategory(article);
+    const sentimentScore = article.sentiment_score || 0.5;
+    const timeAgoText = timeAgo(article.created_at);
+    
+    return `
+        <div class="news-item">
+            <div class="news-title">
+                <a href="${article.url}" target="_blank" rel="noopener noreferrer">
+                    ${article.title}
+                </a>
+            </div>
+            
+            <div class="news-meta">
+                <span class="source-badge source-${article.source.toLowerCase()}">
+                    ${article.source}
+                </span>
+                
+                <span class="news-domain">${article.domain}</span>
+                
+                <span class="sentiment-badge sentiment-${sentiment}">
+                    ${sentiment.toUpperCase()} (${(sentimentScore * 100).toFixed(0)}%)
+                </span>
+                
+                <span>
+                    <i class="fas fa-clock"></i> ${timeAgoText}
+                </span>
+            </div>
+            
+            ${article.currencies && article.currencies.length > 0 ? `
+                <div class="news-currencies">
+                    ${article.currencies.slice(0, 5).map(currency => 
+                        `<span class="currency-tag">${currency}</span>`
+                    ).join('')}
+                    ${article.currencies.length > 5 ? 
+                        `<span class="currency-tag">+${article.currencies.length - 5} more</span>` : ''
+                    }
+                </div>
+            ` : ''}
+            
+            ${article.votes && (article.votes.positive > 0 || article.votes.negative > 0) ? `
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-thumbs-up text-success"></i> ${article.votes.positive}
+                        <i class="fas fa-thumbs-down text-danger ms-2"></i> ${article.votes.negative}
+                        ${article.votes.important > 0 ? 
+                            `<i class="fas fa-star text-warning ms-2"></i> ${article.votes.important}` : ''
+                        }
+                    </small>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+function getSentimentCategory(article) {
+    const score = article.sentiment_score || 0.5;
+    
+    if (score >= 0.6) return 'positive';
+    if (score <= 0.4) return 'negative';
+    return 'neutral';
+}
+
+function updateNewsStatistics() {
+    const totalCount = allNews.length;
+    const positiveCount = allNews.filter(a => getSentimentCategory(a) === 'positive').length;
+    const negativeCount = allNews.filter(a => getSentimentCategory(a) === 'negative').length;
+    
+    document.getElementById('totalNews').textContent = totalCount;
+    document.getElementById('positiveNews').textContent = positiveCount;
+    document.getElementById('negativeNews').textContent = negativeCount;
+}
+
+function loadMoreNews() {
+    const container = document.getElementById('newsContainer');
+    const sourceFilter = document.getElementById('sourceFilter').value;
+    const sentimentFilter = document.getElementById('sentimentFilter').value;
+    
+    // Filter news
+    let filteredNews = allNews.filter(article => {
+        const matchesSource = !sourceFilter || article.source === sourceFilter;
+        const matchesSentiment = !sentimentFilter || getSentimentCategory(article) === sentimentFilter;
+        return matchesSource && matchesSentiment;
+    });
+    
+    // Get next batch
+    const nextBatch = filteredNews.slice(displayedCount, displayedCount + itemsPerPage);
+    
+    if (nextBatch.length > 0) {
+        container.innerHTML += nextBatch.map(createNewsItem).join('');
+        displayedCount += nextBatch.length;
+    }
+    
+    // Hide button if no more items
+    if (displayedCount >= filteredNews.length) {
+        document.getElementById('loadMoreContainer').style.display = 'none';
+    }
+}
+
+function refreshNews() {
+    loadNews();
+}
+
+function showNewsError(message) {
+    const container = document.getElementById('newsContainer');
+    container.innerHTML = `
+        <div class="text-center py-5 text-danger">
+            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+            <h5>News Loading Error</h5>
+            <p>${message}</p>
+            <button class="btn btn-primary" onclick="loadNews()">Retry</button>
+        </div>
+    `;
+}
+
+// Event listeners
+document.getElementById('sourceFilter').addEventListener('change', updateNewsDisplay);
+document.getElementById('sentimentFilter').addEventListener('change', updateNewsDisplay);
+
+// Initialize page
+$(document).ready(function() {
+    loadNews();
+    
+    // Auto refresh every 15 minutes
+    setInterval(loadNews, 15 * 60 * 1000);
+});
+</script>
+{% endblock %}

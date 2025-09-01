@@ -1,0 +1,476 @@
+{% extends "clean_base.html" %}
+
+{% block title %}Trading Bot - Sofia V2{% endblock %}
+{% block page_title %}AI Trading Bot{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left: Chart and RSI -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Price Chart -->
+        <div class="glass-card rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">BTC/USDT Price Chart</h3>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-400">Current:</span>
+                    <span class="text-xl font-bold" id="current-price">$0.00</span>
+                </div>
+            </div>
+            <div style="position: relative; height: 300px;">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- RSI Indicator -->
+        <div class="glass-card rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">RSI Indicator</h3>
+                <div class="flex items-center space-x-4">
+                    <span class="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded">Overbought > 70</span>
+                    <span class="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Oversold < 30</span>
+                </div>
+            </div>
+            <div style="position: relative; height: 150px;">
+                <canvas id="rsiChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right: Bot Controls and Stats -->
+    <div class="space-y-6">
+        <!-- Bot Control -->
+        <div class="glass-card rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Bot Control</h3>
+            
+            <div class="space-y-4">
+                <!-- Status -->
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Status:</span>
+                    <span id="bot-status" class="px-3 py-1 bg-gray-700 text-white rounded text-sm">Stopped</span>
+                </div>
+                
+                <!-- Control Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="start-btn" onclick="startBot()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                        Start Bot
+                    </button>
+                    <button id="stop-btn" onclick="stopBot()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition" disabled>
+                        Stop Bot
+                    </button>
+                </div>
+                
+                <button onclick="resetBot()" class="w-full px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition">
+                    Reset Bot
+                </button>
+            </div>
+        </div>
+        
+        <!-- Performance Stats -->
+        <div class="glass-card rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Performance</h3>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Balance:</span>
+                    <span class="font-bold" id="balance">$10,000.00</span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Position:</span>
+                    <span class="font-bold" id="position">0.0000 BTC</span>
+                </div>
+                
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Total Value:</span>
+                    <span class="font-bold text-xl" id="total-value">$10,000.00</span>
+                </div>
+                
+                <div class="border-t border-gray-700 pt-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">P&L:</span>
+                        <span class="font-bold text-lg" id="pnl">$0.00</span>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">P&L %:</span>
+                        <span class="font-bold" id="pnl-percent">0.00%</span>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-700 pt-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">RSI:</span>
+                        <span class="font-bold" id="rsi-value">50.00</span>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Total Trades:</span>
+                        <span class="font-bold" id="total-trades">0</span>
+                    </div>
+                    
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Win Rate:</span>
+                        <span class="font-bold" id="win-rate">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings -->
+        <div class="glass-card rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Settings</h3>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-sm text-gray-400">RSI Oversold</label>
+                    <input type="number" id="rsi-oversold" value="30" min="10" max="40" 
+                           class="w-full px-3 py-1 bg-gray-700 rounded text-white">
+                </div>
+                
+                <div>
+                    <label class="text-sm text-gray-400">RSI Overbought</label>
+                    <input type="number" id="rsi-overbought" value="70" min="60" max="90"
+                           class="w-full px-3 py-1 bg-gray-700 rounded text-white">
+                </div>
+                
+                <div>
+                    <label class="text-sm text-gray-400">Position Size (%)</label>
+                    <input type="number" id="position-size" value="10" min="5" max="50" step="5"
+                           class="w-full px-3 py-1 bg-gray-700 rounded text-white">
+                </div>
+                
+                <button onclick="updateSettings()" class="w-full px-4 py-2 bg-accent-purple text-white rounded hover:bg-purple-700 transition">
+                    Update Settings
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trade History -->
+<div class="glass-card rounded-lg p-6 mt-6">
+    <h3 class="text-lg font-semibold mb-4">Trade History</h3>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-gray-700">
+                    <th class="text-left py-3 px-4">Time</th>
+                    <th class="text-left py-3 px-4">Signal</th>
+                    <th class="text-right py-3 px-4">Price</th>
+                    <th class="text-right py-3 px-4">Amount</th>
+                    <th class="text-right py-3 px-4">Value</th>
+                    <th class="text-right py-3 px-4">RSI</th>
+                    <th class="text-right py-3 px-4">P&L</th>
+                </tr>
+            </thead>
+            <tbody id="trades-table">
+                <tr>
+                    <td colspan="7" class="text-center py-8 text-gray-400">No trades yet</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global variables
+let priceChart, rsiChart;
+let priceData = [];
+let rsiData = [];
+let updateInterval;
+
+// Initialize charts
+function initCharts() {
+    // Price Chart
+    const priceCtx = document.getElementById('priceChart').getContext('2d');
+    priceChart = new Chart(priceCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Price',
+                data: [],
+                borderColor: '#4a9eff',
+                backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { 
+                    display: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#9ca3af', maxTicksLimit: 10 }
+                },
+                y: {
+                    display: true,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: {
+                        color: '#9ca3af',
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // RSI Chart
+    const rsiCtx = document.getElementById('rsiChart').getContext('2d');
+    rsiChart = new Chart(rsiCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'RSI',
+                data: [],
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { 
+                    display: false
+                },
+                y: {
+                    display: true,
+                    min: 0,
+                    max: 100,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#9ca3af' }
+                }
+            },
+            plugins: {
+                annotation: {
+                    annotations: {
+                        overbought: {
+                            type: 'line',
+                            yMin: 70,
+                            yMax: 70,
+                            borderColor: 'rgba(239, 68, 68, 0.5)',
+                            borderWidth: 1
+                        },
+                        oversold: {
+                            type: 'line',
+                            yMin: 30,
+                            yMax: 30,
+                            borderColor: 'rgba(34, 197, 94, 0.5)',
+                            borderWidth: 1
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Fetch and update bot status
+async function updateBotStatus() {
+    try {
+        const response = await fetch('http://127.0.0.1:8070/api/bot/status');
+        const data = await response.json();
+        
+        // Update status badge
+        const statusEl = document.getElementById('bot-status');
+        statusEl.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+        statusEl.className = `px-3 py-1 rounded text-sm ${
+            data.status === 'running' ? 'bg-green-600 text-white' : 
+            data.status === 'error' ? 'bg-red-600 text-white' : 
+            'bg-gray-700 text-white'
+        }`;
+        
+        // Update stats - Check if TRY or USD
+        const currency = data.currency || 'USD';
+        const symbol = currency === 'TRY' ? '₺' : '$';
+        
+        if (currency === 'TRY') {
+            document.getElementById('balance').textContent = symbol + (data.balance_try || data.balance).toLocaleString('tr-TR');
+            document.getElementById('total-value').textContent = symbol + (data.total_value_try || data.total_value).toLocaleString('tr-TR');
+            
+            // Update positions display
+            if (data.positions && Object.keys(data.positions).length > 0) {
+                let positionText = '';
+                for (const [coin, pos] of Object.entries(data.positions)) {
+                    if (pos.amount > 0) {
+                        positionText += `${pos.amount.toFixed(6)} ${coin.split('/')[0]} `;
+                    }
+                }
+                document.getElementById('position').textContent = positionText || 'No positions';
+            } else {
+                document.getElementById('position').textContent = 'No positions';
+            }
+        } else {
+            document.getElementById('balance').textContent = symbol + data.balance.toLocaleString();
+            document.getElementById('position').textContent = data.position.toFixed(6) + ' BTC';
+            document.getElementById('total-value').textContent = symbol + data.total_value.toLocaleString();
+        }
+        
+        document.getElementById('current-price').textContent = '$' + (data.current_price || 0).toLocaleString();
+        
+        // Update P&L
+        const pnlEl = document.getElementById('pnl');
+        const pnlPercentEl = document.getElementById('pnl-percent');
+        const pnl = currency === 'TRY' ? (data.total_pnl_try || 0) : (data.total_pnl || 0);
+        pnlEl.textContent = (pnl >= 0 ? '+' : '') + symbol + pnl.toLocaleString(currency === 'TRY' ? 'tr-TR' : 'en-US');
+        pnlPercentEl.textContent = (data.pnl_percent >= 0 ? '+' : '') + data.pnl_percent.toFixed(2) + '%';
+        pnlEl.className = pnl >= 0 ? 'font-bold text-lg text-green-400' : 'font-bold text-lg text-red-400';
+        pnlPercentEl.className = data.pnl_percent >= 0 ? 'font-bold text-green-400' : 'font-bold text-red-400';
+        
+        // Update indicators
+        document.getElementById('rsi-value').textContent = data.rsi.toFixed(2);
+        document.getElementById('total-trades').textContent = data.total_trades;
+        document.getElementById('win-rate').textContent = data.win_rate + '%';
+        
+        // Update trades table
+        if (data.trades && data.trades.length > 0) {
+            const tbody = document.getElementById('trades-table');
+            tbody.innerHTML = data.trades.reverse().map(trade => `
+                <tr class="border-b border-gray-800">
+                    <td class="py-3 px-4 text-gray-400">${new Date(trade.timestamp).toLocaleTimeString()}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 ${trade.signal === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} rounded text-xs">
+                            ${trade.signal}
+                        </span>
+                    </td>
+                    <td class="text-right py-3 px-4">$${trade.price.toLocaleString()}</td>
+                    <td class="text-right py-3 px-4">${trade.amount.toFixed(6)}</td>
+                    <td class="text-right py-3 px-4">$${trade.value.toLocaleString()}</td>
+                    <td class="text-right py-3 px-4">${trade.rsi.toFixed(2)}</td>
+                    <td class="text-right py-3 px-4 ${trade.pnl >= 0 ? 'text-green-400' : 'text-red-400'}">
+                        ${trade.pnl ? (trade.pnl >= 0 ? '+' : '') + '$' + trade.pnl.toFixed(2) : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Update button states
+        if (data.status === 'running') {
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('stop-btn').disabled = false;
+        } else {
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+        }
+        
+    } catch (error) {
+        console.error('Error updating bot status:', error);
+    }
+}
+
+// Fetch and update price data
+async function updatePriceData() {
+    try {
+        const response = await fetch('http://127.0.0.1:8001/ohlcv?symbol=BTC/USDT&asset_type=crypto&timeframe=5m&limit=50');
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+            // Update price chart
+            const labels = data.data.map(d => new Date(d.timestamp).toLocaleTimeString());
+            const prices = data.data.map(d => d.close);
+            
+            priceChart.data.labels = labels;
+            priceChart.data.datasets[0].data = prices;
+            priceChart.update();
+            
+            // Simple RSI simulation (will be real from bot)
+            const rsiValues = prices.map((_, i) => 50 + Math.sin(i/5) * 30 + Math.random() * 10);
+            rsiChart.data.labels = labels;
+            rsiChart.data.datasets[0].data = rsiValues;
+            rsiChart.update();
+        }
+    } catch (error) {
+        console.error('Error fetching price data:', error);
+    }
+}
+
+// Bot control functions
+async function startBot() {
+    try {
+        const response = await fetch('http://127.0.0.1:8070/api/bot/start', { method: 'POST' });
+        const data = await response.json();
+        alert(data.message);
+        updateBotStatus();
+    } catch (error) {
+        alert('Error starting bot: ' + error);
+    }
+}
+
+async function stopBot() {
+    try {
+        const response = await fetch('http://127.0.0.1:8070/api/bot/stop', { method: 'POST' });
+        const data = await response.json();
+        alert(data.message);
+        updateBotStatus();
+    } catch (error) {
+        alert('Error stopping bot: ' + error);
+    }
+}
+
+async function resetBot() {
+    if (!confirm('Are you sure you want to reset the bot? This will clear all trades and reset balance.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('http://127.0.0.1:8070/api/bot/reset', { method: 'POST' });
+        const data = await response.json();
+        alert(data.message);
+        updateBotStatus();
+    } catch (error) {
+        alert('Error resetting bot: ' + error);
+    }
+}
+
+async function updateSettings() {
+    const settings = {
+        rsi_oversold: parseInt(document.getElementById('rsi-oversold').value),
+        rsi_overbought: parseInt(document.getElementById('rsi-overbought').value),
+        position_size: parseInt(document.getElementById('position-size').value) / 100
+    };
+    
+    try {
+        const response = await fetch('http://127.0.0.1:8070/api/bot/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert(data.message);
+        }
+    } catch (error) {
+        alert('Error updating settings: ' + error);
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+    updatePriceData();
+    updateBotStatus();
+    
+    // Update every 5 seconds
+    setInterval(() => {
+        updatePriceData();
+        updateBotStatus();
+    }, 5000);
+});
+</script>
+{% endblock %}

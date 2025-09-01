@@ -1,0 +1,5 @@
+
+=========================== short test summary info ===========================
+ERROR tests/test_auth.py
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 error in 1.96s

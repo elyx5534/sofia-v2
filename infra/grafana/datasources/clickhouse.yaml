@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: ClickHouse
+    type: grafana-clickhouse-datasource
+    access: proxy
+    url: http://clickhouse:8123
+    isDefault: true
+    editable: true
+    jsonData:
+      defaultDatabase: sofia
+      username: sofia
+      port: 9000
+      server: clickhouse
+      tlsSkipVerify: true
+    secureJsonData:
+      password: sofia2024

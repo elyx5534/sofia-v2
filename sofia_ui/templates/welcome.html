@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 ﻿{% extends "base.html" %}
 {% block content %}
+=======
+>>>>>>> 96de1d9
 <!DOCTYPE html>
 <html lang="tr" class="dark">
 <head>
@@ -97,6 +100,7 @@
         tr: {
             title: 'Sofia V2',
             subtitle: 'Yapay Zeka Destekli Trading Platformu',
+<<<<<<< HEAD
             welcome: 'HoÅŸ Geldiniz',
             description: 'DÃ¼nya Ã§apÄ±nda hedge fonlarÄ± ile yarÄ±ÅŸan profesyonel algoritmik trading sistemi',
             features: {
@@ -116,10 +120,32 @@
                 portfolio: {
                     title: 'Portfolio Takibi',
                     desc: '$100,000 USD baÅŸlangÄ±Ã§ bakiyesi ile otonom trading'
+=======
+            welcome: 'Hoş Geldiniz',
+            description: 'Dünya çapında hedge fonları ile yarışan profesyonel algoritmik trading sistemi',
+            features: {
+                title: 'Özellikler',
+                ai: {
+                    title: '6 AI Strateji',
+                    desc: 'Makine öğrenmesi destekli profesyonel trading algoritmaları'
+                },
+                realtime: {
+                    title: 'Gerçek Zamanlı',
+                    desc: 'Binance, OKX, Bybit borsalarından canlı veri akışı'
+                },
+                risk: {
+                    title: 'Risk Yönetimi',
+                    desc: 'VaR, CVaR ve Kelly Criterion ile profesyonel risk kontrolü'
+                },
+                portfolio: {
+                    title: 'Portfolio Takibi',
+                    desc: '$100,000 USD başlangıç bakiyesi ile otonom trading'
+>>>>>>> 96de1d9
                 }
             },
             stats: {
                 strategies: 'Aktif Strateji',
+<<<<<<< HEAD
                 balance: 'Portfolio DeÄŸeri',
                 markets: 'Ä°zlenen Market',
                 uptime: 'Ã‡alÄ±ÅŸma SÃ¼resi'
@@ -133,6 +159,21 @@
                 online: 'Ã‡evrimiÃ§i',
                 trading: 'Trading Aktif',
                 monitoring: 'Piyasa Ä°zleniyor'
+=======
+                balance: 'Portfolio Değeri',
+                markets: 'İzlenen Market',
+                uptime: 'Çalışma Süresi'
+            },
+            buttons: {
+                enter: 'Platforma Gir',
+                language: 'Dil Seçimi'
+            },
+            status: {
+                title: 'Sistem Durumu',
+                online: 'Çevrimiçi',
+                trading: 'Trading Aktif',
+                monitoring: 'Piyasa İzleniyor'
+>>>>>>> 96de1d9
             }
         },
         en: {
@@ -193,12 +234,20 @@ x-init="currentText = texts[language]">
             <button @click="language = 'tr'; currentText = texts[language]" 
                     :class="language === 'tr' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'"
                     class="px-3 py-2 rounded-md text-sm font-medium transition-all">
+<<<<<<< HEAD
                 ğŸ‡¹ğŸ‡· TR
+=======
+                🇹🇷 TR
+>>>>>>> 96de1d9
             </button>
             <button @click="language = 'en'; currentText = texts[language]"
                     :class="language === 'en' ? 'bg-blue-500 text-white' : 'text-slate-400 hover:text-white'"
                     class="px-3 py-2 rounded-md text-sm font-medium transition-all">
+<<<<<<< HEAD
                 ğŸ‡ºğŸ‡¸ EN
+=======
+                🇺🇸 EN
+>>>>>>> 96de1d9
             </button>
         </div>
     </div>
@@ -224,11 +273,19 @@ x-init="currentText = texts[language]">
                 <div class="glass rounded-2xl p-8 mb-8 glow-card">
                     <div class="flex items-center justify-center mb-4">
                         <i class="fas fa-sparkles text-yellow-400 text-2xl mr-3"></i>
+<<<<<<< HEAD
                         <h3 class="text-3xl font-bold text-white" x-text="currentText.welcome">HoÅŸ Geldiniz</h3>
                         <i class="fas fa-sparkles text-yellow-400 text-2xl ml-3"></i>
                     </div>
                     <p class="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed" x-text="currentText.description">
                         DÃ¼nya Ã§apÄ±nda hedge fonlarÄ± ile yarÄ±ÅŸan profesyonel algoritmik trading sistemi
+=======
+                        <h3 class="text-3xl font-bold text-white" x-text="currentText.welcome">Hoş Geldiniz</h3>
+                        <i class="fas fa-sparkles text-yellow-400 text-2xl ml-3"></i>
+                    </div>
+                    <p class="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed" x-text="currentText.description">
+                        Dünya çapında hedge fonları ile yarışan profesyonel algoritmik trading sistemi
+>>>>>>> 96de1d9
                     </p>
                 </div>
             </div>
@@ -240,6 +297,7 @@ x-init="currentText = texts[language]">
                     <div class="text-sm text-slate-400" x-text="currentText.stats.strategies">Aktif Strateji</div>
                 </div>
                 <div class="glass rounded-xl p-6 text-center glow-card">
+<<<<<<< HEAD
                     <div class="text-3xl font-bold text-green-400 mb-2">100K â‚º</div>
                     <div class="text-sm text-slate-400" x-text="currentText.stats.balance">Portfolio DeÄŸeri</div>
                 </div>
@@ -250,6 +308,18 @@ x-init="currentText = texts[language]">
                 <div class="glass rounded-xl p-6 text-center glow-card">
                     <div class="text-3xl font-bold text-yellow-400 mb-2">24/7</div>
                     <div class="text-sm text-slate-400" x-text="currentText.stats.uptime">Ã‡alÄ±ÅŸma SÃ¼resi</div>
+=======
+                    <div class="text-3xl font-bold text-green-400 mb-2">100K ₺</div>
+                    <div class="text-sm text-slate-400" x-text="currentText.stats.balance">Portfolio Değeri</div>
+                </div>
+                <div class="glass rounded-xl p-6 text-center glow-card">
+                    <div class="text-3xl font-bold text-purple-400 mb-2">10</div>
+                    <div class="text-sm text-slate-400" x-text="currentText.stats.markets">İzlenen Market</div>
+                </div>
+                <div class="glass rounded-xl p-6 text-center glow-card">
+                    <div class="text-3xl font-bold text-yellow-400 mb-2">24/7</div>
+                    <div class="text-sm text-slate-400" x-text="currentText.stats.uptime">Çalışma Süresi</div>
+>>>>>>> 96de1d9
                 </div>
             </div>
 
@@ -260,23 +330,37 @@ x-init="currentText = texts[language]">
                         <i class="fas fa-brain text-white text-xl"></i>
                     </div>
                     <h4 class="text-lg font-semibold text-white mb-2" x-text="currentText.features.ai.title">6 AI Strateji</h4>
+<<<<<<< HEAD
                     <p class="text-sm text-slate-400" x-text="currentText.features.ai.desc">ML destekli profesyonel algoritmalarÄ±</p>
+=======
+                    <p class="text-sm text-slate-400" x-text="currentText.features.ai.desc">ML destekli profesyonel algoritmaları</p>
+>>>>>>> 96de1d9
                 </div>
 
                 <div class="glass rounded-xl p-6 glow-card">
                     <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-4">
                         <i class="fas fa-chart-line text-white text-xl trading-animation"></i>
                     </div>
+<<<<<<< HEAD
                     <h4 class="text-lg font-semibold text-white mb-2" x-text="currentText.features.realtime.title">GerÃ§ek ZamanlÄ±</h4>
                     <p class="text-sm text-slate-400" x-text="currentText.features.realtime.desc">CanlÄ± veri akÄ±ÅŸÄ±</p>
+=======
+                    <h4 class="text-lg font-semibold text-white mb-2" x-text="currentText.features.realtime.title">Gerçek Zamanlı</h4>
+                    <p class="text-sm text-slate-400" x-text="currentText.features.realtime.desc">Canlı veri akışı</p>
+>>>>>>> 96de1d9
                 </div>
 
                 <div class="glass rounded-xl p-6 glow-card">
                     <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center mb-4">
                         <i class="fas fa-shield-alt text-white text-xl"></i>
                     </div>
+<<<<<<< HEAD
                     <h4 class="text-lg font-semibold text-white mb-2" x-text="currentText.features.risk.title">Risk YÃ¶netimi</h4>
                     <p class="text-sm text-slate-400" x-text="currentText.features.risk.desc">Profesyonel risk kontrolÃ¼</p>
+=======
+                    <h4 class="text-lg font-semibold text-white mb-2" x-text="currentText.features.risk.title">Risk Yönetimi</h4>
+                    <p class="text-sm text-slate-400" x-text="currentText.features.risk.desc">Profesyonel risk kontrolü</p>
+>>>>>>> 96de1d9
                 </div>
 
                 <div class="glass rounded-xl p-6 glow-card">
@@ -294,7 +378,11 @@ x-init="currentText = texts[language]">
                 <div class="flex justify-center space-x-8">
                     <div class="flex items-center space-x-2">
                         <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+<<<<<<< HEAD
                         <span class="text-sm text-slate-300" x-text="currentText.status.online">Ã‡evrimiÃ§i</span>
+=======
+                        <span class="text-sm text-slate-300" x-text="currentText.status.online">Çevrimiçi</span>
+>>>>>>> 96de1d9
                     </div>
                     <div class="flex items-center space-x-2">
                         <div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
@@ -302,7 +390,11 @@ x-init="currentText = texts[language]">
                     </div>
                     <div class="flex items-center space-x-2">
                         <div class="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
+<<<<<<< HEAD
                         <span class="text-sm text-slate-300" x-text="currentText.status.monitoring">Piyasa Ä°zleniyor</span>
+=======
+                        <span class="text-sm text-slate-300" x-text="currentText.status.monitoring">Piyasa İzleniyor</span>
+>>>>>>> 96de1d9
                     </div>
                 </div>
             </div>
@@ -321,9 +413,17 @@ x-init="currentText = texts[language]">
 
     <!-- Footer -->
     <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 text-center">
+<<<<<<< HEAD
         <p class="text-xs text-slate-500">Â© 2024 Sofia V2 - Professional AI Trading Platform</p>
     </div>
 
 </body>
 </html>
 {% endblock %}
+=======
+        <p class="text-xs text-slate-500">© 2024 Sofia V2 - Professional AI Trading Platform</p>
+    </div>
+
+</body>
+</html>
+>>>>>>> 96de1d9
