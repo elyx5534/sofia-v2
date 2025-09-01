@@ -276,20 +276,59 @@ DASHBOARD_HTML = """
                     borderColor: '#00f260',
                     backgroundColor: 'rgba(0, 242, 96, 0.1)',
                     borderWidth: 2,
-                    tension: 0.4,
-                    fill: true
+                    tension: 0,  // No smoothing for step-like appearance
+                    fill: true,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#00f260',
+                    pointBorderColor: '#00f260',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#00f260'
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#00f260',
+                        bodyColor: '#fff',
+                        borderColor: '#00f260',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return 'Time: ' + context[0].label;
+                            },
+                            label: function(context) {
+                                const value = context.parsed.y;
+                                const firstValue = context.chart.data.datasets[0].data[0];
+                                const change = value - firstValue;
+                                const changePct = ((change / firstValue) * 100).toFixed(2);
+                                return [
+                                    'Equity: $' + value.toFixed(2),
+                                    'Change: $' + change.toFixed(2) + ' (' + (change >= 0 ? '+' : '') + changePct + '%)'
+                                ];
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: {
                         grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { color: '#888' }
+                        ticks: { 
+                            color: '#888',
+                            maxTicksLimit: 10,
+                            autoSkip: true
+                        }
                     },
                     y: {
                         grid: { color: 'rgba(255,255,255,0.05)' },
@@ -381,8 +420,8 @@ DASHBOARD_HTML = """
             const labels = [];
             const data = [];
             
-            // Use last 50 points or all if less
-            const points = timeseries.slice(-50);
+            // Use last 60 points or all if less
+            const points = timeseries.slice(-60);
             
             points.forEach(point => {
                 const date = new Date(point.ts_ms);
@@ -390,8 +429,26 @@ DASHBOARD_HTML = """
                 data.push(point.equity);
             });
             
+            // Calculate min/max for autoscale with buffer
+            const minValue = Math.min(...data);
+            const maxValue = Math.max(...data);
+            const buffer = (maxValue - minValue) * 0.02 || 10; // 2% buffer or $10 minimum
+            
+            // Update chart with autoscaled Y-axis
+            equityChart.options.scales.y.min = minValue - buffer;
+            equityChart.options.scales.y.max = maxValue + buffer;
+            
             equityChart.data.labels = labels;
             equityChart.data.datasets[0].data = data;
+            
+            // Update chart appearance for step-like visualization
+            if (points.length > 10) {
+                equityChart.data.datasets[0].stepped = 'before'; // Step-like line
+                equityChart.data.datasets[0].borderWidth = 2;
+                equityChart.data.datasets[0].pointRadius = 1;
+                equityChart.data.datasets[0].pointHoverRadius = 4;
+            }
+            
             equityChart.update('none');
             
             // Store for future updates
