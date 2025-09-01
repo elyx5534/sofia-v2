@@ -1,6 +1,9 @@
 """
 Turkish Cryptocurrency Arbitrage System
 Specialized for BTCTurk, Binance TR, and Paribu
+
+STATUS: SKELETON READY - To be activated tomorrow
+Fee parameters configured, spread calculation ready
 """
 
 import asyncio

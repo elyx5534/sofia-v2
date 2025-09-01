@@ -44,6 +44,14 @@ After the session, check:
 - `logs/paper_audit.log` - All trades with timestamps and price sources
 - `logs/paper_session_summary.json` - P&L summary and statistics
 
+### Turkish Arbitrage (Coming Tomorrow)
+
+Turkish exchange arbitrage system is ready but currently disabled:
+- **Exchanges**: Binance TR, BTCTurk, Paribu
+- **Config**: `config/strategies/turkish_arbitrage.yaml`
+- **Status**: Skeleton ready, will be activated tomorrow
+- **Fees**: Configured (Binance 0.10%, BTCTurk 0.25%, Paribu 0.20%)
+
 ## 🌟 Overview
 
 Sofia V2 is an enterprise-grade algorithmic trading platform that combines:

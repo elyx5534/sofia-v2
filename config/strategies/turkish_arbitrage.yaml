@@ -1,0 +1,28 @@
+# Turkish Arbitrage Configuration
+# BTCTurk vs Binance TR vs Paribu
+
+# Exchange fees (%)
+binance_fee_pct: 0.10  # Binance TR spot fee
+btcturk_fee_pct: 0.25  # BTCTurk maker fee
+paribu_fee_pct: 0.20   # Paribu estimated fee
+
+# Trading parameters
+min_profit_tl: 100         # Minimum 100 TL profit per trade
+max_position_tl: 20000      # Maximum 20,000 TL per position
+max_daily_trades: 50        # Daily trade limit
+cooldown_seconds: 30        # Cooldown between trades
+min_spread_percentage: 0.003  # 0.3% minimum spread
+
+# Risk management
+max_slippage: 0.002         # 0.2% max slippage
+min_liquidity: 10000        # Minimum 10,000 TL liquidity
+partial_fill_threshold: 0.95  # 95% fill required
+
+# Symbols to monitor
+symbols:
+  - "BTC/TRY"
+  - "ETH/TRY"
+  - "USDT/TRY"
+
+# Status
+enabled: false  # DISABLED - Will be activated tomorrow
