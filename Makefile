@@ -128,6 +128,24 @@ paper-start:
 paper-stop:
 	pkill -f "sofia_backtest.paper" || true
 
+# Paper trading proof session (30 minutes)
+proof-today:
+	@echo "========================================="
+	@echo "Starting 30-minute Paper Trading Session"
+	@echo "Strategy: Grid Monster"
+	@echo "Symbols: BTC/USDT, SOL/USDT"
+	@echo "Mode: PAPER (Virtual Trading)"
+	@echo "========================================="
+	@python tools/run_paper_session.py
+	@echo ""
+	@echo "Session complete! Check:"
+	@echo "  - logs/paper_audit.log for trade details"
+	@echo "  - logs/paper_session_summary.json for P&L summary"
+
+# Run smoke tests
+test-smoke:
+	python -m pytest tests/smoke -q
+
 # Production
 build:
 	docker build -t sofia-v2:latest .

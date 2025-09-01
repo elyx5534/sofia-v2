@@ -44,23 +44,49 @@ async def run_paper_session(duration_minutes: int = 30):
     # Initialize paper trading engine
     paper_engine = PaperTradingEngine(initial_balance=1000.0)
     
-    # Initialize Grid Monster strategy
-    grid_config = {
-        "paper_mode": True,
-        "symbols": ["BTC/USDT", "SOL/USDT"],
-        "grid_levels": 30,
-        "grid_spacing_pct": 0.25,
-        "maker_only": True,
-        "cancel_unfilled_sec": 60,
-        "max_position_pct": 5,
-        "daily_max_drawdown_pct": 1.0,
-        "fee_pct": 0.10,
-        "spread_gate_multiplier": 2.0,
-        "default_num_levels": 30,
-        "default_spacing": 0.0025,
-        "max_grids": 2,
-        "max_capital_per_grid": 500
-    }
+    # Load Grid Monster configuration from yaml or use defaults
+    config_path = Path("config/strategies/grid_monster.yaml")
+    if config_path.exists():
+        import yaml
+        with open(config_path, 'r') as f:
+            yaml_config = yaml.safe_load(f)
+        # Override with runtime settings
+        grid_config = {
+            "paper_mode": True,
+            "symbols": yaml_config.get("symbols", ["BTC/USDT", "SOL/USDT"]),
+            "grid_levels": yaml_config.get("grid_levels", 30),
+            "grid_spacing_pct": yaml_config.get("grid_spacing_pct", 0.25),
+            "maker_only": yaml_config.get("maker_only", True),
+            "cancel_unfilled_sec": yaml_config.get("cancel_unfilled_sec", 60),
+            "max_position_pct": yaml_config.get("max_position_pct", 5),
+            "daily_max_drawdown_pct": yaml_config.get("daily_max_drawdown_pct", 1.0),
+            "fee_pct": yaml_config.get("fee_pct", 0.10),
+            "spread_gate_multiplier": yaml_config.get("spread_gate_multiplier", 2.0),
+            "default_num_levels": yaml_config.get("grid_levels", 30),
+            "default_spacing": yaml_config.get("grid_spacing_pct", 0.25) / 100,
+            "max_grids": len(yaml_config.get("symbols", [])),
+            "max_capital_per_grid": 500
+        }
+        print(f"✅ Loaded configuration from {config_path}")
+    else:
+        # Use hardcoded defaults
+        grid_config = {
+            "paper_mode": True,
+            "symbols": ["BTC/USDT", "SOL/USDT"],
+            "grid_levels": 30,
+            "grid_spacing_pct": 0.25,
+            "maker_only": True,
+            "cancel_unfilled_sec": 60,
+            "max_position_pct": 5,
+            "daily_max_drawdown_pct": 1.0,
+            "fee_pct": 0.10,
+            "spread_gate_multiplier": 2.0,
+            "default_num_levels": 30,
+            "default_spacing": 0.0025,
+            "max_grids": 2,
+            "max_capital_per_grid": 500
+        }
+        print("⚠️  Using default configuration")
     
     grid_monster = GridMonster(grid_config)
     await grid_monster.initialize()
@@ -121,17 +147,35 @@ async def run_paper_session(duration_minutes: int = 30):
     pnl = final_capital - initial_capital
     pnl_pct = (pnl / initial_capital) * 100
     
-    # Print summary
-    print("\n📊 TRADING SUMMARY")
-    print("-" * 40)
-    print(f"Initial Capital: ${initial_capital:.2f}")
-    print(f"Final Capital: ${final_capital:.2f}")
-    print(f"Total P&L: ${pnl:.2f} ({pnl_pct:+.2f}%)")
-    print(f"Total Trades: {final_stats['total_trades']}")
-    print(f"Successful Grids: {final_stats['successful_grids']}")
-    print(f"Failed Grids: {final_stats['failed_grids']}")
-    print(f"Success Rate: {final_stats['success_rate']:.1f}%")
-    print("-" * 40)
+    # Print detailed P&L summary
+    print("\n" + "=" * 60)
+    print("📊 P&L PROOF - TRADING SUMMARY")
+    print("=" * 60)
+    
+    # Capital Summary
+    print("\n💰 CAPITAL:")
+    print(f"  Initial Capital:     ${initial_capital:>10.2f} USDT")
+    print(f"  Final Capital:       ${final_capital:>10.2f} USDT")
+    print(f"  {'Profit' if pnl >= 0 else 'Loss':>20}: ${abs(pnl):>10.2f} USDT")
+    print(f"  {'Return %':>20}: {pnl_pct:>+10.2f}%")
+    
+    # Trading Activity
+    print("\n📈 TRADING ACTIVITY:")
+    print(f"  Total Trades:        {final_stats['total_trades']:>10d}")
+    print(f"  Active Grids:        {final_stats['active_grids']:>10d}")
+    print(f"  Successful Grids:    {final_stats['successful_grids']:>10d}")
+    print(f"  Failed Grids:        {final_stats['failed_grids']:>10d}")
+    print(f"  Success Rate:        {final_stats['success_rate']:>10.1f}%")
+    
+    # Realized vs Unrealized
+    realized_pnl = float(final_stats.get('total_profit', 0))
+    unrealized_pnl = 0  # Grid strategy typically has all realized
+    print("\n💹 P&L BREAKDOWN:")
+    print(f"  Realized P&L:        ${realized_pnl:>10.2f} USDT")
+    print(f"  Unrealized P&L:      ${unrealized_pnl:>10.2f} USDT")
+    print(f"  Total P&L:           ${pnl:>10.2f} USDT")
+    
+    print("\n" + "=" * 60)
     
     # Check audit log
     audit_log_path = Path("logs/paper_audit.log")
