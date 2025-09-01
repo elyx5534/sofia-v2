@@ -9,6 +9,24 @@
 
 ## 🚀 Quick Start
 
+### Running the API
+
+Start the FastAPI server with:
+
+```bash
+# Development mode with auto-reload
+uvicorn src.api.main:app --port 8000 --reload
+
+# Production mode
+uvicorn src.api.main:app --port 8000 --workers 4
+```
+
+#### API Endpoints:
+- `http://localhost:8000/docs` - Interactive API documentation (Swagger UI)
+- `http://localhost:8000/api/health` - Health check (returns `{"status": "ok"}`)
+- `http://localhost:8000/live-proof?symbol=BTC/USDT` - Live Binance data proof
+- `http://localhost:8000/health` - Detailed health with service status
+
 ### Smoke Tests
 
 Run smoke tests to verify system health:

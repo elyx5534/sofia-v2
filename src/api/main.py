@@ -405,9 +405,14 @@ async def fetch_multi_source_data(
 
 # ==================== Health Check ====================
 
+@app.get("/api/health")
+async def api_health_check():
+    """API health check endpoint."""
+    return {"status": "ok"}
+
 @app.get("/health")
 async def health_check():
-    """API health check."""
+    """Detailed health check with service status."""
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
