@@ -7,6 +7,19 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Lines of Code](https://img.shields.io/badge/Lines%20of%20Code-50K+-purple.svg)]()
 
+## 🚀 Quick Start - Smoke Tests
+
+Run smoke tests to verify system health:
+
+```bash
+# Run all smoke tests
+pytest -q tests/smoke
+
+# Run specific test
+pytest tests/smoke/test_live_proof.py -v
+pytest tests/smoke/test_orderbook_sanity.py -v
+```
+
 ## 🌟 Overview
 
 Sofia V2 is an enterprise-grade algorithmic trading platform that combines:
