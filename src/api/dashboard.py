@@ -306,6 +306,7 @@ DASHBOARD_HTML = """
         
         let equityHistory = [];
         let errorCount = 0;
+        let sessionRunning = false;
         
         // Update P&L Summary
         async function updatePnlSummary() {
@@ -334,19 +335,33 @@ DASHBOARD_HTML = """
                 document.getElementById('winRate').textContent = (data.win_rate || 0).toFixed(1) + '%';
                 document.getElementById('currentEquity').textContent = '$' + (data.final_capital || 1000).toFixed(2);
                 
-                // Update equity chart
-                const now = new Date().toLocaleTimeString();
-                equityHistory.push(data.final_capital || 1000);
+                // Update session status indicator
+                sessionRunning = data.is_running || false;
+                const statusText = sessionRunning ? '🟢 LIVE' : (data.session_complete ? '✅ COMPLETE' : '⭕ IDLE');
+                document.querySelector('.header p').innerHTML = 'Real-time Paper Trading Performance | Status: ' + statusText + ' | Source: ' + (data.source || 'default');
                 
-                // Keep only last 50 points
-                if (equityHistory.length > 50) {
-                    equityHistory.shift();
-                    equityChart.data.labels.shift();
+                // Update equity chart based on source
+                if (data.source === 'timeseries' && data.timeseries) {
+                    // Use timeseries data for chart
+                    updateChartFromTimeseries(data.timeseries);
+                } else if (data.source === 'summary' && data.timeseries) {
+                    // Session running with timeseries
+                    updateChartFromTimeseries(data.timeseries);
+                } else {
+                    // Single point update
+                    const now = new Date().toLocaleTimeString();
+                    equityHistory.push(data.final_capital || 1000);
+                    
+                    // Keep only last 50 points
+                    if (equityHistory.length > 50) {
+                        equityHistory.shift();
+                        equityChart.data.labels.shift();
+                    }
+                    
+                    equityChart.data.labels.push(now);
+                    equityChart.data.datasets[0].data = [...equityHistory];
+                    equityChart.update('none');
                 }
-                
-                equityChart.data.labels.push(now);
-                equityChart.data.datasets[0].data = [...equityHistory];
-                equityChart.update('none');
                 
                 // Reset error state
                 errorCount = 0;
@@ -356,6 +371,31 @@ DASHBOARD_HTML = """
                 console.error('Error updating P&L:', error);
                 handleError();
             }
+        }
+        
+        // Update chart from timeseries data
+        function updateChartFromTimeseries(timeseries) {
+            if (!timeseries || timeseries.length === 0) return;
+            
+            // Clear and rebuild chart data
+            const labels = [];
+            const data = [];
+            
+            // Use last 50 points or all if less
+            const points = timeseries.slice(-50);
+            
+            points.forEach(point => {
+                const date = new Date(point.ts_ms);
+                labels.push(date.toLocaleTimeString());
+                data.push(point.equity);
+            });
+            
+            equityChart.data.labels = labels;
+            equityChart.data.datasets[0].data = data;
+            equityChart.update('none');
+            
+            // Store for future updates
+            equityHistory = [...data];
         }
         
         // Update Live Proof

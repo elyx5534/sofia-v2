@@ -109,26 +109,72 @@ async def run_paper_session(duration_minutes: int = 30):
         else:
             print(f"❌ Failed to start grid for {symbol}")
     
-    # Monitor session
-    check_interval = 30  # Check every 30 seconds
+    # Monitor session with timeseries updates
+    check_interval = 5  # Check every 5 seconds for dashboard updates
+    display_interval = 30  # Display to console every 30 seconds
     trade_count = 0
+    last_display_time = time.time()
+    timeseries_data = []
+    
+    # Initial timeseries point
+    timeseries_data.append({
+        "ts_ms": int(time.time() * 1000),
+        "equity": initial_capital
+    })
     
     while time.time() < end_time:
         remaining = int((end_time - time.time()) / 60)
         
         # Get statistics
         stats = grid_monster.get_statistics()
+        current_equity = initial_capital + float(stats.get('total_profit', 0))
         
-        # Print status update
-        print(f"\n⏱️  Time Remaining: {remaining} minutes")
-        print(f"📈 Active Grids: {stats['active_grids']}")
-        print(f"💰 Total Trades: {stats['total_trades']}")
-        print(f"💵 Total Profit: ${stats['total_profit']:.2f}")
+        # Update timeseries every 5 seconds
+        timeseries_point = {
+            "ts_ms": int(time.time() * 1000),
+            "equity": current_equity
+        }
+        timeseries_data.append(timeseries_point)
         
-        # Log some trades to audit log
-        if stats['total_trades'] > trade_count:
-            trade_count = stats['total_trades']
-            print(f"🔄 New trades executed: {trade_count}")
+        # Write timeseries to file (overwrite each time with full array)
+        timeseries_path = Path("logs/pnl_timeseries.json")
+        timeseries_path.parent.mkdir(exist_ok=True)
+        with open(timeseries_path, 'w') as f:
+            json.dump(timeseries_data, f, indent=2)
+        
+        # Also update pnl_summary.json with current values for dashboard
+        pnl_summary_current = {
+            "initial_capital": initial_capital,
+            "final_capital": current_equity,
+            "realized_pnl": float(stats.get('total_profit', 0)),
+            "unrealized_pnl": 0,
+            "total_pnl": float(stats.get('total_profit', 0)),
+            "pnl_percentage": (float(stats.get('total_profit', 0)) / initial_capital * 100) if initial_capital > 0 else 0,
+            "total_trades": stats.get('total_trades', 0),
+            "win_rate": stats.get('success_rate', 0),
+            "start_timestamp": datetime.fromtimestamp(start_time).isoformat(),
+            "end_timestamp": datetime.now().isoformat(),
+            "is_running": True
+        }
+        
+        pnl_summary_path = Path("logs/pnl_summary.json")
+        with open(pnl_summary_path, 'w') as f:
+            json.dump(pnl_summary_current, f, indent=2)
+        
+        # Display to console every 30 seconds
+        if time.time() - last_display_time >= display_interval:
+            print(f"\n⏱️  Time Remaining: {remaining} minutes")
+            print(f"📈 Active Grids: {stats['active_grids']}")
+            print(f"💰 Total Trades: {stats['total_trades']}")
+            print(f"💵 Total Profit: ${stats['total_profit']:.2f}")
+            print(f"📊 Current Equity: ${current_equity:.2f}")
+            
+            # Log some trades to audit log
+            if stats['total_trades'] > trade_count:
+                trade_count = stats['total_trades']
+                print(f"🔄 New trades executed: {trade_count}")
+            
+            last_display_time = time.time()
         
         # Wait before next check
         await asyncio.sleep(check_interval)
@@ -209,7 +255,7 @@ async def run_paper_session(duration_minutes: int = 30):
     with open(summary_path, 'w') as f:
         json.dump(summary, f, indent=2)
     
-    # Also write pnl_summary.json for dashboard
+    # Write final pnl_summary.json for dashboard (mark as complete)
     pnl_summary_path = Path("logs/pnl_summary.json")
     pnl_summary = {
         "initial_capital": initial_capital,
@@ -220,12 +266,25 @@ async def run_paper_session(duration_minutes: int = 30):
         "pnl_percentage": pnl_pct,
         "total_trades": final_stats['total_trades'],
         "win_rate": final_stats['success_rate'],
-        "start_timestamp": datetime.now().isoformat(),
-        "end_timestamp": datetime.now().isoformat()
+        "start_timestamp": datetime.fromtimestamp(start_time).isoformat(),
+        "end_timestamp": datetime.now().isoformat(),
+        "is_running": False,
+        "session_complete": True
     }
     
     with open(pnl_summary_path, 'w') as f:
         json.dump(pnl_summary, f, indent=2)
+    
+    # Add final point to timeseries
+    timeseries_data.append({
+        "ts_ms": int(time.time() * 1000),
+        "equity": final_capital
+    })
+    
+    # Write final timeseries
+    timeseries_path = Path("logs/pnl_timeseries.json")
+    with open(timeseries_path, 'w') as f:
+        json.dump(timeseries_data, f, indent=2)
     
     print(f"\n💾 Summary saved to: {summary_path}")
     

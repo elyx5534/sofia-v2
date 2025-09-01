@@ -16,7 +16,8 @@ async def get_pnl_summary() -> Dict[str, Any]:
     Get P&L summary from logs
     Priority: 
     1. logs/pnl_summary.json if exists
-    2. Parse logs/paper_audit.log for approximate P&L
+    2. logs/pnl_timeseries.json for rough P&L from last two points
+    3. Parse logs/paper_audit.log for approximate P&L
     """
     
     # Try to read pnl_summary.json first
@@ -25,7 +26,7 @@ async def get_pnl_summary() -> Dict[str, Any]:
         try:
             with open(summary_path, 'r') as f:
                 data = json.load(f)
-                return {
+                result = {
                     "initial_capital": data.get("initial_capital", 1000),
                     "final_capital": data.get("final_capital", 1000),
                     "realized_pnl": data.get("realized_pnl", 0),
@@ -36,7 +37,57 @@ async def get_pnl_summary() -> Dict[str, Any]:
                     "win_rate": data.get("win_rate", 0),
                     "start_timestamp": data.get("start_timestamp", datetime.now().isoformat()),
                     "end_timestamp": data.get("end_timestamp", datetime.now().isoformat()),
-                    "source": "pnl_summary.json"
+                    "is_running": data.get("is_running", False),
+                    "session_complete": data.get("session_complete", False),
+                    "source": "summary"
+                }
+                
+                # If session is running, also include timeseries
+                if data.get("is_running", False):
+                    timeseries_path = Path("logs/pnl_timeseries.json")
+                    if timeseries_path.exists():
+                        try:
+                            with open(timeseries_path, 'r') as f:
+                                timeseries = json.load(f)
+                                result["timeseries"] = timeseries
+                        except:
+                            pass
+                
+                return result
+        except Exception as e:
+            pass  # Fall through to timeseries
+    
+    # Try to read timeseries for rough P&L
+    timeseries_path = Path("logs/pnl_timeseries.json")
+    if timeseries_path.exists():
+        try:
+            with open(timeseries_path, 'r') as f:
+                timeseries = json.load(f)
+                
+            if len(timeseries) >= 2:
+                first_point = timeseries[0]
+                last_point = timeseries[-1]
+                
+                initial_capital = first_point.get("equity", 1000)
+                final_capital = last_point.get("equity", 1000)
+                total_pnl = final_capital - initial_capital
+                pnl_percentage = (total_pnl / initial_capital * 100) if initial_capital > 0 else 0
+                
+                return {
+                    "initial_capital": initial_capital,
+                    "final_capital": final_capital,
+                    "realized_pnl": total_pnl,  # Assume all realized for simplicity
+                    "unrealized_pnl": 0,
+                    "total_pnl": total_pnl,
+                    "pnl_percentage": pnl_percentage,
+                    "total_trades": 0,  # Unknown from timeseries
+                    "win_rate": 0,  # Unknown from timeseries
+                    "start_timestamp": datetime.fromtimestamp(first_point.get("ts_ms", 0) / 1000).isoformat(),
+                    "end_timestamp": datetime.fromtimestamp(last_point.get("ts_ms", 0) / 1000).isoformat(),
+                    "is_running": True,  # Assume running if no summary
+                    "session_complete": False,
+                    "source": "timeseries",
+                    "timeseries": timeseries
                 }
         except Exception as e:
             pass  # Fall through to audit log parsing
@@ -100,7 +151,9 @@ async def get_pnl_summary() -> Dict[str, Any]:
                 "win_rate": win_rate,
                 "start_timestamp": start_ts or datetime.now().isoformat(),
                 "end_timestamp": end_ts or datetime.now().isoformat(),
-                "source": "paper_audit.log"
+                "is_running": False,
+                "session_complete": False,
+                "source": "audit_log"
             }
         except Exception as e:
             pass  # Fall through to default
@@ -117,6 +170,8 @@ async def get_pnl_summary() -> Dict[str, Any]:
         "win_rate": 0,
         "start_timestamp": datetime.now().isoformat(),
         "end_timestamp": datetime.now().isoformat(),
+        "is_running": False,
+        "session_complete": False,
         "source": "default"
     }
 
