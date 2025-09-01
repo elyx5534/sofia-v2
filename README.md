@@ -7,7 +7,9 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Lines of Code](https://img.shields.io/badge/Lines%20of%20Code-50K+-purple.svg)]()
 
-## 🚀 Quick Start - Smoke Tests
+## 🚀 Quick Start
+
+### Smoke Tests
 
 Run smoke tests to verify system health:
 
@@ -19,6 +21,28 @@ pytest -q tests/smoke
 pytest tests/smoke/test_live_proof.py -v
 pytest tests/smoke/test_orderbook_sanity.py -v
 ```
+
+### Paper Trading Proof Session (30 minutes)
+
+Run a complete paper trading session with Grid Monster strategy:
+
+```bash
+# Start API server
+uvicorn src.api.main:app --port 8000 &
+
+# Run 30-minute paper session
+python tools/run_paper_session.py
+
+# Monitor audit log in real-time
+tail -f logs/paper_audit.log
+
+# Or use Makefile
+make proof-today
+```
+
+After the session, check:
+- `logs/paper_audit.log` - All trades with timestamps and price sources
+- `logs/paper_session_summary.json` - P&L summary and statistics
 
 ## 🌟 Overview
 
