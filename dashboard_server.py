@@ -1,12 +1,87 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Simple Dashboard Server for Sofia V2
 """
 
-from flask import Flask, render_template_string, jsonify
+import sys
+import io
+import platform
+
+# Set UTF-8 encoding for Windows
+if platform.system() == 'Windows':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+from flask import Flask, render_template_string, jsonify, request
 import requests
 from datetime import datetime
+import os
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Auto-discover API endpoint
+API_BASE_URL = None
+
+def discover_api():
+    """Auto-discover which API port is active"""
+    global API_BASE_URL
+    
+    # Check environment variable first
+    if os.getenv('API_BASE_URL'):
+        API_BASE_URL = os.getenv('API_BASE_URL')
+        logger.info(f"Using API from env: {API_BASE_URL}")
+        return API_BASE_URL
+    
+    # Try candidate ports
+    candidates = ["http://127.0.0.1:8002", "http://127.0.0.1:8012"]
+    
+    for candidate in candidates:
+        try:
+            resp = requests.get(f"{candidate}/api/dev/status", timeout=1)
+            if resp.status_code == 200:
+                API_BASE_URL = candidate
+                logger.info(f"API discovered at: {API_BASE_URL}")
+                return API_BASE_URL
+        except:
+            continue
+    
+    # Default fallback
+    API_BASE_URL = "http://127.0.0.1:8012"
+    logger.warning(f"No API found, using default: {API_BASE_URL}")
+    return API_BASE_URL
+
+# Discover on startup
+discover_api()
+
+app = Flask(__name__)
+
+# API Proxy route
+@app.route('/apiProxy/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def api_proxy(path):
+    """Proxy requests to the API server"""
+    if not API_BASE_URL:
+        discover_api()
+    
+    url = f"{API_BASE_URL}/{path}"
+    
+    try:
+        if request.method == 'GET':
+            resp = requests.get(url, params=request.args, timeout=10)
+        elif request.method == 'POST':
+            resp = requests.post(url, json=request.get_json(), timeout=10)
+        elif request.method == 'PUT':
+            resp = requests.put(url, json=request.get_json(), timeout=10)
+        elif request.method == 'DELETE':
+            resp = requests.delete(url, timeout=10)
+        
+        return resp.content, resp.status_code, {'Content-Type': resp.headers.get('Content-Type', 'application/json')}
+    except Exception as e:
+        logger.error(f"Proxy error: {e}")
+        return jsonify({'error': str(e)}), 503
 
 # Simple HTML dashboard template
 DASHBOARD_HTML = """
@@ -102,7 +177,7 @@ DASHBOARD_HTML = """
 </head>
 <body>
     <div class="container">
-        <h1>Sofia V2 Trading Dashboard</h1>
+        <h1>Sofia V2 Trading Dashboard <small style="font-size: 0.5em; opacity: 0.7;">API: <span id="api-status">discovering...</span></small></h1>
         
         <div class="grid">
             <!-- P&L Summary Card -->
@@ -240,31 +315,57 @@ DASHBOARD_HTML = """
     <button class="refresh-btn" onclick="refreshData()">Refresh Data</button>
     
     <script>
+        // Use proxy for all API calls
+        const API_BASE = '/apiProxy';
+        let apiPort = 'discovering...';
+        
         async function refreshData() {
             try {
-                // Fetch P&L data
-                const pnlResponse = await fetch('http://localhost:8002/api/pnl/summary');
-                const pnlData = await pnlResponse.json();
-                
-                document.getElementById('total-pnl').textContent = `$${pnlData.total_pnl.toFixed(2)}`;
-                document.getElementById('total-pnl').className = pnlData.total_pnl >= 0 ? 'value positive' : 'value negative';
-                document.getElementById('win-rate').textContent = `${pnlData.win_rate.toFixed(1)}%`;
-                document.getElementById('total-trades').textContent = pnlData.total_trades;
-                document.getElementById('session-status').textContent = pnlData.session_complete ? 'Complete' : 'Running';
-                
-                // Fetch system status
-                const statusResponse = await fetch('http://localhost:8002/api/dev/status');
+                // Fetch system status first (to check API connectivity)
+                const statusResponse = await fetch(`${API_BASE}/api/dev/status`);
                 const statusData = await statusResponse.json();
                 
-                // Update live guard
-                const guardResponse = await fetch('http://localhost:8002/api/live-guard');
-                const guardData = await guardResponse.json();
+                // Update API status display
+                if (statusData.api) {
+                    apiPort = window.location.port === '5000' ? '{{API_PORT}}' : 'connected';
+                    document.getElementById('api-status').textContent = apiPort + ' (auto)';
+                }
                 
-                document.getElementById('live-enabled').textContent = guardData.enabled ? 'YES' : 'NO';
-                document.getElementById('live-enabled').className = guardData.enabled ? 'value positive' : 'value negative';
-                document.getElementById('approvals').textContent = `${guardData.approvals.operator_A ? 1 : 0}/2`;
-                document.getElementById('requirements').textContent = guardData.requirements.readiness ? 'MET' : 'NOT MET';
-                document.getElementById('trading-hours').textContent = guardData.requirements.hours_ok ? 'OPEN' : 'CLOSED';
+                // Fetch P&L data
+                const pnlResponse = await fetch(`${API_BASE}/api/pnl/summary`);
+                if (pnlResponse.ok) {
+                    const pnlData = await pnlResponse.json();
+                    document.getElementById('total-pnl').textContent = `$${(pnlData.total_pnl || 0).toFixed(2)}`;
+                    document.getElementById('total-pnl').className = (pnlData.total_pnl || 0) >= 0 ? 'value positive' : 'value negative';
+                    document.getElementById('win-rate').textContent = `${(pnlData.win_rate || 0).toFixed(1)}%`;
+                    document.getElementById('total-trades').textContent = pnlData.total_trades || 0;
+                    document.getElementById('session-status').textContent = pnlData.session_complete ? 'Complete' : 'Running';
+                } else {
+                    // Use default values if endpoint not available
+                    document.getElementById('total-pnl').textContent = '$0.00';
+                    document.getElementById('win-rate').textContent = '0.0%';
+                    document.getElementById('total-trades').textContent = '0';
+                    document.getElementById('session-status').textContent = 'IDLE';
+                }
+                
+                // Update live guard
+                const guardResponse = await fetch(`${API_BASE}/api/live-guard`);
+                if (guardResponse.ok) {
+                    const guardData = await guardResponse.json();
+                
+                    document.getElementById('live-enabled').textContent = guardData.enabled ? 'YES' : 'NO';
+                    document.getElementById('live-enabled').className = guardData.enabled ? 'value positive' : 'value negative';
+                    document.getElementById('approvals').textContent = `${guardData.approvals?.operator_A ? 1 : 0}/2`;
+                    document.getElementById('requirements').textContent = guardData.requirements?.readiness ? 'MET' : 'NOT MET';
+                    document.getElementById('trading-hours').textContent = guardData.requirements?.hours_ok ? 'OPEN' : 'CLOSED';
+                } else {
+                    // Default values if endpoint not available
+                    document.getElementById('live-enabled').textContent = 'NO';
+                    document.getElementById('live-enabled').className = 'value negative';
+                    document.getElementById('approvals').textContent = '0/2';
+                    document.getElementById('requirements').textContent = 'NOT MET';
+                    document.getElementById('trading-hours').textContent = 'CLOSED';
+                }
                 
                 // Update time
                 document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
@@ -275,10 +376,10 @@ DASHBOARD_HTML = """
         
         async function runDemo() {
             try {
-                const response = await fetch('http://localhost:8002/api/dev/actions', {
+                const response = await fetch(`${API_BASE}/api/dev/actions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'demo' })
+                    body: JSON.stringify({ action: 'demo', minutes: 5 })
                 });
                 const data = await response.json();
                 alert(`Demo started! Job ID: ${data.job_id}\nView in /dev console`);
@@ -289,7 +390,7 @@ DASHBOARD_HTML = """
         
         async function runQA() {
             try {
-                const response = await fetch('http://localhost:8002/api/dev/actions', {
+                const response = await fetch(`${API_BASE}/api/dev/actions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'qa' })
@@ -303,7 +404,7 @@ DASHBOARD_HTML = """
         
         async function checkReadiness() {
             try {
-                const response = await fetch('http://localhost:8002/api/dev/actions', {
+                const response = await fetch(`${API_BASE}/api/dev/actions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'readiness' })
@@ -316,7 +417,9 @@ DASHBOARD_HTML = """
         }
         
         function viewReports() {
-            window.open('http://localhost:8002/dev', '_blank');
+            // Determine API port from current connection
+            const apiUrl = apiPort.includes('8012') ? 'http://localhost:8012/dev' : 'http://localhost:8002/dev';
+            window.open(apiUrl, '_blank');
         }
         
         // Auto-refresh every 5 seconds
@@ -332,7 +435,10 @@ DASHBOARD_HTML = """
 @app.route('/')
 def dashboard():
     """Render main dashboard"""
-    return render_template_string(DASHBOARD_HTML, current_time=datetime.now().strftime('%H:%M:%S'))
+    # Pass the discovered API port to the template
+    api_port = API_BASE_URL.split(':')[-1] if API_BASE_URL else 'unknown'
+    html = DASHBOARD_HTML.replace('{{API_PORT}}', api_port)
+    return render_template_string(html, current_time=datetime.now().strftime('%H:%M:%S'))
 
 @app.route('/api/status')
 def api_status():

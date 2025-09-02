@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Development Environment Launcher
 Starts API and Dashboard simultaneously with health checks
@@ -6,6 +7,7 @@ Starts API and Dashboard simultaneously with health checks
 
 import os
 import sys
+import io
 import time
 import signal
 import subprocess
@@ -15,7 +17,13 @@ from typing import Optional, Dict
 import json
 import platform
 import requests
+
 from datetime import datetime
+
+# Set UTF-8 encoding for Windows
+if platform.system() == 'Windows':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Configuration
 API_PORT = int(os.getenv("API_PORT", "8002"))
