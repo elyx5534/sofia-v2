@@ -8,6 +8,9 @@ from datetime import datetime
 import asyncio
 import logging
 
+# Setup logger first
+logger = logging.getLogger(__name__)
+
 # Import routers and services with error handling
 try:
     from src.backtester.strategies.registry import StrategyRegistry
@@ -57,8 +60,6 @@ import os
 import psutil
 from fastapi import status
 
-logger = logging.getLogger(__name__)
-
 # Create FastAPI app
 app = FastAPI(
     title="Sofia Trading Platform API",
@@ -98,6 +99,39 @@ except ImportError:
     from fastapi import APIRouter
     backtester_router = APIRouter()
     app.include_router(backtester_router, prefix="/api/backtest")
+
+# Include new routers for UI wireup
+try:
+    from src.api.routes.quotes import router as quotes_router
+    app.include_router(quotes_router)
+except ImportError as e:
+    logger.warning(f"Quotes router not available: {e}")
+
+try:
+    from src.api.routes.backtest import router as new_backtest_router
+    app.include_router(new_backtest_router)
+except ImportError as e:
+    logger.warning(f"New backtest router not available: {e}")
+
+try:
+    from src.api.routes.paper import router as paper_router
+    app.include_router(paper_router)
+except ImportError as e:
+    logger.warning(f"Paper router not available: {e}")
+
+try:
+    from src.api.routes.arbitrage import router as arb_router
+    app.include_router(arb_router)
+except ImportError as e:
+    logger.warning(f"Arbitrage router not available: {e}")
+
+# Mount UI routes
+try:
+    from src.api.ui_server import mount_ui_routes
+    mount_ui_routes(app)
+    logger.info("UI routes mounted successfully")
+except ImportError as e:
+    logger.warning(f"UI server not available: {e}")
 
 # ==================== Health Check Endpoints ====================
 

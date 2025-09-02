@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sofia V2 Trading Platform{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- TradingView Widget -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Sofia V2</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            Showcase
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/showcase/BTC-USDT">BTC/USDT</a></li>
+                            <li><a class="dropdown-item" href="/showcase/ETH-USDT">ETH/USDT</a></li>
+                            <li><a class="dropdown-item" href="/showcase/SOL-USDT">SOL/USDT</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'analysis' %}active{% endif %}" href="/analysis/BTC-USDT">Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'backtest' %}active{% endif %}" href="/backtest-studio">Backtest Studio</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="navbar-text me-3" id="connection-status">
+                            <span class="badge bg-success">Connected</span>
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <span class="navbar-text" id="btc-price">
+                            BTC: <span class="text-success">Loading...</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="container-fluid mt-3">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer mt-5 py-3 bg-dark text-white">
+        <div class="container text-center">
+            <span class="text-muted">Sofia V2 Trading Platform © 2024 | Paper Trading Mode</span>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="/static/app.js"></script>
+    
+    {% block extra_scripts %}{% endblock %}
+    
+    <script>
+        // Update BTC price in navbar
+        async function updateBTCPrice() {
+            try {
+                const response = await fetch('/api/quotes/ticker?symbol=BTC/USDT');
+                const data = await response.json();
+                const priceElement = document.querySelector('#btc-price span');
+                priceElement.textContent = `$${data.price.toFixed(2)}`;
+            } catch (error) {
+                console.error('Failed to update BTC price:', error);
+            }
+        }
+        
+        // Update every 5 seconds
+        updateBTCPrice();
+        setInterval(updateBTCPrice, 5000);
+    </script>
+</body>
+</html>

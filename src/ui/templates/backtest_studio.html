@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Backtest Studio - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Backtest Studio</h1>
+    </div>
+</div>
+
+<!-- Backtest Form -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Configuration</h5>
+            </div>
+            <div class="card-body">
+                <form id="backtestForm">
+                    <div class="mb-3">
+                        <label class="form-label">Symbol</label>
+                        <input type="text" class="form-control" id="btSymbol" value="BTC/USDT" list="symbolList">
+                        <datalist id="symbolList">
+                            <option value="BTC/USDT">
+                            <option value="ETH/USDT">
+                            <option value="SOL/USDT">
+                            <option value="BNB/USDT">
+                            <option value="ADA/USDT">
+                        </datalist>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Timeframe</label>
+                        <select class="form-select" id="btTimeframe">
+                            <option value="1m">1 Minute</option>
+                            <option value="5m">5 Minutes</option>
+                            <option value="15m">15 Minutes</option>
+                            <option value="30m">30 Minutes</option>
+                            <option value="1h" selected>1 Hour</option>
+                            <option value="4h">4 Hours</option>
+                            <option value="1d">1 Day</option>
+                            <option value="1w">1 Week</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="btStartDate" value="2023-01-01">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="btEndDate">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Strategy</label>
+                        <select class="form-select" id="btStrategy">
+                            <option value="sma_cross">SMA Crossover</option>
+                            <option value="rsi_revert">RSI Mean Reversion</option>
+                            <option value="grid">Grid Trading</option>
+                            <option value="mean_revert">Mean Reversion</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Dynamic Parameters -->
+                    <div id="strategyParams">
+                        <h6>Strategy Parameters</h6>
+                        <div id="paramsContainer">
+                            <!-- Will be populated based on strategy -->
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary" id="btnRunBacktest">
+                            <span id="btnText">Run Backtest</span>
+                            <span class="spinner-border spinner-border-sm ms-2 d-none" id="btnSpinner"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results Section -->
+    <div class="col-md-8">
+        <!-- Statistics Card -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="statsContainer">
+                    <div class="col-md-3">
+                        <h6>Total Return</h6>
+                        <h4 id="statReturn">-</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Sharpe Ratio</h6>
+                        <h4 id="statSharpe">-</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Max Drawdown</h6>
+                        <h4 id="statDrawdown">-</h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Win Rate</h6>
+                        <h4 id="statWinRate">-</h4>
+                    </div>
+                </div>
+                <div class="mt-3 d-none" id="exportSection">
+                    <button class="btn btn-sm btn-secondary" id="btnExportCSV">Export CSV</button>
+                    <span class="ms-2 text-muted">Run ID: <span id="runId"></span></span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Equity Curve</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="btEquityChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Drawdown</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="btDrawdownChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trades Table -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Trade List</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Side</th>
+                                <th>Price</th>
+                                <th>Size</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradesTable">
+                            <tr><td colspan="4" class="text-center">No backtest run yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Strategy parameters configuration
+const strategyParams = {
+    sma_cross: {
+        fast: {type: 'number', default: 20, min: 5, max: 50, label: 'Fast Period'},
+        slow: {type: 'number', default: 50, min: 20, max: 200, label: 'Slow Period'}
+    },
+    rsi_revert: {
+        period: {type: 'number', default: 14, min: 5, max: 30, label: 'RSI Period'},
+        oversold: {type: 'number', default: 30, min: 10, max: 40, label: 'Oversold Level'},
+        overbought: {type: 'number', default: 70, min: 60, max: 90, label: 'Overbought Level'}
+    },
+    grid: {
+        levels: {type: 'number', default: 10, min: 5, max: 20, label: 'Grid Levels'},
+        spacing_pct: {type: 'number', default: 1.0, min: 0.5, max: 3.0, step: 0.1, label: 'Spacing (%)'}
+    },
+    mean_revert: {
+        lookback: {type: 'number', default: 20, min: 10, max: 50, label: 'Lookback Period'},
+        z_threshold: {type: 'number', default: 2.0, min: 1.0, max: 3.0, step: 0.1, label: 'Z-Score Threshold'}
+    }
+};
+
+// Charts
+let equityChart = null;
+let drawdownChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default end date to today
+    document.getElementById('btEndDate').value = new Date().toISOString().split('T')[0];
+    
+    // Initialize charts
+    initBacktestCharts();
+    
+    // Update parameters when strategy changes
+    document.getElementById('btStrategy').addEventListener('change', updateStrategyParams);
+    updateStrategyParams();
+    
+    // Handle form submission
+    document.getElementById('backtestForm').addEventListener('submit', runBacktest);
+    
+    // Export CSV handler
+    document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
+});
+
+function updateStrategyParams() {
+    const strategy = document.getElementById('btStrategy').value;
+    const params = strategyParams[strategy] || {};
+    const container = document.getElementById('paramsContainer');
+    
+    container.innerHTML = '';
+    
+    for (const [key, config] of Object.entries(params)) {
+        const div = document.createElement('div');
+        div.className = 'mb-2';
+        div.innerHTML = `
+            <label class="form-label">${config.label}</label>
+            <input type="number" 
+                   class="form-control form-control-sm" 
+                   id="param_${key}"
+                   value="${config.default}"
+                   min="${config.min}"
+                   max="${config.max}"
+                   step="${config.step || 1}">
+        `;
+        container.appendChild(div);
+    }
+}
+
+async function runBacktest(e) {
+    e.preventDefault();
+    
+    // Show spinner
+    document.getElementById('btnText').textContent = 'Running...';
+    document.getElementById('btnSpinner').classList.remove('d-none');
+    document.getElementById('btnRunBacktest').disabled = true;
+    
+    // Gather parameters
+    const strategy = document.getElementById('btStrategy').value;
+    const params = {};
+    
+    for (const key of Object.keys(strategyParams[strategy] || {})) {
+        const input = document.getElementById(`param_${key}`);
+        if (input) {
+            params[key] = parseFloat(input.value);
+        }
+    }
+    
+    // Prepare request
+    const request = {
+        symbol: document.getElementById('btSymbol').value,
+        timeframe: document.getElementById('btTimeframe').value,
+        start: document.getElementById('btStartDate').value,
+        end: document.getElementById('btEndDate').value,
+        strategy: strategy,
+        params: params
+    };
+    
+    try {
+        const response = await apiFetch('/api/backtest/run', {
+            method: 'POST',
+            body: JSON.stringify(request)
+        });
+        
+        // Display results
+        displayResults(response);
+        
+    } catch (error) {
+        console.error('Backtest failed:', error);
+        showToast('Backtest failed: ' + error.message, 'danger');
+    } finally {
+        // Hide spinner
+        document.getElementById('btnText').textContent = 'Run Backtest';
+        document.getElementById('btnSpinner').classList.add('d-none');
+        document.getElementById('btnRunBacktest').disabled = false;
+    }
+}
+
+function displayResults(results) {
+    // Update statistics
+    const stats = results.stats || {};
+    document.getElementById('statReturn').textContent = `${stats.total_return || 0}%`;
+    document.getElementById('statReturn').className = stats.total_return > 0 ? 'text-success' : 'text-danger';
+    document.getElementById('statSharpe').textContent = stats.sharpe_ratio || '-';
+    document.getElementById('statDrawdown').textContent = `${stats.max_drawdown || 0}%`;
+    document.getElementById('statWinRate').textContent = `${stats.win_rate || 0}%`;
+    
+    // Show export section
+    if (results.run_id) {
+        document.getElementById('runId').textContent = results.run_id;
+        document.getElementById('exportSection').classList.remove('d-none');
+    }
+    
+    // Update equity chart
+    updateEquityChart(results.equity_curve || []);
+    
+    // Update drawdown chart
+    updateDrawdownChart(results.drawdown || []);
+    
+    // Update trades table
+    updateTradesTable(results.trades || []);
+    
+    showToast('Backtest completed successfully', 'success');
+}
+
+function initBacktestCharts() {
+    const equityCtx = document.getElementById('btEquityChart').getContext('2d');
+    equityChart = new Chart(equityCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Equity',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: false
+                },
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+    
+    const drawdownCtx = document.getElementById('btDrawdownChart').getContext('2d');
+    drawdownChart = new Chart(drawdownCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Drawdown (%)',
+                data: [],
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    display: false
+                },
+                y: {
+                    beginAtZero: true,
+                    reverse: true
+                }
+            }
+        }
+    });
+}
+
+function updateEquityChart(data) {
+    if (!equityChart || !data.length) return;
+    
+    equityChart.data.labels = data.map(d => new Date(d[0]).toLocaleDateString());
+    equityChart.data.datasets[0].data = data.map(d => d[1]);
+    equityChart.update();
+}
+
+function updateDrawdownChart(data) {
+    if (!drawdownChart || !data.length) return;
+    
+    drawdownChart.data.labels = data.map(d => new Date(d[0]).toLocaleDateString());
+    drawdownChart.data.datasets[0].data = data.map(d => Math.abs(d[1]));
+    drawdownChart.update();
+}
+
+function updateTradesTable(trades) {
+    const tbody = document.getElementById('tradesTable');
+    tbody.innerHTML = '';
+    
+    if (trades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No trades executed</td></tr>';
+        return;
+    }
+    
+    trades.slice(0, 50).forEach(trade => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${new Date(trade.timestamp).toLocaleString()}</td>
+            <td><span class="badge bg-${trade.side === 'buy' ? 'success' : 'danger'}">${trade.side}</span></td>
+            <td>$${trade.price.toFixed(2)}</td>
+            <td>${trade.size.toFixed(4)}</td>
+        `;
+    });
+}
+
+async function exportCSV() {
+    const runId = document.getElementById('runId').textContent;
+    if (!runId) return;
+    
+    window.location.href = `/api/backtest/export?run_id=${runId}`;
+}
+</script>
+{% endblock %}

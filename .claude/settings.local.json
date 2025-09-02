@@ -3,7 +3,12 @@
     "allow": [
       "Bash(API_PORT=8012 DASH_PORT=5010 python scripts/dev_up.py)",
       "Bash(start:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(make:*)",
+      "Bash(python:*)",
+      "Bash(git checkout:*)",
+      "Bash(pip install:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

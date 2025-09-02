@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sofia V2{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Trading Dashboard</h1>
+    </div>
+</div>
+
+<!-- Status Cards Row -->
+<div class="row mb-4">
+    <!-- Live Proof Card -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Live Proof</h5>
+                <div id="live-proof-status">
+                    <span class="badge bg-success">Active</span>
+                    <p class="mt-2 mb-0">
+                        <small>Last Update: <span id="last-update">-</span></small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Paper P&L Card -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Paper P&L</h5>
+                <div id="paper-pnl">
+                    <h3 class="text-success">$<span id="pnl-value">0.00</span></h3>
+                    <canvas id="pnl-sparkline" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Arbitrage Radar Card -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Arbitrage Radar</h5>
+                <div id="arb-status">
+                    <p class="mb-1">Opportunities: <span id="arb-count">0</span></p>
+                    <p class="mb-0">P&L: <span id="arb-pnl">0</span> TL</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Card -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-sm btn-primary" id="btnStartPaper">Start Paper</button>
+                    <button class="btn btn-sm btn-danger" id="btnStopPaper" disabled>Stop Paper</button>
+                    <button class="btn btn-sm btn-info" id="btnStartArb">Start Arb</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Equity Chart -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Equity Curve</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="equity-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Drawdown Chart -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Drawdown</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="drawdown-chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Row -->
+<div class="row">
+    <!-- Recent Trades -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Trades</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Price</th>
+                                <th>Size</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-trades">
+                            <tr><td colspan="5" class="text-center">No trades yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Arbitrage Opportunities -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Arbitrage Opportunities</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Pair</th>
+                                <th>Exchange</th>
+                                <th>Diff (bps)</th>
+                                <th>Direction</th>
+                            </tr>
+                        </thead>
+                        <tbody id="arb-opportunities">
+                            <tr><td colspan="4" class="text-center">No opportunities</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Paper Trading Modal -->
+<div class="modal fade" id="paperModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Start Paper Trading</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paperForm">
+                    <div class="mb-3">
+                        <label class="form-label">Strategy</label>
+                        <select class="form-select" id="paperStrategy">
+                            <option value="grid">Grid Trading</option>
+                            <option value="mean_revert">Mean Reversion</option>
+                            <option value="simple">Simple Momentum</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Symbol</label>
+                        <select class="form-select" id="paperSymbol">
+                            <option value="BTC/USDT">BTC/USDT</option>
+                            <option value="ETH/USDT">ETH/USDT</option>
+                            <option value="SOL/USDT">SOL/USDT</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmPaper">Start</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/charts.js"></script>
+<script>
+// Dashboard-specific JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts
+    initEquityChart();
+    initDrawdownChart();
+    initPnLSparkline();
+    
+    // Start polling for updates
+    setInterval(updateDashboard, 3000);
+    updateDashboard();
+    
+    // Paper trading controls
+    document.getElementById('btnStartPaper').addEventListener('click', () => {
+        new bootstrap.Modal(document.getElementById('paperModal')).show();
+    });
+    
+    document.getElementById('btnConfirmPaper').addEventListener('click', async () => {
+        const strategy = document.getElementById('paperStrategy').value;
+        const symbol = document.getElementById('paperSymbol').value;
+        
+        const response = await apiFetch('/api/paper/start', {
+            method: 'POST',
+            body: JSON.stringify({
+                session: strategy,
+                symbol: symbol,
+                params: {}
+            })
+        });
+        
+        if (response.status === 'started') {
+            bootstrap.Modal.getInstance(document.getElementById('paperModal')).hide();
+            document.getElementById('btnStartPaper').disabled = true;
+            document.getElementById('btnStopPaper').disabled = false;
+            showToast('Paper trading started', 'success');
+        }
+    });
+    
+    document.getElementById('btnStopPaper').addEventListener('click', async () => {
+        const response = await apiFetch('/api/paper/stop', {
+            method: 'POST'
+        });
+        
+        if (response.status === 'stopped') {
+            document.getElementById('btnStartPaper').disabled = false;
+            document.getElementById('btnStopPaper').disabled = true;
+            showToast(`Paper trading stopped. P&L: ${response.final_pnl}`, 'info');
+        }
+    });
+    
+    // Arbitrage controls
+    document.getElementById('btnStartArb').addEventListener('click', async () => {
+        const response = await apiFetch('/api/arb/start', {
+            method: 'POST',
+            body: JSON.stringify({
+                mode: 'tl',
+                pairs: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'],
+                threshold_bps: 50
+            })
+        });
+        
+        if (response.status === 'started') {
+            document.getElementById('btnStartArb').textContent = 'Stop Arb';
+            document.getElementById('btnStartArb').classList.remove('btn-info');
+            document.getElementById('btnStartArb').classList.add('btn-warning');
+            showToast('Arbitrage radar started', 'success');
+        } else {
+            // Stop arbitrage
+            const stopResponse = await apiFetch('/api/arb/stop', {
+                method: 'POST'
+            });
+            
+            if (stopResponse.status === 'stopped') {
+                document.getElementById('btnStartArb').textContent = 'Start Arb';
+                document.getElementById('btnStartArb').classList.remove('btn-warning');
+                document.getElementById('btnStartArb').classList.add('btn-info');
+                showToast(`Arbitrage stopped. P&L: ${stopResponse.total_pnl_tl} TL`, 'info');
+            }
+        }
+    });
+});
+
+async function updateDashboard() {
+    // Update paper trading status
+    try {
+        const paperStatus = await apiFetch('/api/paper/status');
+        if (paperStatus.running) {
+            document.getElementById('pnl-value').textContent = paperStatus.pnl.toFixed(2);
+            document.getElementById('btnStartPaper').disabled = true;
+            document.getElementById('btnStopPaper').disabled = false;
+            
+            // Update recent trades if available
+            if (paperStatus.num_trades > 0) {
+                // Fetch from logs/pnl_summary.json
+                updateRecentTrades();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to update paper status:', error);
+    }
+    
+    // Update arbitrage status
+    try {
+        const arbStatus = await apiFetch('/api/arb/snap');
+        document.getElementById('arb-count').textContent = arbStatus.num_opportunities;
+        document.getElementById('arb-pnl').textContent = arbStatus.total_pnl_tl.toFixed(2);
+        
+        // Update opportunities table
+        if (arbStatus.opportunities && arbStatus.opportunities.length > 0) {
+            updateArbOpportunities(arbStatus.opportunities);
+        }
+    } catch (error) {
+        console.error('Failed to update arb status:', error);
+    }
+    
+    // Update timestamp
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+}
+
+function updateRecentTrades() {
+    // This would fetch from the paper trading logs
+    // For now, just a placeholder
+}
+
+function updateArbOpportunities(opportunities) {
+    const tbody = document.getElementById('arb-opportunities');
+    tbody.innerHTML = '';
+    
+    opportunities.slice(-5).forEach(opp => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${opp.pair}</td>
+            <td>${opp.tr_exchange}</td>
+            <td class="${opp.diff_bps > 0 ? 'text-success' : 'text-danger'}">${opp.diff_bps}</td>
+            <td>${opp.direction.split('_')[0]}</td>
+        `;
+    });
+}
+</script>
+{% endblock %}
