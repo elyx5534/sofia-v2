@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from src.backtester.api import router as backtester_router
+from src.backtest.api import router as backtester_router
 
 from .cache import cache_manager
 from .claude_service import MarketAnalysisRequest, MarketAnalysisResponse, claude_service

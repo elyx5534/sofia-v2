@@ -138,7 +138,7 @@ class FIFOAccounting:
         """Get total realized P&L"""
         return self.realized_pnl
 
-    def get_unrealized(self, prices: Dict[str, Decimal], mid_or_bidask: str = "mid") -> Decimal:
+    def get_unrealized(self, prices: Dict[str, Decimal]) -> Decimal:
         """Calculate unrealized P&L using current market prices"""
         unrealized = Decimal("0")
 

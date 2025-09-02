@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+
 from src.services.datahub import datahub
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,20 @@ router = APIRouter(prefix="/api/quotes", tags=["quotes"])
 
 @router.get("/ticker")
 async def get_ticker(symbol: str = Query(..., description="Symbol like BTC/USDT")) -> Dict:
-    """Get latest price for a symbol"""
+    """Get latest price for a symbol.
+
+    Args:
+        symbol: Trading symbol in format BASE/QUOTE (e.g., BTC/USDT)
+
+    Returns:
+        Dict containing symbol, price, timestamp, and volume
+
+    Raises:
+        HTTPException: If symbol not found or service error
+
+    Example:
+        curl -X GET "http://localhost:8000/api/quotes/ticker?symbol=BTC/USDT"
+    """
     try:
         result = datahub.get_latest_price(symbol)
         if result["price"] == 0:
@@ -34,7 +48,23 @@ async def get_ohlcv(
     start: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
     end: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
 ) -> List[List]:
-    """Get OHLCV data for a symbol"""
+    """Get OHLCV data for a symbol.
+
+    Args:
+        symbol: Trading symbol in format BASE/QUOTE (e.g., BTC/USDT)
+        tf: Timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w)
+        start: Start date in YYYY-MM-DD format (default: 30 days ago)
+        end: End date in YYYY-MM-DD format (default: today)
+
+    Returns:
+        List of OHLCV candles: [[timestamp, open, high, low, close, volume], ...]
+
+    Raises:
+        HTTPException: If no data found or service error
+
+    Example:
+        curl -X GET "http://localhost:8000/api/quotes/ohlcv?symbol=BTC/USDT&tf=1h&start=2024-01-01&end=2024-01-07"
+    """
     try:
         # Default date range if not provided
         if not end:

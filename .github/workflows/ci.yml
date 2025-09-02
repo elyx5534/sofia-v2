@@ -10,8 +10,13 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: pip install -r requirements.txt || true
-      - run: pip install ruff black mypy pytest pytest-cov
+      - run: pip install ruff black mypy pytest pytest-cov import-linter
       - run: ruff check .
       - run: black --check .
       - run: mypy src || true
-      - run: pytest -q
+      - run: lint-imports --config importlinter.ini
+      - run: pytest -q --cov=src --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml

@@ -49,11 +49,7 @@ except ImportError:
     logger.warning("PnL router not available")
     pnl_router = None
 
-try:
-    from src.api.dashboard import router as old_dashboard_router
-except ImportError:
-    logger.warning("Old dashboard router not available")
-    old_dashboard_router = None
+# Old dashboard router removed - deprecated
 import os
 
 import psutil

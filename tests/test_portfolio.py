@@ -1,7 +1,7 @@
 """Tests for the portfolio management module."""
 
 import pytest
-from src.trading_engine.portfolio import Asset, Portfolio
+from src.core.portfolio import Asset, Portfolio
 
 
 class TestAsset:

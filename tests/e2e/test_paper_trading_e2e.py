@@ -6,6 +6,8 @@ import pytest
 from playwright.sync_api import Page, expect
 
 
+@pytest.mark.slow
+@pytest.mark.e2e
 class TestPaperTradingSettings:
     """Test paper trading settings page"""
 

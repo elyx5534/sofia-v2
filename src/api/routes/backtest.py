@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
 from src.services.backtester import BacktestConfig, backtester
 
 logger = logging.getLogger(__name__)
@@ -67,7 +68,23 @@ class BacktestResponse(BaseModel):
 
 @router.post("/run", response_model=BacktestResponse)
 async def run_backtest(request: BacktestRequest) -> Dict:
-    """Run a single backtest with specified parameters"""
+    """Run a single backtest with specified parameters.
+
+    Args:
+        request: BacktestRequest containing symbol, timeframe, dates, strategy, and params
+
+    Returns:
+        Dict with run_id, equity_curve, drawdown, trades, and stats
+
+    Raises:
+        HTTPException: If strategy not found or backtest fails
+
+    Example:
+        curl -X POST "http://localhost:8000/api/backtest/run" \
+             -H "Content-Type: application/json" \
+             -d '{"symbol": "BTC/USDT", "start": "2024-01-01", "end": "2024-01-31",
+                  "strategy": "sma_cross", "params": {"fast_period": 10, "slow_period": 20}}'
+    """
     try:
         logger.info(f"Starting backtest: {request.strategy} on {request.symbol}")
 
@@ -99,7 +116,24 @@ async def run_backtest(request: BacktestRequest) -> Dict:
 
 @router.post("/grid")
 async def run_grid_search(request: GridSearchRequest) -> Dict:
-    """Run grid search optimization"""
+    """Run grid search optimization.
+
+    Args:
+        request: GridSearchRequest with symbol, dates, strategy, and param_grid
+
+    Returns:
+        Dict with best_params, best_sharpe, all_results, and optimization_stats
+
+    Raises:
+        HTTPException: If optimization fails
+
+    Example:
+        curl -X POST "http://localhost:8000/api/backtest/grid" \
+             -H "Content-Type: application/json" \
+             -d '{"symbol": "BTC/USDT", "start": "2024-01-01", "end": "2024-01-31",
+                  "strategy": "sma_cross",
+                  "param_grid": {"fast_period": [5, 10, 15], "slow_period": [20, 30, 40]}}'
+    """
     try:
         logger.info(f"Starting grid search: {request.strategy} on {request.symbol}")
 

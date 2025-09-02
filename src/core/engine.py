@@ -20,7 +20,12 @@ class TradingEngine:
         initial_capital: float = 100000,
         risk_parameters: Optional[RiskParameters] = None,
     ):
-        """Initialize trading engine."""
+        """Initialize trading engine.
+
+        Args:
+            initial_capital: Starting capital in USD
+            risk_parameters: Risk management configuration
+        """
         self.order_manager = OrderManager()
         self.position_manager = PositionManager()
         self.risk_manager = RiskManager(risk_parameters)
@@ -36,7 +41,10 @@ class TradingEngine:
         self.risk_manager.update_portfolio_value(initial_capital)
 
     async def start(self) -> None:
-        """Start the trading engine."""
+        """Start the trading engine.
+
+        Starts background tasks for order processing, position updates, and risk monitoring.
+        """
         self.is_running = True
         logger.info("Trading engine started")
 
@@ -46,7 +54,10 @@ class TradingEngine:
         asyncio.create_task(self._monitor_risk())
 
     async def stop(self) -> None:
-        """Stop the trading engine."""
+        """Stop the trading engine.
+
+        Cancels all active orders and stops background tasks.
+        """
         self.is_running = False
 
         # Cancel all active orders
@@ -63,7 +74,18 @@ class TradingEngine:
         quantity: float,
         price: Optional[float] = None,
     ) -> Optional[Order]:
-        """Place a new order with risk checks."""
+        """Place a new order with risk checks.
+
+        Args:
+            symbol: Trading symbol (e.g., BTC/USDT)
+            side: Order side (BUY or SELL)
+            order_type: Order type (MARKET or LIMIT)
+            quantity: Order quantity
+            price: Limit price (required for LIMIT orders)
+
+        Returns:
+            Order object if successful, None if rejected by risk checks
+        """
 
         # Pre-trade risk checks
         position_value = quantity * (price or self.last_prices.get(symbol, 0))

@@ -63,7 +63,7 @@ class DailyReportGenerator:
                 self.logger.error(f"Scheduler loop error: {e}")
                 await asyncio.sleep(3600)  # Wait an hour on error
 
-    async def generate_and_send_report(self, manual: bool = False):
+    async def generate_and_send_report(self):
         """Generate and send daily report"""
         try:
             # Collect data

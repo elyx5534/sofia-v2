@@ -3,7 +3,7 @@
 from datetime import datetime
 
 import pytest
-from src.trading_engine.order_manager import (
+from src.core.order_manager import (
     Order,
     OrderManager,
     OrderSide,

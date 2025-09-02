@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 
 import pytest
-from src.trading_engine.risk_manager import RiskManager, RiskMetrics, RiskParameters
+from src.core.risk_manager import RiskManager, RiskMetrics, RiskParameters
 
 
 class TestRiskParameters:

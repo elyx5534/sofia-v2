@@ -1,0 +1,11 @@
+[importlinter]
+root_package = src
+
+[contracts.layers]
+name = layered-architecture
+type = layers
+layers =
+    src.api
+    src.services
+    src.adapters
+container = src

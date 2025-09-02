@@ -3,7 +3,7 @@
 from datetime import datetime
 
 import pytest
-from src.trading_engine.position_manager import Position, PositionManager
+from src.core.position_manager import Position, PositionManager
 
 
 class TestPosition:

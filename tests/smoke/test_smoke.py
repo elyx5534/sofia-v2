@@ -116,8 +116,8 @@ def test_accounting_basic_operation():
             "side": "buy",
             "price": Decimal("50000"),
             "quantity": Decimal("0.1"),
-            "fee": Decimal("0.001"),
-            "fee_currency": "USDT",
+            "fee_pct": Decimal("0.1"),  # 0.1% fee
+            "fill_id": "test-fill-1",
             "timestamp": "2024-01-01T00:00:00",
         },
     )()
