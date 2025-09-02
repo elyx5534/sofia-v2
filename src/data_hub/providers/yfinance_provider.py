@@ -79,7 +79,7 @@ class YFinanceProvider:
         except Exception as e:
             if "No data found" in str(e):
                 raise ValueError(f"Symbol {symbol} not found") from e
-            raise Exception(f"YFinance error: {str(e)}") from e
+            raise Exception(f"YFinance error: {e!s}") from e
 
     def _fetch_sync(
         self,
@@ -143,7 +143,7 @@ class YFinanceProvider:
             results = await loop.run_in_executor(None, self._search_sync, query, limit)
             return results
         except Exception as e:
-            raise Exception(f"YFinance search error: {str(e)}") from e
+            raise Exception(f"YFinance search error: {e!s}") from e
 
     def _search_sync(self, query: str, limit: int) -> list[SymbolInfo]:
         """Synchronous search function."""

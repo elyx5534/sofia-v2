@@ -3,15 +3,16 @@ Quotes API Routes
 Real-time and historical price data endpoints
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 
+from fastapi import APIRouter, HTTPException, Query
 from src.services.datahub import datahub
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/quotes", tags=["quotes"])
+
 
 @router.get("/ticker")
 async def get_ticker(symbol: str = Query(..., description="Symbol like BTC/USDT")) -> Dict:
@@ -25,12 +26,13 @@ async def get_ticker(symbol: str = Query(..., description="Symbol like BTC/USDT"
         logger.error(f"Ticker error for {symbol}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/ohlcv")
 async def get_ohlcv(
     symbol: str = Query(..., description="Symbol like BTC/USDT"),
     tf: str = Query("1d", description="Timeframe: 1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w"),
     start: Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
-    end: Optional[str] = Query(None, description="End date YYYY-MM-DD")
+    end: Optional[str] = Query(None, description="End date YYYY-MM-DD"),
 ) -> List[List]:
     """Get OHLCV data for a symbol"""
     try:
@@ -40,20 +42,20 @@ async def get_ohlcv(
         if not start:
             # Default to 30 days ago
             start = (datetime.now() - timedelta(days=30)).isoformat()[:10]
-            
+
         data = datahub.get_ohlcv(symbol, tf, start, end)
-        
+
         if not data:
             raise HTTPException(
-                status_code=404, 
-                detail=f"No data found for {symbol} from {start} to {end}"
+                status_code=404, detail=f"No data found for {symbol} from {start} to {end}"
             )
-            
+
         return data
-        
+
     except Exception as e:
         logger.error(f"OHLCV error for {symbol}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/symbols")
 async def get_symbols() -> List[str]:
@@ -61,7 +63,7 @@ async def get_symbols() -> List[str]:
     # Return common crypto pairs
     return [
         "BTC/USDT",
-        "ETH/USDT", 
+        "ETH/USDT",
         "BNB/USDT",
         "SOL/USDT",
         "ADA/USDT",
@@ -69,8 +71,9 @@ async def get_symbols() -> List[str]:
         "AVAX/USDT",
         "MATIC/USDT",
         "LINK/USDT",
-        "UNI/USDT"
+        "UNI/USDT",
     ]
+
 
 @router.get("/health")
 async def health_check() -> Dict:
@@ -81,11 +84,7 @@ async def health_check() -> Dict:
         return {
             "status": "healthy" if result["price"] > 0 else "degraded",
             "btc_price": result["price"],
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now().isoformat()}

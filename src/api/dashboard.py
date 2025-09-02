@@ -25,15 +25,15 @@ DASHBOARD_HTML = """
             padding: 20px;
         }
         .container { max-width: 1400px; margin: 0 auto; }
-        .header { 
-            text-align: center; 
+        .header {
+            text-align: center;
             margin-bottom: 30px;
             padding: 20px;
             background: rgba(255,255,255,0.05);
             border-radius: 15px;
         }
-        .header h1 { 
-            font-size: 2.5rem; 
+        .header h1 {
+            font-size: 2.5rem;
             margin-bottom: 10px;
             background: linear-gradient(90deg, #00f260, #0575e6);
             -webkit-background-clip: text;
@@ -170,11 +170,11 @@ DASHBOARD_HTML = """
             <h1>Sofia V2 P&L Dashboard</h1>
             <p style="opacity: 0.6">Real-time Paper Trading Performance</p>
         </div>
-        
+
         <div id="errorBanner" class="error-banner">
             Backend connection lost. Retrying...
         </div>
-        
+
         <div class="grid">
             <!-- Today's P&L Card -->
             <div class="card">
@@ -192,7 +192,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- Trading Stats Card -->
             <div class="card">
                 <h2>Trading Stats</h2>
@@ -210,7 +210,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- Live Proof Card -->
             <div class="card">
                 <h2>Live Market (BTC/USDT)</h2>
@@ -229,18 +229,18 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
                 <div style="text-align: center; margin-top: 10px; opacity: 0.5; font-size: 0.8rem;">
-                    Exchange: <span id="exchangeName">Binance</span> | 
+                    Exchange: <span id="exchangeName">Binance</span> |
                     <span id="lastUpdate">Never</span>
                 </div>
             </div>
         </div>
-        
+
         <!-- Equity Chart -->
         <div class="chart-container">
             <h2 style="margin-bottom: 20px; color: #00f260;">Equity Curve</h2>
             <canvas id="equityChart"></canvas>
         </div>
-        
+
         <!-- Last Trades Table -->
         <div class="trades-table">
             <h2>Last Trades</h2>
@@ -324,7 +324,7 @@ DASHBOARD_HTML = """
                 scales: {
                     x: {
                         grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { 
+                        ticks: {
                             color: '#888',
                             maxTicksLimit: 10,
                             autoSkip: true
@@ -332,7 +332,7 @@ DASHBOARD_HTML = """
                     },
                     y: {
                         grid: { color: 'rgba(255,255,255,0.05)' },
-                        ticks: { 
+                        ticks: {
                             color: '#888',
                             callback: function(value) {
                                 return '$' + value.toFixed(2);
@@ -342,43 +342,43 @@ DASHBOARD_HTML = """
                 }
             }
         });
-        
+
         let equityHistory = [];
         let errorCount = 0;
         let sessionRunning = false;
-        
+
         // Update P&L Summary
         async function updatePnlSummary() {
             try {
                 const response = await fetch('/api/pnl/summary');
                 if (!response.ok) throw new Error('Failed to fetch P&L');
-                
+
                 const data = await response.json();
-                
+
                 // Update P&L values
                 const totalPnl = data.total_pnl || 0;
                 const pnlPercent = data.pnl_percentage || 0;
-                
+
                 document.getElementById('todayPnl').textContent = '$' + totalPnl.toFixed(2);
-                document.getElementById('todayPnl').className = 'pnl-value ' + 
+                document.getElementById('todayPnl').className = 'pnl-value ' +
                     (totalPnl > 0 ? 'pnl-positive' : totalPnl < 0 ? 'pnl-negative' : 'pnl-neutral');
-                
-                document.getElementById('todayPnlPercent').textContent = 
+
+                document.getElementById('todayPnlPercent').textContent =
                     (pnlPercent >= 0 ? '+' : '') + pnlPercent.toFixed(2) + '%';
                 document.getElementById('todayPnlPercent').className = 'pnl-percent ' +
                     (pnlPercent > 0 ? 'pnl-positive' : pnlPercent < 0 ? 'pnl-negative' : '');
-                
+
                 document.getElementById('realizedPnl').textContent = '$' + (data.realized_pnl || 0).toFixed(2);
                 document.getElementById('unrealizedPnl').textContent = '$' + (data.unrealized_pnl || 0).toFixed(2);
                 document.getElementById('totalTrades').textContent = data.total_trades || 0;
                 document.getElementById('winRate').textContent = (data.win_rate || 0).toFixed(1) + '%';
                 document.getElementById('currentEquity').textContent = '$' + (data.final_capital || 1000).toFixed(2);
-                
+
                 // Update session status indicator
                 sessionRunning = data.is_running || false;
                 const statusText = sessionRunning ? '🟢 LIVE' : (data.session_complete ? '✅ COMPLETE' : '⭕ IDLE');
                 document.querySelector('.header p').innerHTML = 'Real-time Paper Trading Performance | Status: ' + statusText + ' | Source: ' + (data.source || 'default');
-                
+
                 // Update equity chart based on source
                 if (data.source === 'timeseries' && data.timeseries) {
                     // Use timeseries data for chart
@@ -390,57 +390,57 @@ DASHBOARD_HTML = """
                     // Single point update
                     const now = new Date().toLocaleTimeString();
                     equityHistory.push(data.final_capital || 1000);
-                    
+
                     // Keep only last 50 points
                     if (equityHistory.length > 50) {
                         equityHistory.shift();
                         equityChart.data.labels.shift();
                     }
-                    
+
                     equityChart.data.labels.push(now);
                     equityChart.data.datasets[0].data = [...equityHistory];
                     equityChart.update('none');
                 }
-                
+
                 // Reset error state
                 errorCount = 0;
                 document.getElementById('errorBanner').style.display = 'none';
-                
+
             } catch (error) {
                 console.error('Error updating P&L:', error);
                 handleError();
             }
         }
-        
+
         // Update chart from timeseries data
         function updateChartFromTimeseries(timeseries) {
             if (!timeseries || timeseries.length === 0) return;
-            
+
             // Clear and rebuild chart data
             const labels = [];
             const data = [];
-            
+
             // Use last 60 points or all if less
             const points = timeseries.slice(-60);
-            
+
             points.forEach(point => {
                 const date = new Date(point.ts_ms);
                 labels.push(date.toLocaleTimeString());
                 data.push(point.equity);
             });
-            
+
             // Calculate min/max for autoscale with buffer
             const minValue = Math.min(...data);
             const maxValue = Math.max(...data);
             const buffer = (maxValue - minValue) * 0.02 || 10; // 2% buffer or $10 minimum
-            
+
             // Update chart with autoscaled Y-axis
             equityChart.options.scales.y.min = minValue - buffer;
             equityChart.options.scales.y.max = maxValue + buffer;
-            
+
             equityChart.data.labels = labels;
             equityChart.data.datasets[0].data = data;
-            
+
             // Update chart appearance for step-like visualization
             if (points.length > 10) {
                 equityChart.data.datasets[0].stepped = 'before'; // Step-like line
@@ -448,27 +448,27 @@ DASHBOARD_HTML = """
                 equityChart.data.datasets[0].pointRadius = 1;
                 equityChart.data.datasets[0].pointHoverRadius = 4;
             }
-            
+
             equityChart.update('none');
-            
+
             // Store for future updates
             equityHistory = [...data];
         }
-        
+
         // Update Live Proof
         async function updateLiveProof() {
             try {
                 const response = await fetch('/live-proof?symbol=BTC/USDT');
                 if (!response.ok) throw new Error('Failed to fetch live proof');
-                
+
                 const data = await response.json();
-                
+
                 document.getElementById('liveBid').textContent = '$' + (data.bid || 0).toFixed(2);
                 document.getElementById('liveAsk').textContent = '$' + (data.ask || 0).toFixed(2);
                 document.getElementById('liveLast').textContent = '$' + (data.last || 0).toFixed(2);
                 document.getElementById('exchangeName').textContent = data.exchange || 'Unknown';
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-                
+
             } catch (error) {
                 console.error('Error updating live proof:', error);
                 document.getElementById('liveBid').textContent = '-';
@@ -476,42 +476,42 @@ DASHBOARD_HTML = """
                 document.getElementById('liveLast').textContent = '-';
             }
         }
-        
+
         // Update Trades Table
         async function updateTrades() {
             try {
                 const response = await fetch('/api/pnl/logs/trades?n=10');
                 if (!response.ok) throw new Error('Failed to fetch trades');
-                
+
                 const data = await response.json();
                 const tbody = document.getElementById('tradesBody');
-                
+
                 if (data.items && data.items.length > 0) {
                     tbody.innerHTML = '';
-                    
+
                     // Display trades (already sorted by most recent)
                     data.items.slice(0, 10).forEach(trade => {
                         const row = tbody.insertRow();
-                        
+
                         // Time
                         const time = trade.ts_ms ? new Date(trade.ts_ms).toLocaleTimeString() : '-';
                         row.insertCell(0).textContent = time;
-                        
+
                         // Symbol
                         row.insertCell(1).textContent = trade.symbol || 'BTC/USDT';
-                        
+
                         // Side
                         const sideCell = row.insertCell(2);
                         sideCell.textContent = (trade.side || '-').toUpperCase();
                         sideCell.className = trade.side === 'buy' ? 'trade-buy' : 'trade-sell';
-                        
+
                         // Quantity
                         row.insertCell(3).textContent = (trade.qty || 0).toFixed(8);
-                        
+
                         // Price
                         row.insertCell(4).textContent = '$' + (trade.price || 0).toFixed(2);
                     });
-                    
+
                     // Update trade count indicator
                     const tradeCountEl = document.getElementById('totalTrades');
                     if (tradeCountEl && data.total_trades) {
@@ -520,14 +520,14 @@ DASHBOARD_HTML = """
                 } else {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; opacity: 0.5;">No trades yet</td></tr>';
                 }
-                
+
             } catch (error) {
                 console.error('Error updating trades:', error);
                 const tbody = document.getElementById('tradesBody');
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; opacity: 0.5; color: #ff4444;">Error loading trades</td></tr>';
             }
         }
-        
+
         // Handle errors
         function handleError() {
             errorCount++;
@@ -535,12 +535,12 @@ DASHBOARD_HTML = """
                 document.getElementById('errorBanner').style.display = 'block';
             }
         }
-        
+
         // Initial load
         updatePnlSummary();
         updateLiveProof();
         updateTrades();
-        
+
         // Set up polling (every 5 seconds)
         setInterval(() => {
             updatePnlSummary();
@@ -551,6 +551,7 @@ DASHBOARD_HTML = """
 </body>
 </html>
 """
+
 
 @router.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():

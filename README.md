@@ -1,53 +1,33 @@
-# Sofia V2 - Quantitative Trading Platform 🚀
+# Sofia V2
 
-> **Enterprise-grade algorithmic trading system with portfolio backtesting, live trading, and production monitoring**
+**Quantitative Trading Platform**
 
-[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
-[![Prometheus](https://img.shields.io/badge/Prometheus-Metrics-orange.svg)](https://prometheus.io)
-[![Coverage](https://img.shields.io/badge/Coverage-70%25+-green.svg)]()
-
-## 🚀 Quick Start
-
-### Windows Quick Start (PowerShell)
+## Quick Start
 
 ```powershell
-# 1. Clone the repository
-git clone https://github.com/yourusername/sofia-v2.git
-cd sofia-v2
+# Setup
+python -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
 
-# 2. Run production with single command (API + Paper Trading + UI)
-.\scripts\prod_run.ps1
+# Run API
+uvicorn src.api.main:app --reload
 
-# Options:
-.\scripts\prod_run.ps1 -NoPaper  # Skip paper trading
-.\scripts\prod_run.ps1 -NoArb    # Skip arbitrage radar
-.\scripts\prod_run.ps1 -NoUI     # Skip browser launch
-.\scripts\prod_run.ps1 -Port 9000  # Custom port
+# Access
+# Dashboard: http://127.0.0.1:8000/dashboard
+# Studio: http://127.0.0.1:8000/backtest-studio
+# API Docs: http://127.0.0.1:8000/docs
 ```
 
-### Docker Quick Start
+## Documentation
 
-```bash
-# 1. Copy environment template
-cp .env.example .env
-# Edit .env with your API keys and passwords
+- [Architecture](docs/architecture.md) - System design and components
+- [DataHub](docs/datahub.md) - Market data management
+- [Backtester](docs/backtester.md) - Strategy testing and optimization
+- [Execution](docs/execution.md) - Live and paper trading
+- [Arbitrage](docs/arbitrage.md) - Turkish market arbitrage
+- [Operations](docs/operations.md) - Deployment and monitoring
 
-# 2. Start all services
-docker-compose up -d
-
-# 3. Access services
-# API: http://localhost:8000
-# Grafana: http://localhost:3000 (admin/your_password)
-# Prometheus: http://localhost:9090
-# RabbitMQ: http://localhost:15672
-
-# 4. Stop all services
-docker-compose down
-```
-
-### Manual Setup (Development)
+## Development
 
 ```bash
 # Setup virtual environment (first time only)
@@ -245,7 +225,7 @@ sofia-v2/
 class MyStrategy(Strategy):
     def __init__(self, param1: float = 10):
         self.param1 = param1
-    
+
     def generate_signals(self, data: pd.DataFrame) -> pd.Series:
         # Your logic here
         signals = pd.Series(0, index=data.index)
@@ -365,7 +345,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## ⚠️ Disclaimer
 
-**IMPORTANT**: This software is for educational and research purposes only. 
+**IMPORTANT**: This software is for educational and research purposes only.
 
 - Not financial advice
 - No warranty provided

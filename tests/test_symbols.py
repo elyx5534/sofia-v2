@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 from src.data_hub.api import app
 from src.data_hub.models import AssetType, SymbolInfo
 

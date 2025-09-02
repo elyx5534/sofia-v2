@@ -1,14 +1,16 @@
 """Order management module."""
 
+import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
-import uuid
 
 
 class OrderType(str, Enum):
     """Order types."""
+
     MARKET = "market"
     LIMIT = "limit"
     STOP = "stop"
@@ -18,12 +20,14 @@ class OrderType(str, Enum):
 
 class OrderSide(str, Enum):
     """Order side."""
+
     BUY = "buy"
     SELL = "sell"
 
 
 class OrderStatus(str, Enum):
     """Order status."""
+
     PENDING = "pending"
     OPEN = "open"
     PARTIALLY_FILLED = "partially_filled"
@@ -35,6 +39,7 @@ class OrderStatus(str, Enum):
 
 class TimeInForce(str, Enum):
     """Time in force."""
+
     GTC = "gtc"  # Good Till Cancelled
     IOC = "ioc"  # Immediate or Cancel
     FOK = "fok"  # Fill or Kill
@@ -43,7 +48,7 @@ class TimeInForce(str, Enum):
 
 class Order(BaseModel):
     """Order model."""
-    
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     symbol: str
     side: OrderSide
@@ -58,15 +63,15 @@ class Order(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     notes: Optional[str] = None
-    
+
     def is_filled(self) -> bool:
         """Check if order is completely filled."""
         return self.status == OrderStatus.FILLED
-    
+
     def is_active(self) -> bool:
         """Check if order is active."""
         return self.status in [OrderStatus.PENDING, OrderStatus.OPEN, OrderStatus.PARTIALLY_FILLED]
-    
+
     def cancel(self) -> None:
         """Cancel the order."""
         if self.is_active():
@@ -76,13 +81,13 @@ class Order(BaseModel):
 
 class OrderManager:
     """Manages orders."""
-    
+
     def __init__(self):
         """Initialize order manager."""
         self.orders: dict[str, Order] = {}
         self.active_orders: List[Order] = []
         self.order_history: List[Order] = []
-    
+
     def create_order(
         self,
         symbol: str,
@@ -103,12 +108,12 @@ class OrderManager:
             stop_price=stop_price,
             time_in_force=time_in_force,
         )
-        
+
         self.orders[order.id] = order
         self.active_orders.append(order)
-        
+
         return order
-    
+
     def cancel_order(self, order_id: str) -> bool:
         """Cancel an order."""
         if order_id in self.orders:
@@ -119,7 +124,7 @@ class OrderManager:
                 self.order_history.append(order)
                 return True
         return False
-    
+
     def update_order_status(
         self,
         order_id: str,
@@ -131,29 +136,29 @@ class OrderManager:
         if order_id in self.orders:
             order = self.orders[order_id]
             order.status = status
-            
+
             if filled_quantity is not None:
                 order.filled_quantity = filled_quantity
-            
+
             if average_fill_price is not None:
                 order.average_fill_price = average_fill_price
-            
+
             order.updated_at = datetime.utcnow()
-            
+
             # Move to history if completed
             if not order.is_active() and order in self.active_orders:
                 self.active_orders.remove(order)
                 self.order_history.append(order)
-            
+
             return True
         return False
-    
+
     def get_active_orders(self, symbol: Optional[str] = None) -> List[Order]:
         """Get active orders."""
         if symbol:
             return [o for o in self.active_orders if o.symbol == symbol]
         return self.active_orders.copy()
-    
+
     def get_order_history(self, symbol: Optional[str] = None, limit: int = 100) -> List[Order]:
         """Get order history."""
         history = self.order_history

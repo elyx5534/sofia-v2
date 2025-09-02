@@ -3,17 +3,17 @@ Sofia V2 - Unified Exchange Interface
 Production-ready base class for all exchanges
 """
 
+import asyncio
+import logging
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Callable
 from decimal import Decimal
 from enum import Enum
-import asyncio
-import time
-import logging
-from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
 
 class OrderType(Enum):
     MARKET = "market"
@@ -22,9 +22,11 @@ class OrderType(Enum):
     STOP_LIMIT = "stop_limit"
     TAKE_PROFIT = "take_profit"
 
+
 class OrderSide(Enum):
     BUY = "buy"
     SELL = "sell"
+
 
 class OrderStatus(Enum):
     PENDING = "pending"
@@ -35,6 +37,7 @@ class OrderStatus(Enum):
     REJECTED = "rejected"
     EXPIRED = "expired"
 
+
 class ExchangeStatus(Enum):
     CONNECTED = "connected"
     CONNECTING = "connecting"
@@ -42,21 +45,25 @@ class ExchangeStatus(Enum):
     ERROR = "error"
     MAINTENANCE = "maintenance"
 
+
 @dataclass
 class Balance:
     """Account balance information"""
+
     currency: str
     free: Decimal
     used: Decimal
     total: Decimal
-    
+
     @property
     def available(self) -> Decimal:
         return self.free
 
+
 @dataclass
 class Ticker:
     """Market ticker data"""
+
     symbol: str
     timestamp: int
     bid: Decimal
@@ -67,43 +74,45 @@ class Ticker:
     high_24h: Decimal
     low_24h: Decimal
     vwap: Optional[Decimal] = None
-    
+
     @property
     def mid_price(self) -> Decimal:
         return (self.bid + self.ask) / 2
-    
+
     @property
     def spread(self) -> Decimal:
         return self.ask - self.bid
-    
+
     @property
     def spread_percentage(self) -> Decimal:
         if self.mid_price > 0:
             return (self.spread / self.mid_price) * 100
         return Decimal(0)
 
+
 @dataclass
 class OrderBook:
     """Order book data"""
+
     symbol: str
     timestamp: int
     bids: List[List[Decimal]]  # [[price, amount], ...]
     asks: List[List[Decimal]]  # [[price, amount], ...]
-    
+
     @property
     def best_bid(self) -> Optional[Decimal]:
         return self.bids[0][0] if self.bids else None
-    
+
     @property
     def best_ask(self) -> Optional[Decimal]:
         return self.asks[0][0] if self.asks else None
-    
+
     @property
     def spread(self) -> Optional[Decimal]:
         if self.best_bid and self.best_ask:
             return self.best_ask - self.best_bid
         return None
-    
+
     def get_depth(self, side: str, price_levels: int = 5) -> Decimal:
         """Calculate total volume at given price levels"""
         orders = self.bids if side == "bid" else self.asks
@@ -114,9 +123,11 @@ class OrderBook:
             total += amount
         return total
 
+
 @dataclass
 class Order:
     """Order information"""
+
     id: str
     exchange: str
     symbol: str
@@ -132,27 +143,29 @@ class Order:
     fee_currency: Optional[str] = None
     trades: List[Dict] = field(default_factory=list)
     client_order_id: Optional[str] = None
-    
+
     def __post_init__(self):
         self.remaining = self.amount - self.filled
-    
+
     @property
     def is_filled(self) -> bool:
         return self.status == OrderStatus.FILLED
-    
+
     @property
     def is_open(self) -> bool:
         return self.status in [OrderStatus.OPEN, OrderStatus.PARTIALLY_FILLED]
-    
+
     @property
     def fill_percentage(self) -> Decimal:
         if self.amount > 0:
             return (self.filled / self.amount) * 100
         return Decimal(0)
 
+
 @dataclass
 class Trade:
     """Trade execution information"""
+
     id: str
     order_id: str
     symbol: str
@@ -162,21 +175,22 @@ class Trade:
     fee: Decimal
     fee_currency: str
     timestamp: int
-    
+
     @property
     def cost(self) -> Decimal:
         return self.price * self.amount
 
+
 class RateLimiter:
     """Rate limiter to prevent API bans"""
-    
+
     def __init__(self, requests_per_second: int = 10, burst: int = 20):
         self.requests_per_second = requests_per_second
         self.burst = burst
         self.tokens = burst
         self.last_update = time.time()
         self.lock = asyncio.Lock()
-    
+
     async def acquire(self, weight: int = 1):
         """Acquire permission to make a request"""
         async with self.lock:
@@ -184,17 +198,18 @@ class RateLimiter:
             elapsed = now - self.last_update
             self.tokens = min(self.burst, self.tokens + elapsed * self.requests_per_second)
             self.last_update = now
-            
+
             if self.tokens < weight:
                 sleep_time = (weight - self.tokens) / self.requests_per_second
                 await asyncio.sleep(sleep_time)
                 self.tokens = weight
-            
+
             self.tokens -= weight
+
 
 class BaseExchange(ABC):
     """Base class for all exchange implementations"""
-    
+
     def __init__(self, config: Dict[str, Any]):
         self.name = self.__class__.__name__.replace("Exchange", "").lower()
         self.config = config
@@ -203,8 +218,7 @@ class BaseExchange(ABC):
         self.testnet = config.get("testnet", False)
         self.status = ExchangeStatus.DISCONNECTED
         self.rate_limiter = RateLimiter(
-            requests_per_second=config.get("rate_limit", 10),
-            burst=config.get("burst_limit", 20)
+            requests_per_second=config.get("rate_limit", 10), burst=config.get("burst_limit", 20)
         )
         self.websocket_handlers: Dict[str, List[Callable]] = {}
         self.last_ping = 0
@@ -213,46 +227,46 @@ class BaseExchange(ABC):
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = config.get("max_reconnect", 5)
         self.reconnect_delay = config.get("reconnect_delay", 5)
-        
+
         # Fee structure
         self.maker_fee = Decimal(str(config.get("maker_fee", "0.001")))
         self.taker_fee = Decimal(str(config.get("taker_fee", "0.001")))
-        
+
         # WebSocket connection
         self.ws_connection = None
         self.ws_connected = False
-        
+
         # Cache
         self.ticker_cache: Dict[str, Ticker] = {}
         self.orderbook_cache: Dict[str, OrderBook] = {}
         self.balance_cache: Dict[str, Balance] = {}
         self.cache_ttl = config.get("cache_ttl", 1000)  # milliseconds
-    
+
     @abstractmethod
     async def connect(self) -> bool:
         """Connect to exchange API"""
         pass
-    
+
     @abstractmethod
     async def disconnect(self):
         """Disconnect from exchange"""
         pass
-    
+
     @abstractmethod
     async def get_balance(self, currency: Optional[str] = None) -> Dict[str, Balance]:
         """Get account balance"""
         pass
-    
+
     @abstractmethod
     async def get_ticker(self, symbol: str) -> Ticker:
         """Get ticker for symbol"""
         pass
-    
+
     @abstractmethod
     async def get_orderbook(self, symbol: str, limit: int = 20) -> OrderBook:
         """Get order book for symbol"""
         pass
-    
+
     @abstractmethod
     async def place_order(
         self,
@@ -261,59 +275,53 @@ class BaseExchange(ABC):
         order_type: OrderType,
         amount: Decimal,
         price: Optional[Decimal] = None,
-        **kwargs
+        **kwargs,
     ) -> Order:
         """Place an order"""
         pass
-    
+
     @abstractmethod
     async def cancel_order(self, order_id: str, symbol: Optional[str] = None) -> bool:
         """Cancel an order"""
         pass
-    
+
     @abstractmethod
     async def get_order(self, order_id: str, symbol: Optional[str] = None) -> Order:
         """Get order status"""
         pass
-    
+
     @abstractmethod
     async def get_open_orders(self, symbol: Optional[str] = None) -> List[Order]:
         """Get all open orders"""
         pass
-    
+
     @abstractmethod
     async def get_order_history(
-        self, 
-        symbol: Optional[str] = None, 
-        limit: int = 100
+        self, symbol: Optional[str] = None, limit: int = 100
     ) -> List[Order]:
         """Get order history"""
         pass
-    
+
     @abstractmethod
-    async def get_trades(
-        self, 
-        symbol: Optional[str] = None, 
-        limit: int = 100
-    ) -> List[Trade]:
+    async def get_trades(self, symbol: Optional[str] = None, limit: int = 100) -> List[Trade]:
         """Get trade history"""
         pass
-    
+
     @abstractmethod
     async def subscribe_ticker(self, symbol: str, callback: Callable):
         """Subscribe to ticker updates via WebSocket"""
         pass
-    
+
     @abstractmethod
     async def subscribe_orderbook(self, symbol: str, callback: Callable):
         """Subscribe to order book updates via WebSocket"""
         pass
-    
+
     @abstractmethod
     async def subscribe_trades(self, symbol: str, callback: Callable):
         """Subscribe to trade updates via WebSocket"""
         pass
-    
+
     async def ping(self) -> int:
         """Measure exchange latency"""
         start = time.time()
@@ -326,34 +334,36 @@ class BaseExchange(ABC):
         except Exception as e:
             logger.error(f"{self.name} ping failed: {e}")
             return -1
-    
+
     async def _ping_exchange(self):
         """Exchange-specific ping implementation"""
         # Default: get server time
         pass
-    
+
     def calculate_fee(self, amount: Decimal, price: Decimal, is_maker: bool = False) -> Decimal:
         """Calculate trading fee"""
         fee_rate = self.maker_fee if is_maker else self.taker_fee
         return amount * price * fee_rate
-    
+
     def is_cache_valid(self, timestamp: int) -> bool:
         """Check if cached data is still valid"""
         return (int(time.time() * 1000) - timestamp) < self.cache_ttl
-    
+
     async def reconnect_websocket(self):
         """Reconnect WebSocket with exponential backoff"""
         if self.reconnect_attempts >= self.max_reconnect_attempts:
             logger.error(f"{self.name}: Max reconnection attempts reached")
             self.status = ExchangeStatus.ERROR
             return False
-        
+
         self.reconnect_attempts += 1
         delay = self.reconnect_delay * (2 ** (self.reconnect_attempts - 1))
-        
-        logger.info(f"{self.name}: Reconnecting in {delay} seconds (attempt {self.reconnect_attempts})")
+
+        logger.info(
+            f"{self.name}: Reconnecting in {delay} seconds (attempt {self.reconnect_attempts})"
+        )
         await asyncio.sleep(delay)
-        
+
         try:
             await self.disconnect()
             success = await self.connect()
@@ -364,13 +374,13 @@ class BaseExchange(ABC):
                 return True
         except Exception as e:
             logger.error(f"{self.name}: Reconnection failed: {e}")
-        
+
         return False
-    
+
     async def health_check(self) -> Dict[str, Any]:
         """Perform health check"""
         latency = await self.ping()
-        
+
         return {
             "exchange": self.name,
             "status": self.status.value,
@@ -380,15 +390,15 @@ class BaseExchange(ABC):
             "ws_connected": self.ws_connected,
             "cached_symbols": len(self.ticker_cache),
             "open_orders": 0,  # Override in implementation
-            "testnet": self.testnet
+            "testnet": self.testnet,
         }
-    
+
     def format_symbol(self, base: str, quote: str) -> str:
         """Format trading pair symbol for this exchange"""
         # Default format: BTCUSDT
         # Override in specific exchanges if different
         return f"{base}{quote}"
-    
+
     def parse_symbol(self, symbol: str) -> tuple[str, str]:
         """Parse symbol into base and quote currencies"""
         # Simple parser for common formats

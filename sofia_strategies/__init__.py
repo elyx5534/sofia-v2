@@ -1,6 +1,6 @@
 """Sofia V2 Trading Strategies Module"""
 
-from .base import Strategy, Signal, SignalType
+from .base import Signal, SignalType, Strategy
 from .grid import GridStrategy
 from .trend import TrendStrategy
 

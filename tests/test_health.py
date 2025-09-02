@@ -2,7 +2,6 @@
 
 import pytest
 from fastapi.testclient import TestClient
-
 from src.data_hub.api import app
 from src.data_hub.settings import settings
 
@@ -24,7 +23,7 @@ def test_health_endpoint_payload(client):
     response = client.get("/health")
     data = response.json()
 
-    assert "status" in data 
+    assert "status" in data
     assert data["status"] == "healthy"
 
     assert "timestamp" in data

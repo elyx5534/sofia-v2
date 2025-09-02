@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Simple Dashboard Server for Sofia V2
 """
 
-import sys
 import io
 import platform
+import sys
 
 # Set UTF-8 encoding for Windows
-if platform.system() == 'Windows':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+if platform.system() == "Windows":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-from flask import Flask, render_template_string, jsonify, request
-import requests
-from datetime import datetime
-import os
 import logging
+import os
+from datetime import datetime
+
+import requests
+from flask import Flask, jsonify, render_template_string, request
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -26,19 +26,20 @@ logger = logging.getLogger(__name__)
 # Auto-discover API endpoint
 API_BASE_URL = None
 
+
 def discover_api():
     """Auto-discover which API port is active"""
     global API_BASE_URL
-    
+
     # Check environment variable first
-    if os.getenv('API_BASE_URL'):
-        API_BASE_URL = os.getenv('API_BASE_URL')
+    if os.getenv("API_BASE_URL"):
+        API_BASE_URL = os.getenv("API_BASE_URL")
         logger.info(f"Using API from env: {API_BASE_URL}")
         return API_BASE_URL
-    
+
     # Try candidate ports
     candidates = ["http://127.0.0.1:8002", "http://127.0.0.1:8012"]
-    
+
     for candidate in candidates:
         try:
             resp = requests.get(f"{candidate}/api/dev/status", timeout=1)
@@ -48,40 +49,47 @@ def discover_api():
                 return API_BASE_URL
         except:
             continue
-    
+
     # Default fallback
     API_BASE_URL = "http://127.0.0.1:8012"
     logger.warning(f"No API found, using default: {API_BASE_URL}")
     return API_BASE_URL
+
 
 # Discover on startup
 discover_api()
 
 app = Flask(__name__)
 
+
 # API Proxy route
-@app.route('/apiProxy/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route("/apiProxy/<path:path>", methods=["GET", "POST", "PUT", "DELETE"])
 def api_proxy(path):
     """Proxy requests to the API server"""
     if not API_BASE_URL:
         discover_api()
-    
+
     url = f"{API_BASE_URL}/{path}"
-    
+
     try:
-        if request.method == 'GET':
+        if request.method == "GET":
             resp = requests.get(url, params=request.args, timeout=10)
-        elif request.method == 'POST':
+        elif request.method == "POST":
             resp = requests.post(url, json=request.get_json(), timeout=10)
-        elif request.method == 'PUT':
+        elif request.method == "PUT":
             resp = requests.put(url, json=request.get_json(), timeout=10)
-        elif request.method == 'DELETE':
+        elif request.method == "DELETE":
             resp = requests.delete(url, timeout=10)
-        
-        return resp.content, resp.status_code, {'Content-Type': resp.headers.get('Content-Type', 'application/json')}
+
+        return (
+            resp.content,
+            resp.status_code,
+            {"Content-Type": resp.headers.get("Content-Type", "application/json")},
+        )
     except Exception as e:
         logger.error(f"Proxy error: {e}")
-        return jsonify({'error': str(e)}), 503
+        return jsonify({"error": str(e)}), 503
+
 
 # Simple HTML dashboard template
 DASHBOARD_HTML = """
@@ -92,21 +100,21 @@ DASHBOARD_HTML = """
     <meta charset="utf-8">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px;
         }
         .container { max-width: 1400px; margin: 0 auto; }
-        h1 { 
-            text-align: center; 
+        h1 {
+            text-align: center;
             margin-bottom: 30px;
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        .grid { 
-            display: grid; 
+        .grid {
+            display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
@@ -133,7 +141,7 @@ DASHBOARD_HTML = """
         }
         .metric:last-child { border-bottom: none; }
         .label { opacity: 0.8; }
-        .value { 
+        .value {
             font-weight: bold;
             font-size: 1.1em;
         }
@@ -178,7 +186,7 @@ DASHBOARD_HTML = """
 <body>
     <div class="container">
         <h1>Sofia V2 Trading Dashboard <small style="font-size: 0.5em; opacity: 0.7;">API: <span id="api-status">discovering...</span></small></h1>
-        
+
         <div class="grid">
             <!-- P&L Summary Card -->
             <div class="card">
@@ -202,7 +210,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- Live Guard Card -->
             <div class="card">
                 <h2>Live Trading Guard</h2>
@@ -225,7 +233,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- QA Metrics Card -->
             <div class="card">
                 <h2>QA Metrics</h2>
@@ -248,7 +256,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- System Status Card -->
             <div class="card">
                 <h2>System Status</h2>
@@ -271,7 +279,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- Campaign Status Card -->
             <div class="card">
                 <h2>Campaign Status</h2>
@@ -294,7 +302,7 @@ DASHBOARD_HTML = """
                     </div>
                 </div>
             </div>
-            
+
             <!-- Quick Actions Card -->
             <div class="card">
                 <h2>Quick Actions</h2>
@@ -306,31 +314,31 @@ DASHBOARD_HTML = """
                 </div>
             </div>
         </div>
-        
+
         <div class="time-update">
             Last updated: <span id="last-update">{{ current_time }}</span>
         </div>
     </div>
-    
+
     <button class="refresh-btn" onclick="refreshData()">Refresh Data</button>
-    
+
     <script>
         // Use proxy for all API calls
         const API_BASE = '/apiProxy';
         let apiPort = 'discovering...';
-        
+
         async function refreshData() {
             try {
                 // Fetch system status first (to check API connectivity)
                 const statusResponse = await fetch(`${API_BASE}/api/dev/status`);
                 const statusData = await statusResponse.json();
-                
+
                 // Update API status display
                 if (statusData.api) {
                     apiPort = window.location.port === '5000' ? '{{API_PORT}}' : 'connected';
                     document.getElementById('api-status').textContent = apiPort + ' (auto)';
                 }
-                
+
                 // Fetch P&L data
                 const pnlResponse = await fetch(`${API_BASE}/api/pnl/summary`);
                 if (pnlResponse.ok) {
@@ -347,12 +355,12 @@ DASHBOARD_HTML = """
                     document.getElementById('total-trades').textContent = '0';
                     document.getElementById('session-status').textContent = 'IDLE';
                 }
-                
+
                 // Update live guard
                 const guardResponse = await fetch(`${API_BASE}/api/live-guard`);
                 if (guardResponse.ok) {
                     const guardData = await guardResponse.json();
-                
+
                     document.getElementById('live-enabled').textContent = guardData.enabled ? 'YES' : 'NO';
                     document.getElementById('live-enabled').className = guardData.enabled ? 'value positive' : 'value negative';
                     document.getElementById('approvals').textContent = `${guardData.approvals?.operator_A ? 1 : 0}/2`;
@@ -366,14 +374,14 @@ DASHBOARD_HTML = """
                     document.getElementById('requirements').textContent = 'NOT MET';
                     document.getElementById('trading-hours').textContent = 'CLOSED';
                 }
-                
+
                 // Update time
                 document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
         }
-        
+
         async function runDemo() {
             try {
                 const response = await fetch(`${API_BASE}/api/dev/actions`, {
@@ -387,7 +395,7 @@ DASHBOARD_HTML = """
                 alert('Failed to start demo: ' + error.message);
             }
         }
-        
+
         async function runQA() {
             try {
                 const response = await fetch(`${API_BASE}/api/dev/actions`, {
@@ -401,7 +409,7 @@ DASHBOARD_HTML = """
                 alert('Failed to start QA: ' + error.message);
             }
         }
-        
+
         async function checkReadiness() {
             try {
                 const response = await fetch(`${API_BASE}/api/dev/actions`, {
@@ -415,16 +423,16 @@ DASHBOARD_HTML = """
                 alert('Failed to check readiness: ' + error.message);
             }
         }
-        
+
         function viewReports() {
             // Determine API port from current connection
             const apiUrl = apiPort.includes('8012') ? 'http://localhost:8012/dev' : 'http://localhost:8002/dev';
             window.open(apiUrl, '_blank');
         }
-        
+
         // Auto-refresh every 5 seconds
         setInterval(refreshData, 5000);
-        
+
         // Initial load
         refreshData();
     </script>
@@ -432,35 +440,38 @@ DASHBOARD_HTML = """
 </html>
 """
 
-@app.route('/')
+
+@app.route("/")
 def dashboard():
     """Render main dashboard"""
     # Pass the discovered API port to the template
-    api_port = API_BASE_URL.split(':')[-1] if API_BASE_URL else 'unknown'
-    html = DASHBOARD_HTML.replace('{{API_PORT}}', api_port)
-    return render_template_string(html, current_time=datetime.now().strftime('%H:%M:%S'))
+    api_port = API_BASE_URL.split(":")[-1] if API_BASE_URL else "unknown"
+    html = DASHBOARD_HTML.replace("{{API_PORT}}", api_port)
+    return render_template_string(html, current_time=datetime.now().strftime("%H:%M:%S"))
 
-@app.route('/api/status')
+
+@app.route("/api/status")
 def api_status():
     """Return system status"""
     try:
         # Try to get data from main API
-        response = requests.get('http://localhost:8001/health', timeout=2)
+        response = requests.get("http://localhost:8001/health", timeout=2)
         health = response.json()
-        
-        return jsonify({
-            'status': 'online',
-            'services': health.get('services', {}),
-            'timestamp': datetime.now().isoformat()
-        })
-    except:
-        return jsonify({
-            'status': 'offline',
-            'services': {},
-            'timestamp': datetime.now().isoformat()
-        })
 
-@app.route('/reports')
+        return jsonify(
+            {
+                "status": "online",
+                "services": health.get("services", {}),
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+    except:
+        return jsonify(
+            {"status": "offline", "services": {}, "timestamp": datetime.now().isoformat()}
+        )
+
+
+@app.route("/reports")
 def reports():
     """Simple reports page"""
     return """
@@ -473,7 +484,8 @@ def reports():
     </ul>
     """
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     print("=" * 60)
     print("SOFIA V2 DASHBOARD SERVER")
     print("=" * 60)
@@ -483,5 +495,5 @@ if __name__ == '__main__':
     print("-" * 60)
     print("Press Ctrl+C to stop")
     print("=" * 60)
-    
-    app.run(host='0.0.0.0', port=5000, debug=False)
+
+    app.run(host="0.0.0.0", port=5000, debug=False)

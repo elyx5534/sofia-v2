@@ -3,18 +3,20 @@
 Test Dashboard Endpoints
 """
 
-import requests
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import requests
+
 
 def test_dashboard():
     """Test dashboard endpoints"""
     base_url = "http://localhost:8000"
-    
+
     print("Testing Dashboard Endpoints...")
     print("=" * 50)
-    
+
     # Test dashboard HTML
     try:
         response = requests.get(f"{base_url}/dashboard", timeout=5)
@@ -27,13 +29,13 @@ def test_dashboard():
         print("\n⚠️  Make sure the API is running:")
         print("    uvicorn src.api.main:app --port 8000")
         return False
-    
+
     # Test P&L summary endpoint
     try:
         response = requests.get(f"{base_url}/api/pnl/summary", timeout=5)
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ /api/pnl/summary - OK")
+            print("✅ /api/pnl/summary - OK")
             print(f"   - Initial Capital: ${data.get('initial_capital', 0)}")
             print(f"   - Final Capital: ${data.get('final_capital', 0)}")
             print(f"   - Total P&L: ${data.get('total_pnl', 0):.2f}")
@@ -42,20 +44,20 @@ def test_dashboard():
             print(f"❌ /api/pnl/summary - Failed: {response.status_code}")
     except Exception as e:
         print(f"❌ /api/pnl/summary - Error: {e}")
-    
+
     # Test logs tail endpoint
     try:
         response = requests.get(f"{base_url}/api/pnl/logs/tail?n=5", timeout=5)
         if response.status_code == 200:
             data = response.json()
-            print(f"✅ /api/pnl/logs/tail - OK")
+            print("✅ /api/pnl/logs/tail - OK")
             print(f"   - Lines returned: {data.get('count', 0)}")
             print(f"   - Total lines in log: {data.get('total_lines', 0)}")
         else:
             print(f"❌ /api/pnl/logs/tail - Failed: {response.status_code}")
     except Exception as e:
         print(f"❌ /api/pnl/logs/tail - Error: {e}")
-    
+
     # Create test P&L summary if none exists
     pnl_path = Path("logs/pnl_summary.json")
     if not pnl_path.exists():
@@ -71,17 +73,18 @@ def test_dashboard():
             "total_trades": 25,
             "win_rate": 68.0,
             "start_timestamp": "2024-01-01T09:00:00",
-            "end_timestamp": "2024-01-01T09:30:00"
+            "end_timestamp": "2024-01-01T09:30:00",
         }
-        with open(pnl_path, 'w') as f:
+        with open(pnl_path, "w") as f:
             json.dump(test_summary, f, indent=2)
         print(f"   Created test data at {pnl_path}")
-    
+
     print("\n" + "=" * 50)
     print("Dashboard test complete!")
-    print(f"\n🌐 Open http://localhost:8000/dashboard to see the live dashboard")
-    
+    print("\n🌐 Open http://localhost:8000/dashboard to see the live dashboard")
+
     return True
+
 
 if __name__ == "__main__":
     success = test_dashboard()

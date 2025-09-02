@@ -7,12 +7,13 @@ Redirects to the main API entrypoint.
 """
 
 import warnings
+
 import uvicorn
 
 warnings.warn(
     "start_api.py is deprecated. Use 'uvicorn src.api.main:app --port 8000 --reload' instead",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 if __name__ == "__main__":

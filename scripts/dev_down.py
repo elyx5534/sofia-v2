@@ -5,11 +5,12 @@ Cleanly stops services started by dev_up.py
 """
 
 import os
-import sys
+import platform
 import signal
+import sys
 import time
 from pathlib import Path
-import platform
+
 import psutil
 
 # Paths
@@ -24,11 +25,11 @@ def read_pid(pid_file: Path) -> int:
     """Read PID from file"""
     if not pid_file.exists():
         return None
-    
+
     try:
-        with open(pid_file, "r") as f:
+        with open(pid_file) as f:
             return int(f.read().strip())
-    except (ValueError, IOError):
+    except (OSError, ValueError):
         return None
 
 
@@ -40,10 +41,9 @@ def is_process_running(pid: int) -> bool:
         # Fallback method if psutil not available
         if platform.system() == "Windows":
             import subprocess
+
             result = subprocess.run(
-                ["tasklist", "/FI", f"PID eq {pid}"],
-                capture_output=True,
-                text=True
+                ["tasklist", "/FI", f"PID eq {pid}"], capture_output=True, text=True, check=False
             )
             return str(pid) in result.stdout
         else:
@@ -59,29 +59,30 @@ def stop_process(name: str, pid: int) -> bool:
     if not is_process_running(pid):
         print(f"  ⚠️  {name} not running (PID: {pid})")
         return True
-    
+
     print(f"  Stopping {name} (PID: {pid})...")
-    
+
     try:
         if platform.system() == "Windows":
             # Windows: Send CTRL_C_EVENT or terminate
             import subprocess
+
             subprocess.run(["taskkill", "/PID", str(pid), "/F"], check=False)
         else:
             # Unix: Send SIGTERM first, then SIGKILL if needed
             os.kill(pid, signal.SIGTERM)
-            
+
             # Wait for graceful shutdown
             for _ in range(10):  # 5 seconds timeout
                 time.sleep(0.5)
                 if not is_process_running(pid):
                     print(f"  ✅ {name} stopped gracefully")
                     return True
-            
+
             # Force kill if still running
             print(f"  ⚠️  Force killing {name}")
             os.kill(pid, signal.SIGKILL)
-        
+
         # Verify stopped
         time.sleep(1)
         if not is_process_running(pid):
@@ -90,7 +91,7 @@ def stop_process(name: str, pid: int) -> bool:
         else:
             print(f"  ❌ Failed to stop {name}")
             return False
-            
+
     except Exception as e:
         print(f"  ❌ Error stopping {name}: {e}")
         return False
@@ -99,13 +100,13 @@ def stop_process(name: str, pid: int) -> bool:
 def kill_orphan_processes():
     """Kill any orphaned uvicorn/python processes on our ports"""
     ports = [8002, 5000]
-    
+
     try:
-        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+        for proc in psutil.process_iter(["pid", "name", "connections"]):
             try:
                 # Check if process is using our ports
                 for conn in proc.connections():
-                    if conn.laddr.port in ports and conn.status == 'LISTEN':
+                    if conn.laddr.port in ports and conn.status == "LISTEN":
                         print(f"  Found orphan process on port {conn.laddr.port} (PID: {proc.pid})")
                         proc.terminate()
                         proc.wait(timeout=5)
@@ -116,12 +117,11 @@ def kill_orphan_processes():
         # psutil not available, try netstat
         if platform.system() != "Windows":
             import subprocess
+
             for port in ports:
                 try:
                     result = subprocess.run(
-                        ["lsof", "-ti", f":{port}"],
-                        capture_output=True,
-                        text=True
+                        ["lsof", "-ti", f":{port}"], capture_output=True, text=True, check=False
                     )
                     if result.stdout:
                         pid = int(result.stdout.strip())
@@ -136,22 +136,22 @@ def clean_up():
     # Remove PID files
     API_PID_FILE.unlink(missing_ok=True)
     DASH_PID_FILE.unlink(missing_ok=True)
-    
+
     # Clean up empty PID directory
     if PID_DIR.exists() and not any(PID_DIR.iterdir()):
         PID_DIR.rmdir()
-    
+
     print("  ✅ Cleaned up PID files")
 
 
 def main():
     """Main entry point"""
-    print("="*60)
+    print("=" * 60)
     print(" 🛑 SOFIA V2 - Development Environment Shutdown")
-    print("="*60)
-    
+    print("=" * 60)
+
     services_stopped = False
-    
+
     # Stop API
     api_pid = read_pid(API_PID_FILE)
     if api_pid:
@@ -159,7 +159,7 @@ def main():
             services_stopped = True
     else:
         print("  ℹ️  No API PID file found")
-    
+
     # Stop Dashboard
     dash_pid = read_pid(DASH_PID_FILE)
     if dash_pid:
@@ -167,27 +167,27 @@ def main():
             services_stopped = True
     else:
         print("  ℹ️  No Dashboard PID file found")
-    
+
     # Kill any orphaned processes
     print("\n🔍 Checking for orphaned processes...")
     kill_orphan_processes()
-    
+
     # Clean up
     print("\n🧹 Cleaning up...")
     clean_up()
-    
+
     # Final message
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     if services_stopped:
         print(" ✅ Services stopped successfully")
     else:
         print(" ℹ️  No services were running")
-    
+
     if LOGS_DIR.exists():
         print(f"\n📝 Logs preserved in: {LOGS_DIR}")
-    
-    print("="*60)
-    
+
+    print("=" * 60)
+
     return 0
 
 

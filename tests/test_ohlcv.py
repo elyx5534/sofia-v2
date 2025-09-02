@@ -1,4 +1,5 @@
 from datetime import timezone
+
 """Tests for the OHLCV endpoint."""
 
 from datetime import datetime, timedelta
@@ -6,7 +7,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 from src.data_hub.api import app
 from src.data_hub.models import OHLCVData
 
@@ -197,8 +197,8 @@ def test_ohlcv_with_dates(client):
             end = datetime.now(timezone.utc)
 
             # Use URL-safe datetime format
-            start_str = start.isoformat().replace('+', '%2B')
-            end_str = end.isoformat().replace('+', '%2B')
+            start_str = start.isoformat().replace("+", "%2B")
+            end_str = end.isoformat().replace("+", "%2B")
 
             response = client.get(
                 f"/ohlcv?symbol=AAPL&asset_type=equity"
@@ -210,9 +210,15 @@ def test_ohlcv_with_dates(client):
 
 def test_ohlcv_with_limit(client):
     """Test OHLCV endpoint with limit parameter."""
-    with patch("src.data_hub.api.cache_manager.get_ohlcv_cache", new_callable=AsyncMock) as mock_cache:
-        with patch("src.data_hub.api.yfinance_provider.fetch_ohlcv", new_callable=AsyncMock) as mock_fetch:
-            with patch("src.data_hub.api.cache_manager.set_ohlcv_cache", new_callable=AsyncMock) as mock_set_cache:
+    with patch(
+        "src.data_hub.api.cache_manager.get_ohlcv_cache", new_callable=AsyncMock
+    ) as mock_cache:
+        with patch(
+            "src.data_hub.api.yfinance_provider.fetch_ohlcv", new_callable=AsyncMock
+        ) as mock_fetch:
+            with patch(
+                "src.data_hub.api.cache_manager.set_ohlcv_cache", new_callable=AsyncMock
+            ) as mock_set_cache:
                 # Create 100 data points
                 data = [
                     OHLCVData(
@@ -225,7 +231,7 @@ def test_ohlcv_with_limit(client):
                     )
                     for i in range(100)
                 ]
-                
+
                 # Mock the async methods properly
                 mock_cache.return_value = None
                 mock_fetch.return_value = data[:50]  # Return only 50

@@ -1,18 +1,17 @@
 """
 Test suite for Data Hub API endpoints
 """
-import pytest
-import httpx
-from unittest.mock import AsyncMock, patch, MagicMock
-from datetime import datetime, timezone
-import json
 
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 # Import the app and modules we need to test
 from src.data_hub.api import app
-from src.data_hub.models import AssetType, OHLCVData
 from src.data_hub.claude_service import MarketAnalysisResponse
+from src.data_hub.models import OHLCVData
 
 
 @pytest.fixture
@@ -24,7 +23,7 @@ def client():
 @pytest.fixture
 def mock_cache_manager():
     """Mock cache manager"""
-    with patch('src.data_hub.api.cache_manager') as mock:
+    with patch("src.data_hub.api.cache_manager") as mock:
         mock.get_ohlcv_cache = AsyncMock(return_value=None)
         mock.set_ohlcv_cache = AsyncMock()
         mock.clear_expired_cache = AsyncMock(return_value=10)
@@ -34,32 +33,44 @@ def mock_cache_manager():
 @pytest.fixture
 def mock_yfinance_provider():
     """Mock yfinance provider"""
-    with patch('src.data_hub.api.yfinance_provider') as mock:
-        mock.search_symbols = AsyncMock(return_value=[
-            {"symbol": "AAPL", "name": "Apple Inc.", "type": "equity"}
-        ])
-        mock.fetch_ohlcv = AsyncMock(return_value=[
-            OHLCVData(
-                timestamp=datetime.now(timezone.utc),
-                open=150.0, high=155.0, low=148.0, close=153.0, volume=1000000
-            )
-        ])
+    with patch("src.data_hub.api.yfinance_provider") as mock:
+        mock.search_symbols = AsyncMock(
+            return_value=[{"symbol": "AAPL", "name": "Apple Inc.", "type": "equity"}]
+        )
+        mock.fetch_ohlcv = AsyncMock(
+            return_value=[
+                OHLCVData(
+                    timestamp=datetime.now(timezone.utc),
+                    open=150.0,
+                    high=155.0,
+                    low=148.0,
+                    close=153.0,
+                    volume=1000000,
+                )
+            ]
+        )
         yield mock
 
 
 @pytest.fixture
 def mock_ccxt_provider():
     """Mock CCXT provider"""
-    with patch('src.data_hub.api.ccxt_provider') as mock:
-        mock.search_symbols = AsyncMock(return_value=[
-            {"symbol": "BTC/USDT", "name": "Bitcoin/Tether", "type": "crypto"}
-        ])
-        mock.fetch_ohlcv = AsyncMock(return_value=[
-            OHLCVData(
-                timestamp=datetime.now(timezone.utc),
-                open=45000.0, high=46000.0, low=44500.0, close=45500.0, volume=100.0
-            )
-        ])
+    with patch("src.data_hub.api.ccxt_provider") as mock:
+        mock.search_symbols = AsyncMock(
+            return_value=[{"symbol": "BTC/USDT", "name": "Bitcoin/Tether", "type": "crypto"}]
+        )
+        mock.fetch_ohlcv = AsyncMock(
+            return_value=[
+                OHLCVData(
+                    timestamp=datetime.now(timezone.utc),
+                    open=45000.0,
+                    high=46000.0,
+                    low=44500.0,
+                    close=45500.0,
+                    volume=100.0,
+                )
+            ]
+        )
         mock.close = AsyncMock()
         yield mock
 
@@ -67,17 +78,19 @@ def mock_ccxt_provider():
 @pytest.fixture
 def mock_claude_service():
     """Mock Claude service"""
-    with patch('src.data_hub.api.claude_service') as mock:
-        mock.analyze_market_data = AsyncMock(return_value=MarketAnalysisResponse(
-            symbol="BTC/USDT",
-            analysis_type="technical",
-            summary="Test technical analysis showing bullish momentum",
-            key_insights=["BUY signal detected", "Strong momentum"],
-            risk_level="medium",
-            recommendation="buy",
-            confidence=0.8,
-            timestamp=datetime.now(timezone.utc)
-        ))
+    with patch("src.data_hub.api.claude_service") as mock:
+        mock.analyze_market_data = AsyncMock(
+            return_value=MarketAnalysisResponse(
+                symbol="BTC/USDT",
+                analysis_type="technical",
+                summary="Test technical analysis showing bullish momentum",
+                key_insights=["BUY signal detected", "Strong momentum"],
+                risk_level="medium",
+                recommendation="buy",
+                confidence=0.8,
+                timestamp=datetime.now(timezone.utc),
+            )
+        )
         yield mock
 
 
@@ -87,10 +100,10 @@ class TestDataHubAPI:
     def test_health_endpoint(self, client):
         """Test health check endpoint"""
         response = client.get("/health")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["status"] == "healthy"
         assert "timestamp" in data
         assert "version" in data
@@ -98,10 +111,10 @@ class TestDataHubAPI:
     def test_root_endpoint(self, client):
         """Test root endpoint"""
         response = client.get("/")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "title" in data
         assert "version" in data
         assert "description" in data
@@ -109,13 +122,15 @@ class TestDataHubAPI:
         assert data["health"] == "/health"
         assert "endpoints" in data
 
-    def test_symbols_search_equity_success(self, client, mock_yfinance_provider, mock_cache_manager):
+    def test_symbols_search_equity_success(
+        self, client, mock_yfinance_provider, mock_cache_manager
+    ):
         """Test symbol search for equity - success case"""
         response = client.get("/symbols?query=AAPL&asset_type=equity&limit=10")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["query"] == "AAPL"
         assert data["asset_type"] == "equity"
         assert data["count"] == 1
@@ -125,10 +140,10 @@ class TestDataHubAPI:
     def test_symbols_search_crypto_success(self, client, mock_ccxt_provider, mock_cache_manager):
         """Test symbol search for crypto - success case"""
         response = client.get("/symbols?query=BTC&asset_type=crypto&limit=5")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["query"] == "BTC"
         assert data["asset_type"] == "crypto"
         assert data["count"] == 1
@@ -162,21 +177,19 @@ class TestDataHubAPI:
 
     def test_symbols_search_provider_error(self, client, mock_cache_manager):
         """Test symbol search when provider raises exception"""
-        with patch('src.data_hub.api.yfinance_provider') as mock_provider:
+        with patch("src.data_hub.api.yfinance_provider") as mock_provider:
             mock_provider.search_symbols = AsyncMock(side_effect=Exception("Provider error"))
-            
+
             response = client.get("/symbols?query=AAPL&asset_type=equity")
             assert response.status_code == 503
 
     def test_ohlcv_equity_success(self, client, mock_yfinance_provider, mock_cache_manager):
         """Test OHLCV endpoint for equity - success case"""
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h&limit=100"
-        )
-        
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h&limit=100")
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["symbol"] == "AAPL"
         assert data["asset_type"] == "equity"
         assert data["timeframe"] == "1h"
@@ -190,10 +203,10 @@ class TestDataHubAPI:
         response = client.get(
             "/ohlcv?symbol=BTC/USDT&asset_type=crypto&timeframe=1h&exchange=binance"
         )
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["symbol"] == "BTC/USDT"
         assert data["asset_type"] == "crypto"
         assert data["timeframe"] == "1h"
@@ -205,27 +218,27 @@ class TestDataHubAPI:
         cached_data = [
             OHLCVData(
                 timestamp=datetime.now(timezone.utc),
-                open=100.0, high=105.0, low=95.0, close=102.0, volume=50000
+                open=100.0,
+                high=105.0,
+                low=95.0,
+                close=102.0,
+                volume=50000,
             )
         ]
         mock_cache_manager.get_ohlcv_cache.return_value = cached_data
-        
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h"
-        )
-        
+
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h")
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert data["cached"] == True
         assert len(data["data"]) == 1
 
     def test_ohlcv_nocache_flag(self, client, mock_yfinance_provider, mock_cache_manager):
         """Test OHLCV endpoint with nocache flag"""
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h&nocache=true"
-        )
-        
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h&nocache=true")
+
         assert response.status_code == 200
         # Should not call cache get when nocache=true
         mock_cache_manager.get_ohlcv_cache.assert_not_called()
@@ -236,7 +249,7 @@ class TestDataHubAPI:
             "/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h"
             "&start_date=2023-01-01T00:00:00Z&end_date=2023-01-02T00:00:00Z"
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["symbol"] == "AAPL"
@@ -254,54 +267,50 @@ class TestDataHubAPI:
     def test_ohlcv_invalid_limit(self, client):
         """Test OHLCV endpoint with invalid limit"""
         # Limit too high
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&limit=1001"
-        )
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&limit=1001")
         assert response.status_code == 422
 
         # Limit too low
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&limit=0"
-        )
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&limit=0")
         assert response.status_code == 422
 
     def test_ohlcv_symbol_not_found(self, client, mock_cache_manager):
         """Test OHLCV endpoint when symbol is not found"""
-        with patch('src.data_hub.api.yfinance_provider') as mock_provider:
+        with patch("src.data_hub.api.yfinance_provider") as mock_provider:
             mock_provider.fetch_ohlcv = AsyncMock(side_effect=ValueError("Symbol not found"))
-            
-            response = client.get(
-                "/ohlcv?symbol=INVALID&asset_type=equity"
-            )
+
+            response = client.get("/ohlcv?symbol=INVALID&asset_type=equity")
             assert response.status_code == 404
 
     def test_ohlcv_provider_error(self, client, mock_cache_manager):
         """Test OHLCV endpoint when provider has error"""
-        with patch('src.data_hub.api.yfinance_provider') as mock_provider:
+        with patch("src.data_hub.api.yfinance_provider") as mock_provider:
             mock_provider.fetch_ohlcv = AsyncMock(side_effect=Exception("Provider error"))
-            
-            response = client.get(
-                "/ohlcv?symbol=AAPL&asset_type=equity"
-            )
+
+            response = client.get("/ohlcv?symbol=AAPL&asset_type=equity")
             assert response.status_code == 503
 
     def test_ohlcv_custom_exchange_crypto(self, client, mock_cache_manager):
         """Test OHLCV endpoint for crypto with custom exchange"""
-        with patch('src.data_hub.api.CCXTProvider') as MockCCXTProvider:
+        with patch("src.data_hub.api.CCXTProvider") as MockCCXTProvider:
             mock_custom_provider = AsyncMock()
-            mock_custom_provider.fetch_ohlcv = AsyncMock(return_value=[
-                OHLCVData(
-                    timestamp=datetime.now(timezone.utc),
-                    open=45000.0, high=46000.0, low=44500.0, close=45500.0, volume=100.0
-                )
-            ])
+            mock_custom_provider.fetch_ohlcv = AsyncMock(
+                return_value=[
+                    OHLCVData(
+                        timestamp=datetime.now(timezone.utc),
+                        open=45000.0,
+                        high=46000.0,
+                        low=44500.0,
+                        close=45500.0,
+                        volume=100.0,
+                    )
+                ]
+            )
             mock_custom_provider.close = AsyncMock()
             MockCCXTProvider.return_value = mock_custom_provider
-            
-            response = client.get(
-                "/ohlcv?symbol=BTC/USDT&asset_type=crypto&exchange=kraken"
-            )
-            
+
+            response = client.get("/ohlcv?symbol=BTC/USDT&asset_type=crypto&exchange=kraken")
+
             assert response.status_code == 200
             # Should create custom provider for different exchange
             MockCCXTProvider.assert_called_once_with("kraken")
@@ -309,10 +318,10 @@ class TestDataHubAPI:
     def test_clear_cache_success(self, client, mock_cache_manager):
         """Test cache clearing endpoint - success"""
         response = client.delete("/cache")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         assert "message" in data
         assert "10 expired cache entries" in data["message"]
         assert "timestamp" in data
@@ -320,21 +329,23 @@ class TestDataHubAPI:
     def test_clear_cache_error(self, client, mock_cache_manager):
         """Test cache clearing endpoint - error"""
         mock_cache_manager.clear_expired_cache = AsyncMock(side_effect=Exception("Cache error"))
-        
+
         response = client.delete("/cache")
         assert response.status_code == 500
 
-    def test_analyze_market_data_success(self, client, mock_claude_service, mock_cache_manager, mock_ccxt_provider):
+    def test_analyze_market_data_success(
+        self, client, mock_claude_service, mock_cache_manager, mock_ccxt_provider
+    ):
         """Test market analysis endpoint - success case"""
         # Mock Claude service as available
-        with patch('src.data_hub.api.claude_service', mock_claude_service):
+        with patch("src.data_hub.api.claude_service", mock_claude_service):
             response = client.post(
                 "/analyze?symbol=BTC/USDT&asset_type=crypto&timeframe=1h&analysis_type=technical&limit=100"
             )
-            
+
             assert response.status_code == 200
             data = response.json()
-            
+
             assert data["summary"] == "Test technical analysis showing bullish momentum"
             assert data["confidence"] == 0.8
             assert data["key_insights"] == ["BUY signal detected", "Strong momentum"]
@@ -343,77 +354,86 @@ class TestDataHubAPI:
 
     def test_analyze_market_data_claude_not_configured(self, client):
         """Test market analysis endpoint when Claude is not configured"""
-        with patch('src.data_hub.api.claude_service', None):
-            response = client.post(
-                "/analyze?symbol=BTC/USDT&asset_type=crypto&timeframe=1h"
-            )
-            
+        with patch("src.data_hub.api.claude_service", None):
+            response = client.post("/analyze?symbol=BTC/USDT&asset_type=crypto&timeframe=1h")
+
             assert response.status_code == 503
             assert "Claude AI service not configured" in response.json()["detail"]
 
-    def test_analyze_market_data_no_data_available(self, client, mock_claude_service, mock_cache_manager):
+    def test_analyze_market_data_no_data_available(
+        self, client, mock_claude_service, mock_cache_manager
+    ):
         """Test market analysis endpoint when no OHLCV data available"""
         # Mock no data from providers
-        with patch('src.data_hub.api.claude_service', mock_claude_service):
-            with patch('src.data_hub.api.ccxt_provider') as mock_provider:
+        with patch("src.data_hub.api.claude_service", mock_claude_service):
+            with patch("src.data_hub.api.ccxt_provider") as mock_provider:
                 mock_provider.fetch_ohlcv = AsyncMock(return_value=None)
-                
+
                 response = client.post(
                     "/analyze?symbol=INVALID/USDT&asset_type=crypto&timeframe=1h"
                 )
-                
+
                 assert response.status_code == 404
                 assert "No data available" in response.json()["detail"]
 
-    def test_analyze_market_data_with_cached_data(self, client, mock_claude_service, mock_cache_manager):
+    def test_analyze_market_data_with_cached_data(
+        self, client, mock_claude_service, mock_cache_manager
+    ):
         """Test market analysis endpoint using cached OHLCV data"""
         # Mock cached OHLCV data
         cached_data = [
             OHLCVData(
                 timestamp=datetime.now(timezone.utc),
-                open=45000.0, high=46000.0, low=44500.0, close=45500.0, volume=100.0
+                open=45000.0,
+                high=46000.0,
+                low=44500.0,
+                close=45500.0,
+                volume=100.0,
             )
         ]
         mock_cache_manager.get_ohlcv_cache.return_value = cached_data
-        
-        with patch('src.data_hub.api.claude_service', mock_claude_service):
-            response = client.post(
-                "/analyze?symbol=BTC/USDT&asset_type=crypto&timeframe=1h"
-            )
-            
+
+        with patch("src.data_hub.api.claude_service", mock_claude_service):
+            response = client.post("/analyze?symbol=BTC/USDT&asset_type=crypto&timeframe=1h")
+
             assert response.status_code == 200
             # Should use cached data, not fetch from provider
             mock_cache_manager.get_ohlcv_cache.assert_called_once()
 
-    def test_analyze_market_data_equity(self, client, mock_claude_service, mock_cache_manager, mock_yfinance_provider):
+    def test_analyze_market_data_equity(
+        self, client, mock_claude_service, mock_cache_manager, mock_yfinance_provider
+    ):
         """Test market analysis endpoint for equity"""
-        with patch('src.data_hub.api.claude_service', mock_claude_service):
+        with patch("src.data_hub.api.claude_service", mock_claude_service):
             response = client.post(
                 "/analyze?symbol=AAPL&asset_type=equity&timeframe=1h&analysis_type=fundamental"
             )
-            
+
             assert response.status_code == 200
             data = response.json()
             assert data["analysis"]  # Should have analysis content
 
-    def test_analyze_market_data_limit_parameter(self, client, mock_claude_service, mock_cache_manager, mock_ccxt_provider):
+    def test_analyze_market_data_limit_parameter(
+        self, client, mock_claude_service, mock_cache_manager, mock_ccxt_provider
+    ):
         """Test market analysis endpoint with limit parameter"""
         # Create larger dataset
         large_dataset = [
             OHLCVData(
                 timestamp=datetime.now(timezone.utc),
-                open=45000.0 + i, high=46000.0 + i, low=44500.0 + i, 
-                close=45500.0 + i, volume=100.0
+                open=45000.0 + i,
+                high=46000.0 + i,
+                low=44500.0 + i,
+                close=45500.0 + i,
+                volume=100.0,
             )
             for i in range(200)  # 200 data points
         ]
         mock_ccxt_provider.fetch_ohlcv.return_value = large_dataset
-        
-        with patch('src.data_hub.api.claude_service', mock_claude_service):
-            response = client.post(
-                "/analyze?symbol=BTC/USDT&asset_type=crypto&limit=50"
-            )
-            
+
+        with patch("src.data_hub.api.claude_service", mock_claude_service):
+            response = client.post("/analyze?symbol=BTC/USDT&asset_type=crypto&limit=50")
+
             assert response.status_code == 200
             # Should limit analysis data to last 50 candles
 
@@ -424,37 +444,33 @@ class TestDataHubAPI:
         assert response.status_code == 422
 
         # Invalid limit (too low)
-        response = client.post(
-            "/analyze?symbol=BTC/USDT&asset_type=crypto&limit=5"
-        )
+        response = client.post("/analyze?symbol=BTC/USDT&asset_type=crypto&limit=5")
         assert response.status_code == 422
 
         # Invalid limit (too high)
-        response = client.post(
-            "/analyze?symbol=BTC/USDT&asset_type=crypto&limit=501"
-        )
+        response = client.post("/analyze?symbol=BTC/USDT&asset_type=crypto&limit=501")
         assert response.status_code == 422
 
-    def test_analyze_market_data_provider_error(self, client, mock_claude_service, mock_cache_manager):
+    def test_analyze_market_data_provider_error(
+        self, client, mock_claude_service, mock_cache_manager
+    ):
         """Test market analysis endpoint when provider has error"""
-        with patch('src.data_hub.api.claude_service', mock_claude_service):
-            with patch('src.data_hub.api.ccxt_provider') as mock_provider:
+        with patch("src.data_hub.api.claude_service", mock_claude_service):
+            with patch("src.data_hub.api.ccxt_provider") as mock_provider:
                 mock_provider.fetch_ohlcv = AsyncMock(side_effect=Exception("Provider error"))
-                
-                response = client.post(
-                    "/analyze?symbol=BTC/USDT&asset_type=crypto"
-                )
-                
+
+                response = client.post("/analyze?symbol=BTC/USDT&asset_type=crypto")
+
                 assert response.status_code == 503
 
     def test_exception_handlers(self, client):
         """Test custom exception handlers"""
         # Test ValueError handler (404)
-        with patch('src.data_hub.api.yfinance_provider') as mock_provider:
+        with patch("src.data_hub.api.yfinance_provider") as mock_provider:
             mock_provider.search_symbols = AsyncMock(side_effect=ValueError("Test error"))
-            
+
             response = client.get("/symbols?query=TEST&asset_type=equity")
-            
+
             assert response.status_code == 404
             data = response.json()
             assert data["error"] == "Not Found"
@@ -483,16 +499,16 @@ class TestDataHubAPI:
 class TestDataHubAPIIntegration:
     """Integration tests for Data Hub API"""
 
-    def test_ohlcv_to_analysis_workflow(self, client, mock_claude_service, mock_cache_manager, mock_ccxt_provider):
+    def test_ohlcv_to_analysis_workflow(
+        self, client, mock_claude_service, mock_cache_manager, mock_ccxt_provider
+    ):
         """Test complete workflow from OHLCV to analysis"""
         # Step 1: Get OHLCV data
-        ohlcv_response = client.get(
-            "/ohlcv?symbol=BTC/USDT&asset_type=crypto&timeframe=1h"
-        )
+        ohlcv_response = client.get("/ohlcv?symbol=BTC/USDT&asset_type=crypto&timeframe=1h")
         assert ohlcv_response.status_code == 200
-        
+
         # Step 2: Use the data for analysis
-        with patch('src.data_hub.api.claude_service', mock_claude_service):
+        with patch("src.data_hub.api.claude_service", mock_claude_service):
             analysis_response = client.post(
                 "/analyze?symbol=BTC/USDT&asset_type=crypto&timeframe=1h"
             )
@@ -503,33 +519,27 @@ class TestDataHubAPIIntegration:
         # Step 1: Search for symbols
         search_response = client.get("/symbols?query=BTC&asset_type=crypto")
         assert search_response.status_code == 200
-        
+
         symbols = search_response.json()["results"]
         assert len(symbols) > 0
-        
+
         # Step 2: Use found symbol for OHLCV
         symbol = symbols[0]["symbol"]
-        ohlcv_response = client.get(
-            f"/ohlcv?symbol={symbol}&asset_type=crypto&timeframe=1h"
-        )
+        ohlcv_response = client.get(f"/ohlcv?symbol={symbol}&asset_type=crypto&timeframe=1h")
         assert ohlcv_response.status_code == 200
 
     def test_cache_workflow(self, client, mock_cache_manager, mock_yfinance_provider):
         """Test cache-related workflow"""
         # Step 1: Get data (should cache it)
-        response1 = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h"
-        )
+        response1 = client.get("/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h")
         assert response1.status_code == 200
-        
+
         # Step 2: Clear cache
         clear_response = client.delete("/cache")
         assert clear_response.status_code == 200
-        
+
         # Step 3: Get data again (should fetch fresh)
-        response2 = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h"
-        )
+        response2 = client.get("/ohlcv?symbol=AAPL&asset_type=equity&timeframe=1h")
         assert response2.status_code == 200
 
 
@@ -538,24 +548,26 @@ class TestDataHubAPIEdgeCases:
 
     def test_empty_query_responses(self, client, mock_cache_manager):
         """Test API responses with empty queries"""
-        with patch('src.data_hub.api.yfinance_provider') as mock_provider:
+        with patch("src.data_hub.api.yfinance_provider") as mock_provider:
             mock_provider.search_symbols = AsyncMock(return_value=[])
-            
+
             response = client.get("/symbols?query=NONEXISTENT&asset_type=equity")
             assert response.status_code == 200
-            
+
             data = response.json()
             assert data["count"] == 0
             assert data["results"] == []
 
-    def test_special_characters_in_symbols(self, client, mock_cache_manager, mock_yfinance_provider):
+    def test_special_characters_in_symbols(
+        self, client, mock_cache_manager, mock_yfinance_provider
+    ):
         """Test API with special characters in symbol names"""
-        response = client.get(
-            "/ohlcv?symbol=BRK.A&asset_type=equity&timeframe=1h"
-        )
+        response = client.get("/ohlcv?symbol=BRK.A&asset_type=equity&timeframe=1h")
         assert response.status_code == 200
 
-    def test_unicode_characters_in_queries(self, client, mock_cache_manager, mock_yfinance_provider):
+    def test_unicode_characters_in_queries(
+        self, client, mock_cache_manager, mock_yfinance_provider
+    ):
         """Test API with unicode characters"""
         response = client.get("/symbols?query=测试&asset_type=equity")
         # Should handle gracefully, either succeed or fail appropriately
@@ -568,35 +580,31 @@ class TestDataHubAPIEdgeCases:
         # Should handle gracefully
         assert response.status_code in [200, 422, 413, 503]
 
-    def test_concurrent_requests_simulation(self, client, mock_cache_manager, mock_yfinance_provider):
+    def test_concurrent_requests_simulation(
+        self, client, mock_cache_manager, mock_yfinance_provider
+    ):
         """Test multiple simultaneous requests"""
         # This simulates concurrent requests by making multiple calls
         responses = []
         for i in range(5):
             response = client.get(f"/symbols?query=TEST{i}&asset_type=equity")
             responses.append(response)
-        
+
         # All should succeed or fail gracefully
         for response in responses:
             assert response.status_code in [200, 422, 503]
 
     def test_malformed_datetime_parameters(self, client):
         """Test API with malformed datetime parameters"""
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&start_date=invalid-date"
-        )
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&start_date=invalid-date")
         assert response.status_code == 422
 
     def test_extreme_limit_values(self, client):
         """Test API with extreme limit values"""
         # Test with negative limit
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&limit=-1"
-        )
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&limit=-1")
         assert response.status_code == 422
-        
-        # Test with zero limit  
-        response = client.get(
-            "/ohlcv?symbol=AAPL&asset_type=equity&limit=0"
-        )
+
+        # Test with zero limit
+        response = client.get("/ohlcv?symbol=AAPL&asset_type=equity&limit=0")
         assert response.status_code == 422

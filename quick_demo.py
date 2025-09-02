@@ -3,21 +3,19 @@ Sofia V2 Quick Demo - Docker olmadan çalışan basit demo
 """
 
 import asyncio
-import json
 import random
-from datetime import datetime, UTC
-from typing import Dict, List
+from datetime import UTC, datetime
 
+import uvicorn
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse
-import uvicorn
 
 app = FastAPI(title="Sofia V2 Demo")
 
 # Mock data storage
 positions = {
     "BTCUSDT": {"quantity": 0.0015, "avg_price": 51234, "pnl": 399.00},
-    "ETHUSDT": {"quantity": 0.234, "avg_price": 3234, "pnl": 37.44}
+    "ETHUSDT": {"quantity": 0.234, "avg_price": 3234, "pnl": 37.44},
 }
 
 orders = []
@@ -75,7 +73,7 @@ dashboard_html = """
 </head>
 <body>
     <h1>🚀 Sofia V2 Trading Platform - Demo Mode</h1>
-    
+
     <div class="card">
         <h2>📊 Portfolio Metrics</h2>
         <div class="metric">
@@ -95,7 +93,7 @@ dashboard_html = """
             <div class="metric-value">2</div>
         </div>
     </div>
-    
+
     <div class="card">
         <h2>💹 Live Tickers</h2>
         <div id="tickers">
@@ -121,7 +119,7 @@ dashboard_html = """
             </div>
         </div>
     </div>
-    
+
     <div class="card">
         <h2>📈 Open Positions</h2>
         <table>
@@ -152,7 +150,7 @@ dashboard_html = """
             </tbody>
         </table>
     </div>
-    
+
     <div class="card">
         <h2>📝 Recent Orders</h2>
         <table>
@@ -186,7 +184,7 @@ dashboard_html = """
             </tbody>
         </table>
     </div>
-    
+
     <script>
         // Simulate live price updates
         setInterval(() => {
@@ -194,21 +192,21 @@ dashboard_html = """
             const btcPrice = 51000 + Math.random() * 1000;
             document.getElementById('btc-price').textContent = '$' + btcPrice.toFixed(0);
             document.getElementById('btc-current').textContent = '$' + btcPrice.toFixed(0);
-            
+
             // Update ETH price
             const ethPrice = 3200 + Math.random() * 100;
             document.getElementById('eth-price').textContent = '$' + ethPrice.toFixed(0);
             document.getElementById('eth-current').textContent = '$' + ethPrice.toFixed(0);
-            
+
             // Update BNB price
             const bnbPrice = 420 + Math.random() * 10;
             document.getElementById('bnb-price').textContent = '$' + bnbPrice.toFixed(0);
-            
+
             // Update SOL price
             const solPrice = 100 + Math.random() * 10;
             document.getElementById('sol-price').textContent = '$' + solPrice.toFixed(0);
         }, 2000);
-        
+
         // Add new orders periodically
         let orderCount = 2;
         setInterval(() => {
@@ -216,10 +214,10 @@ dashboard_html = """
             const sides = ['BUY', 'SELL'];
             const symbol = symbols[Math.floor(Math.random() * symbols.length)];
             const side = sides[Math.floor(Math.random() * sides.length)];
-            
+
             const newRow = document.getElementById('orders').insertRow(0);
             const time = new Date().toLocaleTimeString();
-            
+
             newRow.innerHTML = `
                 <td>${time}</td>
                 <td>${symbol}</td>
@@ -228,7 +226,7 @@ dashboard_html = """
                 <td>$${(50000 + Math.random() * 5000).toFixed(0)}</td>
                 <td>✅ Filled</td>
             `;
-            
+
             // Keep only last 5 orders
             if (document.getElementById('orders').rows.length > 5) {
                 document.getElementById('orders').deleteRow(5);
@@ -239,15 +237,18 @@ dashboard_html = """
 </html>
 """
 
+
 @app.get("/")
 async def home():
     """Home page with dashboard"""
     return HTMLResponse(content=dashboard_html)
 
+
 @app.get("/api/positions")
 async def get_positions():
     """Get current positions"""
     return positions
+
 
 @app.get("/api/orders")
 async def get_orders():
@@ -255,15 +256,18 @@ async def get_orders():
     # Generate some mock orders
     mock_orders = []
     for i in range(5):
-        mock_orders.append({
-            "time": datetime.now(UTC).isoformat(),
-            "symbol": random.choice(["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]),
-            "side": random.choice(["buy", "sell"]),
-            "quantity": round(random.random() * 0.5, 4),
-            "price": round(50000 + random.random() * 5000, 2),
-            "status": "filled"
-        })
+        mock_orders.append(
+            {
+                "time": datetime.now(UTC).isoformat(),
+                "symbol": random.choice(["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT"]),
+                "side": random.choice(["buy", "sell"]),
+                "quantity": round(random.random() * 0.5, 4),
+                "price": round(50000 + random.random() * 5000, 2),
+                "status": "filled",
+            }
+        )
     return mock_orders
+
 
 @app.get("/api/health")
 async def health():
@@ -271,8 +275,9 @@ async def health():
     return {
         "status": "healthy",
         "mode": "demo",
-        "message": "Sofia V2 Demo Mode - No Docker Required"
+        "message": "Sofia V2 Demo Mode - No Docker Required",
     }
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -285,12 +290,13 @@ async def websocket_endpoint(websocket: WebSocket):
                 "type": "tick",
                 "symbol": random.choice(["BTCUSDT", "ETHUSDT"]),
                 "price": round(50000 + random.random() * 5000, 2),
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             }
             await websocket.send_json(data)
             await asyncio.sleep(1)
     except:
         pass
+
 
 def main():
     """Run the demo server"""
@@ -307,8 +313,9 @@ def main():
     print("  • REST API endpoints")
     print("\n[INFO] Press Ctrl+C to stop")
     print("=" * 60)
-    
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
 
 if __name__ == "__main__":
     main()

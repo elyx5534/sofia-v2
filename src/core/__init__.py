@@ -1,10 +1,10 @@
 """Trading Engine Core Module."""
 
 from .engine import TradingEngine
-from .order_manager import OrderManager, Order, OrderType, OrderStatus, OrderSide
-from .position_manager import PositionManager, Position
+from .order_manager import Order, OrderManager, OrderSide, OrderStatus, OrderType
+from .portfolio import Asset, Portfolio
+from .position_manager import Position, PositionManager
 from .risk_manager import RiskManager, RiskParameters
-from .portfolio import Portfolio, Asset
 
 __version__ = "0.1.0"
 

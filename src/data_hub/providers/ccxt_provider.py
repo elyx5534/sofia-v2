@@ -123,9 +123,9 @@ class CCXTProvider:
         except ccxt.BaseError as e:
             if isinstance(e, ccxt.BadSymbol):
                 raise ValueError(f"Invalid symbol: {symbol}") from e
-            raise Exception(f"CCXT error: {str(e)}") from e
+            raise Exception(f"CCXT error: {e!s}") from e
         except Exception as e:
-            raise Exception(f"Unexpected error: {str(e)}") from e
+            raise Exception(f"Unexpected error: {e!s}") from e
 
     async def search_symbols(self, query: str = "", limit: int = 50) -> list[SymbolInfo]:
         """
@@ -170,9 +170,9 @@ class CCXTProvider:
             return symbols
 
         except ccxt.BaseError as e:
-            raise Exception(f"CCXT error: {str(e)}") from e
+            raise Exception(f"CCXT error: {e!s}") from e
         except Exception as e:
-            raise Exception(f"Unexpected error: {str(e)}") from e
+            raise Exception(f"Unexpected error: {e!s}") from e
 
     async def get_symbol_info(self, symbol: str) -> SymbolInfo | None:
         """
@@ -230,4 +230,4 @@ class CCXTProvider:
                 await exchange.load_markets()
             return exchange.markets
         except Exception as e:
-            raise Exception(f"Failed to fetch markets: {str(e)}") from e
+            raise Exception(f"Failed to fetch markets: {e!s}") from e

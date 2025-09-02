@@ -1,4 +1,5 @@
 from datetime import timezone
+
 """Tests for cache TTL functionality."""
 
 import asyncio
@@ -6,7 +7,6 @@ from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from src.data_hub.cache import CacheManager
 from src.data_hub.models import AssetType, OHLCVData, SymbolInfo
 

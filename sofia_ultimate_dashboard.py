@@ -4,18 +4,13 @@ Modern, responsive ve gerçek zamanlı güncellemelerle
 """
 
 import asyncio
-import json
 import random
-import time
-from datetime import datetime, UTC, timedelta
-from typing import Dict, List, Optional
-import os
+from datetime import UTC, datetime
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, JSONResponse
 
 app = FastAPI(title="Sofia V2 Ultimate Trading Platform")
 
@@ -39,7 +34,7 @@ portfolio_state = {
     "sharpe_ratio": 1.45,
     "positions": {},
     "orders": [],
-    "trades_today": 12
+    "trades_today": 12,
 }
 
 # Mock price data
@@ -76,20 +71,20 @@ dashboard_html = """
             --accent-yellow: #ffd93d;
             --border-color: rgba(255, 255, 255, 0.1);
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             overflow-x: hidden;
         }
-        
+
         /* Header */
         .header {
             background: var(--bg-secondary);
@@ -103,13 +98,13 @@ dashboard_html = """
             z-index: 100;
             backdrop-filter: blur(10px);
         }
-        
+
         .logo {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-        
+
         .logo-icon {
             width: 40px;
             height: 40px;
@@ -121,7 +116,7 @@ dashboard_html = """
             font-weight: bold;
             font-size: 1.5rem;
         }
-        
+
         .logo-text {
             font-size: 1.5rem;
             font-weight: 700;
@@ -129,13 +124,13 @@ dashboard_html = """
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        
+
         .header-actions {
             display: flex;
             gap: 1rem;
             align-items: center;
         }
-        
+
         .connection-status {
             display: flex;
             align-items: center;
@@ -146,7 +141,7 @@ dashboard_html = """
             border-radius: 20px;
             font-size: 0.875rem;
         }
-        
+
         .status-dot {
             width: 8px;
             height: 8px;
@@ -154,12 +149,12 @@ dashboard_html = """
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(1.2); }
         }
-        
+
         .btn {
             padding: 0.75rem 1.5rem;
             background: linear-gradient(135deg, var(--accent-blue), #0099ff);
@@ -170,19 +165,19 @@ dashboard_html = """
             cursor: pointer;
             transition: all 0.3s;
         }
-        
+
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(0, 212, 255, 0.4);
         }
-        
+
         /* Main Container */
         .container {
             max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
         }
-        
+
         /* Metrics Grid */
         .metrics-grid {
             display: grid;
@@ -190,7 +185,7 @@ dashboard_html = """
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
-        
+
         .metric-card {
             background: var(--bg-card);
             border-radius: 16px;
@@ -200,7 +195,7 @@ dashboard_html = """
             position: relative;
             overflow: hidden;
         }
-        
+
         .metric-card::before {
             content: '';
             position: absolute;
@@ -210,26 +205,26 @@ dashboard_html = """
             height: 3px;
             background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
         }
-        
+
         .metric-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 40px rgba(0, 212, 255, 0.1);
         }
-        
+
         .metric-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
-        
+
         .metric-label {
             font-size: 0.875rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
-        
+
         .metric-icon {
             width: 32px;
             height: 32px;
@@ -239,24 +234,24 @@ dashboard_html = """
             align-items: center;
             justify-content: center;
         }
-        
+
         .metric-value {
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
         }
-        
+
         .metric-change {
             font-size: 0.875rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .positive { color: var(--accent-green); }
         .negative { color: var(--accent-red); }
         .neutral { color: var(--text-secondary); }
-        
+
         /* Ticker Grid */
         .ticker-section {
             background: var(--bg-card);
@@ -265,25 +260,25 @@ dashboard_html = """
             margin-bottom: 2rem;
             border: 1px solid var(--border-color);
         }
-        
+
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
         }
-        
+
         .section-title {
             font-size: 1.25rem;
             font-weight: 600;
         }
-        
+
         .ticker-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 1rem;
         }
-        
+
         .ticker-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
@@ -293,13 +288,13 @@ dashboard_html = """
             transition: all 0.3s;
             position: relative;
         }
-        
+
         .ticker-card:hover {
             background: rgba(0, 212, 255, 0.05);
             border-color: var(--accent-blue);
             transform: translateY(-3px);
         }
-        
+
         .ticker-symbol {
             font-weight: 600;
             margin-bottom: 0.5rem;
@@ -307,19 +302,19 @@ dashboard_html = """
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .ticker-price {
             font-size: 1.5rem;
             font-weight: 700;
             margin-bottom: 0.25rem;
         }
-        
+
         .ticker-info {
             display: flex;
             justify-content: space-between;
             font-size: 0.875rem;
         }
-        
+
         /* Chart Section */
         .chart-section {
             display: grid;
@@ -327,7 +322,7 @@ dashboard_html = """
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
-        
+
         .chart-container {
             background: var(--bg-card);
             border-radius: 16px;
@@ -335,14 +330,14 @@ dashboard_html = """
             border: 1px solid var(--border-color);
             min-height: 400px;
         }
-        
+
         .order-book {
             background: var(--bg-card);
             border-radius: 16px;
             padding: 1.5rem;
             border: 1px solid var(--border-color);
         }
-        
+
         /* Tables */
         .table-section {
             background: var(--bg-card);
@@ -351,12 +346,12 @@ dashboard_html = """
             margin-bottom: 2rem;
             border: 1px solid var(--border-color);
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
-        
+
         th {
             text-align: left;
             padding: 1rem;
@@ -366,16 +361,16 @@ dashboard_html = """
             text-transform: uppercase;
             font-size: 0.875rem;
         }
-        
+
         td {
             padding: 1rem;
             border-bottom: 1px solid var(--border-color);
         }
-        
+
         tr:hover {
             background: rgba(0, 212, 255, 0.02);
         }
-        
+
         /* Badges */
         .badge {
             padding: 0.25rem 0.75rem;
@@ -384,48 +379,48 @@ dashboard_html = """
             font-weight: 600;
             text-transform: uppercase;
         }
-        
+
         .badge-success {
             background: rgba(0, 255, 136, 0.2);
             color: var(--accent-green);
         }
-        
+
         .badge-danger {
             background: rgba(255, 71, 87, 0.2);
             color: var(--accent-red);
         }
-        
+
         .badge-warning {
             background: rgba(255, 217, 61, 0.2);
             color: var(--accent-yellow);
         }
-        
+
         /* Canvas for chart */
         #priceChart {
             width: 100%;
             height: 350px;
         }
-        
+
         /* Responsive */
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
             }
-            
+
             .metrics-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .chart-section {
                 grid-template-columns: 1fr;
             }
-            
+
             .header {
                 flex-direction: column;
                 gap: 1rem;
             }
         }
-        
+
         /* Loading animation */
         .loading {
             display: inline-block;
@@ -436,7 +431,7 @@ dashboard_html = """
             border-top-color: var(--accent-blue);
             animation: spin 1s ease-in-out infinite;
         }
-        
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -457,7 +452,7 @@ dashboard_html = """
             <button class="btn" onclick="toggleTrading()">Start Trading</button>
         </div>
     </header>
-    
+
     <!-- Main Container -->
     <div class="container">
         <!-- Metrics Cards -->
@@ -473,7 +468,7 @@ dashboard_html = """
                     <span id="equity-change">+4.36%</span>
                 </div>
             </div>
-            
+
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-label">Total P&L</div>
@@ -485,7 +480,7 @@ dashboard_html = """
                     <span>+125.32 today</span>
                 </div>
             </div>
-            
+
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-label">Win Rate</div>
@@ -496,7 +491,7 @@ dashboard_html = """
                     <span>12 trades today</span>
                 </div>
             </div>
-            
+
             <div class="metric-card">
                 <div class="metric-header">
                     <div class="metric-label">Sharpe Ratio</div>
@@ -509,7 +504,7 @@ dashboard_html = """
                 </div>
             </div>
         </div>
-        
+
         <!-- Live Tickers -->
         <div class="ticker-section">
             <div class="section-header">
@@ -520,7 +515,7 @@ dashboard_html = """
                 <!-- Populated by JavaScript -->
             </div>
         </div>
-        
+
         <!-- Chart and Order Book -->
         <div class="chart-section">
             <div class="chart-container">
@@ -535,7 +530,7 @@ dashboard_html = """
                 </div>
                 <canvas id="priceChart"></canvas>
             </div>
-            
+
             <div class="order-book">
                 <h2 class="section-title">Order Book</h2>
                 <div id="order-book-content">
@@ -550,7 +545,7 @@ dashboard_html = """
                 </div>
             </div>
         </div>
-        
+
         <!-- Positions Table -->
         <div class="table-section">
             <div class="section-header">
@@ -575,7 +570,7 @@ dashboard_html = """
                 </tbody>
             </table>
         </div>
-        
+
         <!-- Recent Trades -->
         <div class="table-section">
             <div class="section-header">
@@ -600,38 +595,38 @@ dashboard_html = """
             </table>
         </div>
     </div>
-    
+
     <script>
         // WebSocket connection
         let ws = null;
         let priceData = {};
         let chartData = [];
         let chart = null;
-        
+
         // Initialize WebSocket
         function initWebSocket() {
             ws = new WebSocket(`ws://${window.location.host}/ws`);
-            
+
             ws.onopen = () => {
                 console.log('WebSocket connected');
                 document.getElementById('ws-status').textContent = 'Connected';
             };
-            
+
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 handleWebSocketMessage(data);
             };
-            
+
             ws.onerror = (error) => {
                 console.error('WebSocket error:', error);
             };
-            
+
             ws.onclose = () => {
                 document.getElementById('ws-status').textContent = 'Disconnected';
                 setTimeout(initWebSocket, 3000);
             };
         }
-        
+
         // Handle WebSocket messages
         function handleWebSocketMessage(data) {
             if (data.type === 'price_update') {
@@ -642,7 +637,7 @@ dashboard_html = """
                 addNewTrade(data);
             }
         }
-        
+
         // Update price display
         function updatePriceDisplay(symbol, price, change) {
             const element = document.getElementById(`price-${symbol}`);
@@ -655,20 +650,20 @@ dashboard_html = """
                 }
             }
         }
-        
+
         // Initialize tickers
         function initTickers() {
             const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT', 'DOGEUSDT'];
             const grid = document.getElementById('ticker-grid');
-            
+
             symbols.forEach(symbol => {
                 const card = document.createElement('div');
                 card.className = 'ticker-card';
                 card.onclick = () => selectSymbol(symbol);
-                
+
                 const mockPrice = Math.random() * 50000;
                 const mockChange = (Math.random() - 0.5) * 10;
-                
+
                 card.innerHTML = `
                     <div class="ticker-symbol">
                         <span>${symbol.replace('USDT', '')}/USDT</span>
@@ -682,25 +677,25 @@ dashboard_html = """
                         <span style="color: var(--text-secondary)">24h Vol: ${(Math.random() * 1000000).toFixed(0)}</span>
                     </div>
                 `;
-                
+
                 grid.appendChild(card);
             });
         }
-        
+
         // Initialize positions
         function initPositions() {
             const positions = [
                 {symbol: 'BTCUSDT', side: 'LONG', qty: 0.0015, entry: 51234, current: 51500, pnl: 399},
                 {symbol: 'ETHUSDT', side: 'LONG', qty: 0.234, entry: 3234, current: 3250, pnl: 37.44}
             ];
-            
+
             const tbody = document.getElementById('positions-tbody');
             tbody.innerHTML = '';
-            
+
             positions.forEach(pos => {
                 const row = tbody.insertRow();
                 const roi = ((pos.pnl / (pos.qty * pos.entry)) * 100).toFixed(2);
-                
+
                 row.innerHTML = `
                     <td>${pos.symbol}</td>
                     <td><span class="badge badge-success">${pos.side}</span></td>
@@ -718,17 +713,17 @@ dashboard_html = """
                     </td>
                 `;
             });
-            
+
             if (positions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">No open positions</td></tr>';
             }
         }
-        
+
         // Initialize recent trades
         function initTrades() {
             const tbody = document.getElementById('trades-tbody');
             tbody.innerHTML = '';
-            
+
             // Generate mock trades
             for (let i = 0; i < 5; i++) {
                 const row = tbody.insertRow();
@@ -738,7 +733,7 @@ dashboard_html = """
                 const qty = (Math.random() * 0.5).toFixed(4);
                 const price = (50000 + Math.random() * 5000).toFixed(2);
                 const total = (qty * price).toFixed(2);
-                
+
                 row.innerHTML = `
                     <td>${time}</td>
                     <td>${symbol}</td>
@@ -750,26 +745,26 @@ dashboard_html = """
                 `;
             }
         }
-        
+
         // Initialize chart
         function initChart() {
             const canvas = document.getElementById('priceChart');
             const ctx = canvas.getContext('2d');
-            
+
             // Generate mock data
             const labels = [];
             const data = [];
             const now = Date.now();
-            
+
             for (let i = 50; i >= 0; i--) {
                 labels.push(new Date(now - i * 60000).toLocaleTimeString());
                 data.push(51000 + Math.random() * 1000 - 500);
             }
-            
+
             // Simple line chart
             canvas.width = canvas.offsetWidth;
             canvas.height = 350;
-            
+
             // Draw axes
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             ctx.beginPath();
@@ -777,47 +772,47 @@ dashboard_html = """
             ctx.lineTo(40, 330);
             ctx.lineTo(canvas.width - 10, 330);
             ctx.stroke();
-            
+
             // Draw line
             ctx.strokeStyle = '#00d4ff';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            
+
             const xStep = (canvas.width - 50) / data.length;
             const yMin = Math.min(...data);
             const yMax = Math.max(...data);
             const yScale = 300 / (yMax - yMin);
-            
+
             data.forEach((price, i) => {
                 const x = 40 + i * xStep;
                 const y = 330 - (price - yMin) * yScale;
-                
+
                 if (i === 0) {
                     ctx.moveTo(x, y);
                 } else {
                     ctx.lineTo(x, y);
                 }
             });
-            
+
             ctx.stroke();
-            
+
             // Fill gradient
             const gradient = ctx.createLinearGradient(0, 0, 0, 350);
             gradient.addColorStop(0, 'rgba(0, 212, 255, 0.3)');
             gradient.addColorStop(1, 'rgba(0, 212, 255, 0)');
-            
+
             ctx.fillStyle = gradient;
             ctx.fill();
         }
-        
+
         // Initialize order book
         function initOrderBook() {
             const asks = document.getElementById('asks');
             const bids = document.getElementById('bids');
-            
+
             asks.innerHTML = '';
             bids.innerHTML = '';
-            
+
             // Generate mock order book
             for (let i = 0; i < 5; i++) {
                 const askPrice = (51500 + i * 10).toFixed(2);
@@ -828,7 +823,7 @@ dashboard_html = """
                         <span>${askQty}</span>
                     </div>
                 `;
-                
+
                 const bidPrice = (51490 - i * 10).toFixed(2);
                 const bidQty = (Math.random() * 0.5).toFixed(4);
                 bids.innerHTML += `
@@ -839,39 +834,39 @@ dashboard_html = """
                 `;
             }
         }
-        
+
         // Action functions
         function toggleTrading() {
             alert('Trading started! (Demo mode)');
         }
-        
+
         function refreshPrices() {
             location.reload();
         }
-        
+
         function selectSymbol(symbol) {
             document.getElementById('chart-symbol').value = symbol;
             updateChart();
         }
-        
+
         function updateChart() {
             initChart();
         }
-        
+
         function closePosition(symbol) {
             if (confirm(`Close position for ${symbol}?`)) {
                 alert(`Position closed for ${symbol}`);
                 initPositions();
             }
         }
-        
+
         function closeAllPositions() {
             if (confirm('Close all positions?')) {
                 alert('All positions closed');
                 initPositions();
             }
         }
-        
+
         // Auto-update prices
         setInterval(() => {
             const symbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'ADAUSDT', 'DOGEUSDT'];
@@ -882,7 +877,7 @@ dashboard_html = """
                 updatePriceDisplay(symbol, newPrice, change);
             });
         }, 2000);
-        
+
         // Initialize everything
         window.onload = () => {
             initWebSocket();
@@ -891,12 +886,12 @@ dashboard_html = """
             initTrades();
             initChart();
             initOrderBook();
-            
+
             // Update metrics periodically
             setInterval(() => {
                 const equity = 10000 + Math.random() * 1000;
                 document.getElementById('total-equity').textContent = `$${equity.toFixed(2)}`;
-                
+
                 const pnl = Math.random() * 500;
                 document.getElementById('total-pnl').textContent = `$${pnl.toFixed(2)}`;
             }, 5000);
@@ -906,20 +901,24 @@ dashboard_html = """
 </html>
 """
 
+
 @app.get("/", response_class=HTMLResponse)
 async def home():
     """Main dashboard"""
     return dashboard_html
+
 
 @app.get("/api/portfolio")
 async def get_portfolio():
     """Get portfolio state"""
     return JSONResponse(content=portfolio_state)
 
+
 @app.get("/api/prices")
 async def get_prices():
     """Get current prices"""
     return JSONResponse(content=price_data)
+
 
 @app.get("/api/positions")
 async def get_positions():
@@ -931,58 +930,59 @@ async def get_positions():
             "quantity": 0.0015,
             "entry_price": 51234,
             "current_price": price_data["BTCUSDT"]["price"],
-            "pnl": (price_data["BTCUSDT"]["price"] - 51234) * 0.0015
+            "pnl": (price_data["BTCUSDT"]["price"] - 51234) * 0.0015,
         },
         {
-            "symbol": "ETHUSDT", 
+            "symbol": "ETHUSDT",
             "side": "LONG",
             "quantity": 0.234,
             "entry_price": 3234,
             "current_price": price_data["ETHUSDT"]["price"],
-            "pnl": (price_data["ETHUSDT"]["price"] - 3234) * 0.234
-        }
+            "pnl": (price_data["ETHUSDT"]["price"] - 3234) * 0.234,
+        },
     ]
     return JSONResponse(content=positions)
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket for real-time updates"""
     await websocket.accept()
     websocket_clients.add(websocket)
-    
+
     try:
         while True:
             # Send price updates
             for symbol, data in price_data.items():
                 # Simulate price changes
-                data["price"] *= (1 + (random.random() - 0.5) * 0.002)
+                data["price"] *= 1 + (random.random() - 0.5) * 0.002
                 data["change"] = (random.random() - 0.5) * 5
-                
-                await websocket.send_json({
-                    "type": "price_update",
-                    "symbol": symbol,
-                    "price": data["price"],
-                    "change": data["change"],
-                    "volume": data["volume"]
-                })
-            
+
+                await websocket.send_json(
+                    {
+                        "type": "price_update",
+                        "symbol": symbol,
+                        "price": data["price"],
+                        "change": data["change"],
+                        "volume": data["volume"],
+                    }
+                )
+
             # Send portfolio update
             portfolio_state["total_pnl"] = random.uniform(400, 500)
             portfolio_state["daily_pnl"] = random.uniform(100, 150)
-            
-            await websocket.send_json({
-                "type": "portfolio_update",
-                "data": portfolio_state
-            })
-            
+
+            await websocket.send_json({"type": "portfolio_update", "data": portfolio_state})
+
             await asyncio.sleep(2)
-            
+
     except WebSocketDisconnect:
         websocket_clients.remove(websocket)
     except Exception as e:
         print(f"WebSocket error: {e}")
         if websocket in websocket_clients:
             websocket_clients.remove(websocket)
+
 
 @app.get("/api/health")
 async def health():
@@ -991,8 +991,9 @@ async def health():
         "status": "healthy",
         "timestamp": datetime.now(UTC).isoformat(),
         "version": "2.0.0",
-        "mode": "demo"
+        "mode": "demo",
     }
+
 
 def main():
     """Run the ultimate dashboard"""
@@ -1010,8 +1011,9 @@ def main():
     print("  [OK] Responsive design")
     print("\n[INFO] Press Ctrl+C to stop")
     print("=" * 60)
-    
+
     uvicorn.run(app, host="0.0.0.0", port=8001, log_level="warning")
+
 
 if __name__ == "__main__":
     main()

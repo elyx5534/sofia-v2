@@ -1,5 +1,7 @@
-import httpx
 import asyncio
+
+import httpx
+
 
 async def test():
     async with httpx.AsyncClient() as client:
@@ -10,5 +12,6 @@ async def test():
             print(f"Total Balance: ${data['portfolio']['total_balance']}")
         else:
             print("Failed")
+
 
 asyncio.run(test())

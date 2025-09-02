@@ -15,12 +15,12 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
-from .market_adapter import MarketType, Order, OrderSide, OrderStatus, OrderType
+from .market_adapter import Order, OrderStatus, OrderType
 
 
 class ExecutionAlgorithm(str, Enum):
     """Execution algorithm types."""
-    
+
     IMMEDIATE = "immediate"  # Market order
     TWAP = "twap"  # Time-weighted average price
     VWAP = "vwap"  # Volume-weighted average price
@@ -30,29 +30,29 @@ class ExecutionAlgorithm(str, Enum):
 
 class RouteDecision(BaseModel):
     """Routing decision for an order."""
-    
+
     market: str
     quantity: float
     price: Optional[float]
     algorithm: ExecutionAlgorithm
     priority: int  # Execution priority
     estimated_cost: float
-    
+
 
 class ExecutionPlan(BaseModel):
     """Execution plan for complex orders."""
-    
+
     original_order: Order
     routes: List[RouteDecision]
     total_quantity: float
     avg_price: float
     estimated_time: int  # Seconds
     estimated_slippage: float
-    
+
 
 class ExecutionReport(BaseModel):
     """Report of order execution."""
-    
+
     order_id: str
     status: OrderStatus
     filled_quantity: float
@@ -68,14 +68,14 @@ class ExecutionReport(BaseModel):
 class SmartOrderRouter:
     """
     Intelligent order routing system.
-    
+
     Features:
     - Multi-venue routing
     - Algorithmic execution
     - Cost optimization
     - Latency monitoring
     """
-    
+
     def __init__(self):
         """Initialize smart order router."""
         self.market_depths: Dict[str, Dict] = {}  # Market -> order book
@@ -94,17 +94,17 @@ class SmartOrderRouter:
             "nyse": 10,
         }
         self.active_orders: Dict[str, ExecutionPlan] = {}
-        
+
     def update_market_depth(self, market: str, symbol: str, depth: Dict) -> None:
         """Update market depth for routing decisions."""
         if market not in self.market_depths:
             self.market_depths[market] = {}
         self.market_depths[market][symbol] = depth
-        
+
     def analyze_liquidity(self, symbol: str, quantity: float) -> Dict[str, float]:
         """Analyze liquidity across markets."""
         liquidity = {}
-        
+
         for market, depths in self.market_depths.items():
             if symbol in depths:
                 depth = depths[symbol]
@@ -113,29 +113,24 @@ class SmartOrderRouter:
                     bid_liquidity = sum(level[1] for level in depth["bids"][:5])
                     ask_liquidity = sum(level[1] for level in depth["asks"][:5])
                     liquidity[market] = min(bid_liquidity, ask_liquidity)
-                    
+
         return liquidity
-        
-    def calculate_execution_cost(
-        self, 
-        market: str, 
-        quantity: float, 
-        price: float
-    ) -> float:
+
+    def calculate_execution_cost(self, market: str, quantity: float, price: float) -> float:
         """Calculate total execution cost."""
         notional = quantity * price
         fee = self.execution_costs.get(market, 0.003) * notional
-        
+
         # Add estimated slippage
         slippage = self._estimate_slippage(market, quantity) * notional
-        
+
         return fee + slippage
-        
+
     def _estimate_slippage(self, market: str, quantity: float) -> float:
         """Estimate slippage for given quantity."""
         # Simplified slippage model
         base_slippage = 0.0001  # 1 basis point
-        
+
         # Increase for larger orders
         if quantity > 10000:
             return base_slippage * 3
@@ -143,11 +138,11 @@ class SmartOrderRouter:
             return base_slippage * 2
         else:
             return base_slippage
-            
+
     async def create_execution_plan(self, order: Order) -> ExecutionPlan:
         """Create optimal execution plan for an order."""
         routes = []
-        
+
         if order.type == OrderType.MARKET:
             # Immediate execution
             routes = await self._plan_immediate_execution(order)
@@ -157,79 +152,79 @@ class SmartOrderRouter:
         else:
             # Smart routing for normal orders
             routes = await self._plan_smart_routing(order)
-            
+
         # Calculate estimates
         total_cost = sum(r.estimated_cost for r in routes)
         avg_price = total_cost / order.quantity if order.quantity > 0 else 0
-        
+
         plan = ExecutionPlan(
             original_order=order,
             routes=routes,
             total_quantity=order.quantity,
             avg_price=avg_price,
             estimated_time=self._estimate_execution_time(routes),
-            estimated_slippage=self._calculate_total_slippage(routes)
+            estimated_slippage=self._calculate_total_slippage(routes),
         )
-        
+
         # Store plan
         if order.id:
             self.active_orders[order.id] = plan
-            
+
         return plan
-        
+
     async def _plan_immediate_execution(self, order: Order) -> List[RouteDecision]:
         """Plan immediate market execution."""
         liquidity = self.analyze_liquidity(order.symbol, order.quantity)
-        
+
         # Find market with best liquidity
         best_market = max(liquidity.items(), key=lambda x: x[1])[0] if liquidity else "binance"
-        
-        return [RouteDecision(
-            market=best_market,
-            quantity=order.quantity,
-            price=order.price,
-            algorithm=ExecutionAlgorithm.IMMEDIATE,
-            priority=1,
-            estimated_cost=self.calculate_execution_cost(
-                best_market, 
-                order.quantity, 
-                order.price or 0
+
+        return [
+            RouteDecision(
+                market=best_market,
+                quantity=order.quantity,
+                price=order.price,
+                algorithm=ExecutionAlgorithm.IMMEDIATE,
+                priority=1,
+                estimated_cost=self.calculate_execution_cost(
+                    best_market, order.quantity, order.price or 0
+                ),
             )
-        )]
-        
+        ]
+
     async def _plan_twap_execution(self, order: Order) -> List[RouteDecision]:
         """Plan time-weighted average price execution."""
         # Split order into time slices
         num_slices = 10
         slice_quantity = order.quantity / num_slices
-        
+
         routes = []
         for i in range(num_slices):
             # Rotate between markets for better execution
             market = ["binance", "coinbase", "kraken"][i % 3]
-            
-            routes.append(RouteDecision(
-                market=market,
-                quantity=slice_quantity,
-                price=order.price,
-                algorithm=ExecutionAlgorithm.TWAP,
-                priority=i + 1,
-                estimated_cost=self.calculate_execution_cost(
-                    market,
-                    slice_quantity,
-                    order.price or 0
+
+            routes.append(
+                RouteDecision(
+                    market=market,
+                    quantity=slice_quantity,
+                    price=order.price,
+                    algorithm=ExecutionAlgorithm.TWAP,
+                    priority=i + 1,
+                    estimated_cost=self.calculate_execution_cost(
+                        market, slice_quantity, order.price or 0
+                    ),
                 )
-            ))
-            
+            )
+
         return routes
-        
+
     async def _plan_smart_routing(self, order: Order) -> List[RouteDecision]:
         """Plan smart order routing."""
         liquidity = self.analyze_liquidity(order.symbol, order.quantity)
-        
+
         routes = []
         remaining = order.quantity
-        
+
         # Sort markets by cost efficiency
         market_scores = {}
         for market, liq in liquidity.items():
@@ -239,84 +234,82 @@ class SmartOrderRouter:
                 # Lower score is better
                 score = cost * 1000 + latency * 0.001
                 market_scores[market] = score
-                
+
         sorted_markets = sorted(market_scores.items(), key=lambda x: x[1])
-        
+
         # Distribute order across markets
         for market, _ in sorted_markets[:3]:  # Use top 3 markets
             if remaining <= 0:
                 break
-                
+
             available = liquidity.get(market, 0)
             quantity = min(remaining, available * 0.5)  # Use 50% of available
-            
+
             if quantity > 0:
-                routes.append(RouteDecision(
-                    market=market,
-                    quantity=quantity,
-                    price=order.price,
-                    algorithm=ExecutionAlgorithm.SMART,
-                    priority=len(routes) + 1,
-                    estimated_cost=self.calculate_execution_cost(
-                        market,
-                        quantity,
-                        order.price or 0
+                routes.append(
+                    RouteDecision(
+                        market=market,
+                        quantity=quantity,
+                        price=order.price,
+                        algorithm=ExecutionAlgorithm.SMART,
+                        priority=len(routes) + 1,
+                        estimated_cost=self.calculate_execution_cost(
+                            market, quantity, order.price or 0
+                        ),
                     )
-                ))
+                )
                 remaining -= quantity
-                
+
         return routes
-        
+
     def _estimate_execution_time(self, routes: List[RouteDecision]) -> int:
         """Estimate total execution time."""
         if not routes:
             return 0
-            
+
         # For TWAP, estimate based on number of slices
         if routes[0].algorithm == ExecutionAlgorithm.TWAP:
             return len(routes) * 60  # 1 minute per slice
-            
+
         # For immediate/smart, use max latency
-        max_latency = max(
-            self.latencies.get(r.market, 100) for r in routes
-        )
+        max_latency = max(self.latencies.get(r.market, 100) for r in routes)
         return int(max_latency / 1000) + 1  # Convert to seconds
-        
+
     def _calculate_total_slippage(self, routes: List[RouteDecision]) -> float:
         """Calculate total expected slippage."""
         total_slippage = 0.0
-        
+
         for route in routes:
             slippage = self._estimate_slippage(route.market, route.quantity)
             total_slippage += slippage * route.quantity * (route.price or 0)
-            
+
         total_value = sum(r.quantity * (r.price or 0) for r in routes)
-        
+
         return total_slippage / total_value if total_value > 0 else 0.0
-        
+
     async def execute_plan(self, plan: ExecutionPlan) -> ExecutionReport:
         """Execute an order plan."""
         start_time = datetime.utcnow()
         filled = 0.0
         total_cost = 0.0
         routes_used = []
-        
+
         for route in plan.routes:
             # Simulate execution delay
             latency = self.latencies.get(route.market, 100)
             await asyncio.sleep(latency / 1000)
-            
+
             # Execute route (mock)
             filled += route.quantity
             total_cost += route.estimated_cost
             routes_used.append(route.market)
-            
+
             # Check if order is filled
             if filled >= plan.total_quantity:
                 break
-                
+
         execution_time = (datetime.utcnow() - start_time).total_seconds()
-        
+
         report = ExecutionReport(
             order_id=plan.original_order.id or f"order_{datetime.utcnow().timestamp()}",
             status=OrderStatus.FILLED if filled >= plan.total_quantity else OrderStatus.PARTIAL,
@@ -327,20 +320,18 @@ class SmartOrderRouter:
             slippage=plan.estimated_slippage,
             execution_time=execution_time,
             routes_used=routes_used,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
-        
+
         return report
-        
+
     async def execute_iceberg_order(
-        self, 
-        order: Order, 
-        visible_quantity: float
+        self, order: Order, visible_quantity: float
     ) -> List[ExecutionReport]:
         """Execute iceberg order with hidden quantity."""
         reports = []
         remaining = order.quantity
-        
+
         while remaining > 0:
             # Create visible slice
             slice_quantity = min(visible_quantity, remaining)
@@ -350,37 +341,33 @@ class SmartOrderRouter:
                 side=order.side,
                 type=order.type,
                 quantity=slice_quantity,
-                price=order.price
+                price=order.price,
             )
-            
+
             # Execute slice
             plan = await self.create_execution_plan(slice_order)
             report = await self.execute_plan(plan)
             reports.append(report)
-            
+
             remaining -= report.filled_quantity
-            
+
             # Wait between slices
             await asyncio.sleep(5)
-            
+
         return reports
-        
-    async def execute_vwap(
-        self, 
-        order: Order, 
-        duration_minutes: int = 30
-    ) -> ExecutionReport:
+
+    async def execute_vwap(self, order: Order, duration_minutes: int = 30) -> ExecutionReport:
         """Execute volume-weighted average price order."""
         # Get volume profile
         volume_profile = await self._get_volume_profile(order.symbol)
-        
+
         # Create execution schedule based on volume
         schedule = self._create_vwap_schedule(order, volume_profile, duration_minutes)
-        
+
         # Execute according to schedule
         filled = 0.0
         total_cost = 0.0
-        
+
         for time_slot, quantity in schedule:
             slice_order = Order(
                 symbol=order.symbol,
@@ -388,18 +375,18 @@ class SmartOrderRouter:
                 side=order.side,
                 type=OrderType.LIMIT,
                 quantity=quantity,
-                price=order.price
+                price=order.price,
             )
-            
+
             plan = await self.create_execution_plan(slice_order)
             report = await self.execute_plan(plan)
-            
+
             filled += report.filled_quantity
             total_cost += report.total_cost
-            
+
             # Wait until next time slot
             await asyncio.sleep(60)  # 1 minute
-            
+
         return ExecutionReport(
             order_id=order.id or f"vwap_{datetime.utcnow().timestamp()}",
             status=OrderStatus.FILLED if filled >= order.quantity else OrderStatus.PARTIAL,
@@ -410,52 +397,67 @@ class SmartOrderRouter:
             slippage=0.001,
             execution_time=duration_minutes * 60,
             routes_used=["multiple"],
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
-        
+
     async def _get_volume_profile(self, symbol: str) -> List[float]:
         """Get volume profile for VWAP calculation."""
         # Mock volume profile (U-shaped: high at open/close)
         return [
-            100, 80, 60, 50, 40, 40, 50, 60, 80, 100,  # Morning to afternoon
-            100, 80, 60, 50, 40, 40, 50, 60, 80, 100   # Afternoon to close
+            100,
+            80,
+            60,
+            50,
+            40,
+            40,
+            50,
+            60,
+            80,
+            100,  # Morning to afternoon
+            100,
+            80,
+            60,
+            50,
+            40,
+            40,
+            50,
+            60,
+            80,
+            100,  # Afternoon to close
         ]
-        
+
     def _create_vwap_schedule(
-        self, 
-        order: Order, 
-        volume_profile: List[float], 
-        duration_minutes: int
+        self, order: Order, volume_profile: List[float], duration_minutes: int
     ) -> List[Tuple[datetime, float]]:
         """Create VWAP execution schedule."""
         total_volume = sum(volume_profile)
         schedule = []
-        
+
         for i, volume in enumerate(volume_profile[:duration_minutes]):
             # Proportional quantity based on volume
             quantity = order.quantity * (volume / total_volume)
             time_slot = datetime.utcnow() + timedelta(minutes=i)
             schedule.append((time_slot, quantity))
-            
+
         return schedule
-        
+
     def get_best_execution_venue(self, order: Order) -> str:
         """Get best execution venue for an order."""
         liquidity = self.analyze_liquidity(order.symbol, order.quantity)
-        
+
         best_market = None
-        best_score = float('inf')
-        
+        best_score = float("inf")
+
         for market, liq in liquidity.items():
             if liq >= order.quantity:
                 cost = self.calculate_execution_cost(market, order.quantity, order.price or 0)
                 latency = self.latencies.get(market, 100)
-                
+
                 # Combined score (lower is better)
                 score = cost + latency * 0.01
-                
+
                 if score < best_score:
                     best_score = score
                     best_market = market
-                    
+
         return best_market or "binance"  # Default

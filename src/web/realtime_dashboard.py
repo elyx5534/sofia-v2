@@ -2,15 +2,16 @@
 Real-time Dashboard with WebSocket Support
 Live price updates, portfolio tracking, and alerts
 """
+
 import asyncio
 import json
-from datetime import datetime, timezone
-from typing import Dict, List, Set, Optional, Any
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 import logging
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Set
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class DashboardUpdate(BaseModel):
     """Dashboard update message"""
+
     type: str  # price, portfolio, alert, trade
     data: Dict[str, Any]
     timestamp: datetime
@@ -25,29 +27,29 @@ class DashboardUpdate(BaseModel):
 
 class ConnectionManager:
     """Manages WebSocket connections"""
-    
+
     def __init__(self):
         self.active_connections: List[WebSocket] = []
         self.subscriptions: Dict[WebSocket, Set[str]] = {}
-        
+
     async def connect(self, websocket: WebSocket):
         """Accept new connection"""
         await websocket.accept()
         self.active_connections.append(websocket)
         self.subscriptions[websocket] = set()
         logger.info(f"Client connected. Total connections: {len(self.active_connections)}")
-        
+
     def disconnect(self, websocket: WebSocket):
         """Remove connection"""
         self.active_connections.remove(websocket)
         if websocket in self.subscriptions:
             del self.subscriptions[websocket]
         logger.info(f"Client disconnected. Total connections: {len(self.active_connections)}")
-        
+
     async def send_personal_message(self, message: str, websocket: WebSocket):
         """Send message to specific client"""
         await websocket.send_text(message)
-        
+
     async def broadcast(self, message: str, channel: Optional[str] = None):
         """Broadcast message to all or subscribed clients"""
         for connection in self.active_connections:
@@ -57,75 +59,73 @@ class ConnectionManager:
                 except:
                     # Connection might be closed
                     pass
-                    
+
     def subscribe(self, websocket: WebSocket, channels: List[str]):
         """Subscribe client to channels"""
         if websocket in self.subscriptions:
             self.subscriptions[websocket].update(channels)
-            
+
 
 manager = ConnectionManager()
 
 
 class RealTimeDashboard:
     """Real-time dashboard service"""
-    
+
     def __init__(self):
         self.price_cache: Dict[str, float] = {}
         self.portfolio_cache: Dict[str, Any] = {}
         self.alerts: List[Dict] = []
         self.update_interval = 1  # seconds
-        
+
     async def start_price_updates(self):
         """Start streaming price updates"""
         symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"]
-        
+
         while True:
             try:
                 # Simulate price updates (replace with real data source)
                 import random
+
                 for symbol in symbols:
-                    base_price = self.price_cache.get(symbol, {
-                        "BTC/USDT": 68000,
-                        "ETH/USDT": 2500,
-                        "SOL/USDT": 180,
-                        "BNB/USDT": 600
-                    }.get(symbol, 100))
-                    
+                    base_price = self.price_cache.get(
+                        symbol,
+                        {"BTC/USDT": 68000, "ETH/USDT": 2500, "SOL/USDT": 180, "BNB/USDT": 600}.get(
+                            symbol, 100
+                        ),
+                    )
+
                     # Random walk
                     change = random.uniform(-0.5, 0.5) / 100
                     new_price = base_price * (1 + change)
                     self.price_cache[symbol] = new_price
-                    
+
                     update = DashboardUpdate(
                         type="price",
                         data={
                             "symbol": symbol,
                             "price": new_price,
                             "change_24h": random.uniform(-5, 5),
-                            "volume_24h": random.uniform(1000000, 10000000)
+                            "volume_24h": random.uniform(1000000, 10000000),
                         },
-                        timestamp=datetime.now(timezone.utc)
+                        timestamp=datetime.now(timezone.utc),
                     )
-                    
-                    await manager.broadcast(
-                        update.model_dump_json(),
-                        channel="prices"
-                    )
-                
+
+                    await manager.broadcast(update.model_dump_json(), channel="prices")
+
                 await asyncio.sleep(self.update_interval)
-                
+
             except Exception as e:
                 logger.error(f"Price update error: {e}")
                 await asyncio.sleep(5)
-                
+
     async def start_portfolio_updates(self):
         """Start streaming portfolio updates"""
         while True:
             try:
                 # Simulate portfolio updates
                 portfolio_value = sum(self.price_cache.values()) * 0.1
-                
+
                 update = DashboardUpdate(
                     type="portfolio",
                     data={
@@ -137,25 +137,22 @@ class RealTimeDashboard:
                                 "symbol": symbol,
                                 "quantity": 0.1,
                                 "value": price * 0.1,
-                                "pnl": price * 0.1 * 0.02
+                                "pnl": price * 0.1 * 0.02,
                             }
                             for symbol, price in self.price_cache.items()
-                        ]
+                        ],
                     },
-                    timestamp=datetime.now(timezone.utc)
+                    timestamp=datetime.now(timezone.utc),
                 )
-                
-                await manager.broadcast(
-                    update.model_dump_json(),
-                    channel="portfolio"
-                )
-                
+
+                await manager.broadcast(update.model_dump_json(), channel="portfolio")
+
                 await asyncio.sleep(5)  # Update every 5 seconds
-                
+
             except Exception as e:
                 logger.error(f"Portfolio update error: {e}")
                 await asyncio.sleep(5)
-                
+
     async def check_alerts(self):
         """Check and broadcast alerts"""
         while True:
@@ -169,16 +166,15 @@ class RealTimeDashboard:
                             "symbol": symbol,
                             "message": f"{symbol} exceeded $69,000!",
                             "severity": "high",
-                            "timestamp": datetime.now(timezone.utc).isoformat()
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
                         }
-                        
+
                         await manager.broadcast(
-                            json.dumps({"type": "alert", "data": alert}),
-                            channel="alerts"
+                            json.dumps({"type": "alert", "data": alert}), channel="alerts"
                         )
-                        
+
                 await asyncio.sleep(10)  # Check every 10 seconds
-                
+
             except Exception as e:
                 logger.error(f"Alert check error: {e}")
                 await asyncio.sleep(10)
@@ -192,7 +188,7 @@ dashboard_html = """
     <title>Real-Time Trading Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
             color: #e0e0e0;
@@ -255,13 +251,13 @@ dashboard_html = """
             <h1>🚀 Real-Time Trading Dashboard</h1>
             <span id="status" class="status disconnected">Disconnected</span>
         </div>
-        
+
         <div class="grid">
             <div class="card">
                 <h2>📊 Live Prices</h2>
                 <div id="prices"></div>
             </div>
-            
+
             <div class="card">
                 <h2>💼 Portfolio</h2>
                 <div id="portfolio">
@@ -269,40 +265,40 @@ dashboard_html = """
                     <p>Daily P&L: <span id="dailyPnl">$0.00</span></p>
                 </div>
             </div>
-            
+
             <div class="card">
                 <h2>🔔 Alerts</h2>
                 <div id="alerts"></div>
             </div>
         </div>
-        
+
         <div class="card" style="margin-top: 20px;">
             <h2>📈 Price Chart</h2>
             <div id="chart"></div>
         </div>
     </div>
-    
+
     <script>
         const ws = new WebSocket('ws://localhost:8000/ws/dashboard');
         const statusEl = document.getElementById('status');
         const pricesEl = document.getElementById('prices');
         const alertsEl = document.getElementById('alerts');
         const priceData = {};
-        
+
         ws.onopen = () => {
             statusEl.textContent = 'Connected';
             statusEl.className = 'status connected';
-            
+
             // Subscribe to channels
             ws.send(JSON.stringify({
                 action: 'subscribe',
                 channels: ['prices', 'portfolio', 'alerts']
             }));
         };
-        
+
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            
+
             if (data.type === 'price') {
                 updatePrice(data.data);
             } else if (data.type === 'portfolio') {
@@ -311,19 +307,19 @@ dashboard_html = """
                 showAlert(data.data);
             }
         };
-        
+
         ws.onclose = () => {
             statusEl.textContent = 'Disconnected';
             statusEl.className = 'status disconnected';
         };
-        
+
         function updatePrice(data) {
             if (!priceData[data.symbol]) {
                 priceData[data.symbol] = document.createElement('div');
                 priceData[data.symbol].className = 'price-card';
                 pricesEl.appendChild(priceData[data.symbol]);
             }
-            
+
             const changeClass = data.change_24h >= 0 ? 'positive' : 'negative';
             priceData[data.symbol].innerHTML = `
                 <div>
@@ -335,15 +331,15 @@ dashboard_html = """
                 </div>
             `;
         }
-        
+
         function updatePortfolio(data) {
             document.getElementById('totalValue').textContent = data.total_value.toFixed(2);
-            document.getElementById('dailyPnl').textContent = 
+            document.getElementById('dailyPnl').textContent =
                 (data.daily_pnl >= 0 ? '+' : '') + '$' + data.daily_pnl.toFixed(2);
-            document.getElementById('dailyPnl').className = 
+            document.getElementById('dailyPnl').className =
                 data.daily_pnl >= 0 ? 'positive' : 'negative';
         }
-        
+
         function showAlert(data) {
             const alert = document.createElement('div');
             alert.className = 'alert';
@@ -352,7 +348,7 @@ dashboard_html = """
                 <small style="float: right">${new Date(data.timestamp).toLocaleTimeString()}</small>
             `;
             alertsEl.insertBefore(alert, alertsEl.firstChild);
-            
+
             // Keep only last 5 alerts
             while (alertsEl.children.length > 5) {
                 alertsEl.removeChild(alertsEl.lastChild);
@@ -379,21 +375,20 @@ async def get_dashboard():
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
     await manager.connect(websocket)
-    
+
     try:
         while True:
             # Receive messages from client
             data = await websocket.receive_text()
             message = json.loads(data)
-            
+
             if message.get("action") == "subscribe":
                 channels = message.get("channels", [])
                 manager.subscribe(websocket, channels)
                 await manager.send_personal_message(
-                    json.dumps({"status": "subscribed", "channels": channels}),
-                    websocket
+                    json.dumps({"status": "subscribed", "channels": channels}), websocket
                 )
-                
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -408,4 +403,5 @@ async def startup_event():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8001)

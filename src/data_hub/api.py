@@ -7,12 +7,13 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from src.backtester.api import router as backtester_router
+
 from .cache import cache_manager
 from .claude_service import MarketAnalysisRequest, MarketAnalysisResponse, claude_service
 from .models import AssetType, ErrorResponse, HealthResponse, OHLCVResponse, SymbolSearchResponse
 from .providers import CCXTProvider, YFinanceProvider
 from .settings import settings
-from src.backtester.api import router as backtester_router
 
 
 @asynccontextmanager
@@ -238,18 +239,20 @@ async def analyze_market_data(
     symbol: str = Query(..., description="Symbol ticker (e.g., AAPL, BTC/USDT)"),
     asset_type: AssetType = Query(..., description="Type of asset"),
     timeframe: str = Query("1h", description="Timeframe (1m, 5m, 15m, 30m, 1h, 4h, 1d, 1w, 1M)"),
-    analysis_type: str = Query("technical", description="Analysis type (technical, fundamental, sentiment)"),
+    analysis_type: str = Query(
+        "technical", description="Analysis type (technical, fundamental, sentiment)"
+    ),
     limit: int = Query(100, ge=10, le=500, description="Number of candles for analysis"),
 ):
     """
     Get AI-powered market analysis using Claude.
-    
+
     This endpoint combines OHLCV data retrieval with Claude AI analysis to provide:
     - Technical analysis insights
     - Risk assessment
     - Trading recommendations
     - Market sentiment analysis
-    
+
     **Requirements:**
     - Claude API key must be configured
     - Valid symbol and asset type
@@ -259,20 +262,20 @@ async def analyze_market_data(
         # Check if Claude service is available
         if not claude_service:
             raise HTTPException(
-                status_code=503, 
-                detail="Claude AI service not configured. Please set CLAUDE_API_KEY environment variable."
+                status_code=503,
+                detail="Claude AI service not configured. Please set CLAUDE_API_KEY environment variable.",
             )
-        
+
         # First, get OHLCV data
         ohlcv_data = None
-        
+
         # Check cache first
         ohlcv_data = await cache_manager.get_ohlcv_cache(
             symbol=symbol,
             asset_type=asset_type,
             timeframe=timeframe,
         )
-        
+
         # Fetch from provider if not cached
         if not ohlcv_data:
             if asset_type == AssetType.EQUITY:
@@ -287,7 +290,7 @@ async def analyze_market_data(
                     timeframe=timeframe,
                     limit=limit,
                 )
-            
+
             # Cache the data
             if ohlcv_data:
                 await cache_manager.set_ohlcv_cache(
@@ -296,27 +299,27 @@ async def analyze_market_data(
                     timeframe=timeframe,
                     data=ohlcv_data,
                 )
-        
+
         if not ohlcv_data:
             raise HTTPException(status_code=404, detail=f"No data available for {symbol}")
-        
+
         # Limit data for analysis (use most recent candles)
         analysis_data = ohlcv_data[-limit:] if len(ohlcv_data) > limit else ohlcv_data
-        
+
         # Create analysis request
         analysis_request = MarketAnalysisRequest(
             symbol=symbol,
             asset_type=asset_type,
             ohlcv_data=analysis_data,
             timeframe=timeframe,
-            analysis_type=analysis_type
+            analysis_type=analysis_type,
         )
-        
+
         # Get AI analysis
         analysis = await claude_service.analyze_market_data(analysis_request)
-        
+
         return analysis
-        
+
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
