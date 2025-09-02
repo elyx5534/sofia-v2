@@ -9,156 +9,390 @@
     </div>
 </div>
 
-<!-- Backtest Form -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Configuration</h5>
+<!-- Tab Navigation -->
+<ul class="nav nav-tabs mb-4" id="backtestTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button">
+            Single Run
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="grid-tab" data-bs-toggle="tab" data-bs-target="#grid" type="button">
+            Grid Search
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="ga-tab" data-bs-toggle="tab" data-bs-target="#ga" type="button">
+            Genetic Algorithm
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="wfo-tab" data-bs-toggle="tab" data-bs-target="#wfo" type="button">
+            Walk-Forward
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="backtestTabContent">
+    <!-- Single Run Tab -->
+    <div class="tab-pane fade show active" id="single" role="tabpanel">
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="backtestForm">
+                            <div class="mb-3">
+                                <label class="form-label">Symbol</label>
+                                <input type="text" class="form-control" id="btSymbol" value="BTC/USDT" list="symbolList">
+                                <datalist id="symbolList">
+                                    <option value="BTC/USDT">
+                                    <option value="ETH/USDT">
+                                    <option value="SOL/USDT">
+                                    <option value="BNB/USDT">
+                                </datalist>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Timeframe</label>
+                                <select class="form-select" id="btTimeframe">
+                                    <option value="1m">1 Minute</option>
+                                    <option value="5m">5 Minutes</option>
+                                    <option value="15m">15 Minutes</option>
+                                    <option value="30m">30 Minutes</option>
+                                    <option value="1h" selected>1 Hour</option>
+                                    <option value="4h">4 Hours</option>
+                                    <option value="1d">1 Day</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="btStartDate" value="2024-01-01">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="btEndDate">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Strategy</label>
+                                <select class="form-select" id="btStrategy">
+                                    <option value="sma_cross">SMA Crossover</option>
+                                    <option value="rsi_revert">RSI Mean Reversion</option>
+                                    <option value="breakout">Channel Breakout</option>
+                                    <option value="mean_rev_spread">Pairs Mean Reversion</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Dynamic Parameters -->
+                            <div id="strategyParams">
+                                <h6>Strategy Parameters</h6>
+                                <div id="paramsContainer">
+                                    <!-- Will be populated based on strategy -->
+                                </div>
+                            </div>
+                            
+                            <!-- Portfolio Settings -->
+                            <div class="mt-3">
+                                <h6>Portfolio Settings</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label class="form-label">Commission (bps)</label>
+                                        <input type="number" class="form-control form-control-sm" id="commissionBps" value="10" min="0" max="100">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Slippage (bps)</label>
+                                        <input type="number" class="form-control form-control-sm" id="slippageBps" value="5" min="0" max="50">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary" id="btnRunBacktest">
+                                    <span id="btnText">Run Backtest</span>
+                                    <span class="spinner-border spinner-border-sm ms-2 d-none" id="btnSpinner"></span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <form id="backtestForm">
-                    <div class="mb-3">
-                        <label class="form-label">Symbol</label>
-                        <input type="text" class="form-control" id="btSymbol" value="BTC/USDT" list="symbolList">
-                        <datalist id="symbolList">
-                            <option value="BTC/USDT">
-                            <option value="ETH/USDT">
-                            <option value="SOL/USDT">
-                            <option value="BNB/USDT">
-                            <option value="ADA/USDT">
-                        </datalist>
+            
+            <!-- Results Section -->
+            <div class="col-md-8">
+                <!-- Statistics Card -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Statistics</h5>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Timeframe</label>
-                        <select class="form-select" id="btTimeframe">
-                            <option value="1m">1 Minute</option>
-                            <option value="5m">5 Minutes</option>
-                            <option value="15m">15 Minutes</option>
-                            <option value="30m">30 Minutes</option>
-                            <option value="1h" selected>1 Hour</option>
-                            <option value="4h">4 Hours</option>
-                            <option value="1d">1 Day</option>
-                            <option value="1w">1 Week</option>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Start Date</label>
-                        <input type="date" class="form-control" id="btStartDate" value="2023-01-01">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">End Date</label>
-                        <input type="date" class="form-control" id="btEndDate">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Strategy</label>
-                        <select class="form-select" id="btStrategy">
-                            <option value="sma_cross">SMA Crossover</option>
-                            <option value="rsi_revert">RSI Mean Reversion</option>
-                            <option value="grid">Grid Trading</option>
-                            <option value="mean_revert">Mean Reversion</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Dynamic Parameters -->
-                    <div id="strategyParams">
-                        <h6>Strategy Parameters</h6>
-                        <div id="paramsContainer">
-                            <!-- Will be populated based on strategy -->
+                    <div class="card-body">
+                        <div class="row" id="statsContainer">
+                            <div class="col-md-3">
+                                <h6>Total Return</h6>
+                                <h4 id="statReturn">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Sharpe Ratio</h6>
+                                <h4 id="statSharpe">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Max Drawdown</h6>
+                                <h4 id="statDrawdown">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Win Rate</h6>
+                                <h4 id="statWinRate">-</h4>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <h6>Total Trades</h6>
+                                <h4 id="statTrades">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Profit Factor</h6>
+                                <h4 id="statPF">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Total Fees</h6>
+                                <h4 id="statFees">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Final Equity</h6>
+                                <h4 id="statFinal">-</h4>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-none" id="exportSection">
+                            <button class="btn btn-sm btn-secondary" id="btnExportCSV">Export CSV</button>
+                            <span class="ms-2 text-muted">Run ID: <span id="runId"></span></span>
                         </div>
                     </div>
-                    
-                    <div class="d-grid gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary" id="btnRunBacktest">
-                            <span id="btnText">Run Backtest</span>
-                            <span class="spinner-border spinner-border-sm ms-2 d-none" id="btnSpinner"></span>
-                        </button>
+                </div>
+                
+                <!-- Charts -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Equity Curve</h5>
                     </div>
-                </form>
+                    <div class="card-body">
+                        <canvas id="btEquityChart" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Drawdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="btDrawdownChart" height="150"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     
-    <!-- Results Section -->
-    <div class="col-md-8">
-        <!-- Statistics Card -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="mb-0">Statistics</h5>
-            </div>
-            <div class="card-body">
-                <div class="row" id="statsContainer">
-                    <div class="col-md-3">
-                        <h6>Total Return</h6>
-                        <h4 id="statReturn">-</h4>
+    <!-- Grid Search Tab -->
+    <div class="tab-pane fade" id="grid" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Grid Search Configuration</h5>
                     </div>
-                    <div class="col-md-3">
-                        <h6>Sharpe Ratio</h6>
-                        <h4 id="statSharpe">-</h4>
-                    </div>
-                    <div class="col-md-3">
-                        <h6>Max Drawdown</h6>
-                        <h4 id="statDrawdown">-</h4>
-                    </div>
-                    <div class="col-md-3">
-                        <h6>Win Rate</h6>
-                        <h4 id="statWinRate">-</h4>
+                    <div class="card-body">
+                        <form id="gridForm">
+                            <div class="mb-3">
+                                <label class="form-label">Symbol</label>
+                                <input type="text" class="form-control" id="gridSymbol" value="BTC/USDT">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Strategy</label>
+                                <select class="form-select" id="gridStrategy">
+                                    <option value="sma_cross">SMA Crossover</option>
+                                    <option value="rsi_revert">RSI Mean Reversion</option>
+                                    <option value="breakout">Channel Breakout</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Date Range</label>
+                                <input type="date" class="form-control mb-2" id="gridStartDate" value="2024-01-01">
+                                <input type="date" class="form-control" id="gridEndDate">
+                            </div>
+                            
+                            <div id="gridParamsContainer">
+                                <h6>Parameter Grid</h6>
+                                <!-- Dynamic grid parameters -->
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary mt-3">
+                                <span id="gridBtnText">Run Grid Search</span>
+                                <span class="spinner-border spinner-border-sm ms-2 d-none" id="gridSpinner"></span>
+                            </button>
+                        </form>
                     </div>
                 </div>
-                <div class="mt-3 d-none" id="exportSection">
-                    <button class="btn btn-sm btn-secondary" id="btnExportCSV">Export CSV</button>
-                    <span class="ms-2 text-muted">Run ID: <span id="runId"></span></span>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Grid Search Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="gridResults">
+                            <p class="text-muted">Run a grid search to see results</p>
+                        </div>
+                        <canvas id="gridHeatmap" class="d-none"></canvas>
+                    </div>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Charts -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="mb-0">Equity Curve</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="btEquityChart"></canvas>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Drawdown</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="btDrawdownChart"></canvas>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Trades Table -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Trade List</h5>
+    
+    <!-- Genetic Algorithm Tab -->
+    <div class="tab-pane fade" id="ga" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">GA Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="gaForm">
+                            <div class="mb-3">
+                                <label class="form-label">Symbol</label>
+                                <input type="text" class="form-control" id="gaSymbol" value="BTC/USDT">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Strategy</label>
+                                <select class="form-select" id="gaStrategy">
+                                    <option value="sma_cross">SMA Crossover</option>
+                                    <option value="rsi_revert">RSI Mean Reversion</option>
+                                    <option value="breakout">Channel Breakout</option>
+                                </select>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Population</label>
+                                    <input type="number" class="form-control" id="gaPopulation" value="30" min="10" max="100">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Generations</label>
+                                    <input type="number" class="form-control" id="gaGenerations" value="15" min="5" max="50">
+                                </div>
+                            </div>
+                            
+                            <div id="gaParamsContainer">
+                                <h6>Parameter Ranges</h6>
+                                <!-- Dynamic GA parameter ranges -->
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary mt-3">
+                                <span id="gaBtnText">Run GA Optimization</span>
+                                <span class="spinner-border spinner-border-sm ms-2 d-none" id="gaSpinner"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Side</th>
-                                <th>Price</th>
-                                <th>Size</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tradesTable">
-                            <tr><td colspan="4" class="text-center">No backtest run yet</td></tr>
-                        </tbody>
-                    </table>
+            
+            <div class="col-md-8">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Evolution Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="gaEvolutionChart" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Best Individual</h5>
+                    </div>
+                    <div class="card-body" id="gaBestParams">
+                        <p class="text-muted">Run GA to find best parameters</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Walk-Forward Tab -->
+    <div class="tab-pane fade" id="wfo" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">WFO Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="wfoForm">
+                            <div class="mb-3">
+                                <label class="form-label">Symbol</label>
+                                <input type="text" class="form-control" id="wfoSymbol" value="BTC/USDT">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Strategy</label>
+                                <select class="form-select" id="wfoStrategy">
+                                    <option value="sma_cross">SMA Crossover</option>
+                                    <option value="rsi_revert">RSI Mean Reversion</option>
+                                </select>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Splits</label>
+                                    <input type="number" class="form-control" id="wfoSplits" value="3" min="2" max="10">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Train Ratio</label>
+                                    <input type="number" class="form-control" id="wfoTrainRatio" value="0.7" min="0.5" max="0.9" step="0.1">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary mt-3">
+                                <span id="wfoBtnText">Run Walk-Forward</span>
+                                <span class="spinner-border spinner-border-sm ms-2 d-none" id="wfoSpinner"></span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Walk-Forward Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="wfoResults">
+                            <p class="text-muted">Run walk-forward optimization to see results</p>
+                        </div>
+                        <table class="table table-sm d-none" id="wfoTable">
+                            <thead>
+                                <tr>
+                                    <th>Split</th>
+                                    <th>Train Period</th>
+                                    <th>Test Period</th>
+                                    <th>IS Sharpe</th>
+                                    <th>OOS Sharpe</th>
+                                    <th>OOS Return</th>
+                                </tr>
+                            </thead>
+                            <tbody id="wfoTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -179,33 +413,44 @@ const strategyParams = {
         oversold: {type: 'number', default: 30, min: 10, max: 40, label: 'Oversold Level'},
         overbought: {type: 'number', default: 70, min: 60, max: 90, label: 'Overbought Level'}
     },
-    grid: {
-        levels: {type: 'number', default: 10, min: 5, max: 20, label: 'Grid Levels'},
-        spacing_pct: {type: 'number', default: 1.0, min: 0.5, max: 3.0, step: 0.1, label: 'Spacing (%)'}
+    breakout: {
+        period: {type: 'number', default: 20, min: 10, max: 50, label: 'Breakout Period'}
     },
-    mean_revert: {
+    mean_rev_spread: {
+        symbol2: {type: 'text', default: 'ETH/USDT', label: 'Second Symbol'},
         lookback: {type: 'number', default: 20, min: 10, max: 50, label: 'Lookback Period'},
-        z_threshold: {type: 'number', default: 2.0, min: 1.0, max: 3.0, step: 0.1, label: 'Z-Score Threshold'}
+        z_entry: {type: 'number', default: 2.0, min: 1.0, max: 3.0, step: 0.1, label: 'Z-Score Entry'},
+        z_exit: {type: 'number', default: 0.5, min: 0.1, max: 1.0, step: 0.1, label: 'Z-Score Exit'}
     }
 };
 
 // Charts
 let equityChart = null;
 let drawdownChart = null;
+let gaEvolutionChart = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Set default end date to today
-    document.getElementById('btEndDate').value = new Date().toISOString().split('T')[0];
+    // Set default end dates
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('btEndDate').value = today;
+    document.getElementById('gridEndDate').value = today;
     
     // Initialize charts
     initBacktestCharts();
     
     // Update parameters when strategy changes
     document.getElementById('btStrategy').addEventListener('change', updateStrategyParams);
+    document.getElementById('gridStrategy').addEventListener('change', updateGridParams);
+    document.getElementById('gaStrategy').addEventListener('change', updateGAParams);
     updateStrategyParams();
+    updateGridParams();
+    updateGAParams();
     
-    // Handle form submission
+    // Handle form submissions
     document.getElementById('backtestForm').addEventListener('submit', runBacktest);
+    document.getElementById('gridForm').addEventListener('submit', runGridSearch);
+    document.getElementById('gaForm').addEventListener('submit', runGeneticAlgorithm);
+    document.getElementById('wfoForm').addEventListener('submit', runWalkForward);
     
     // Export CSV handler
     document.getElementById('btnExportCSV').addEventListener('click', exportCSV);
@@ -221,15 +466,74 @@ function updateStrategyParams() {
     for (const [key, config] of Object.entries(params)) {
         const div = document.createElement('div');
         div.className = 'mb-2';
+        const inputType = config.type === 'text' ? 'text' : 'number';
         div.innerHTML = `
             <label class="form-label">${config.label}</label>
-            <input type="number" 
+            <input type="${inputType}" 
                    class="form-control form-control-sm" 
                    id="param_${key}"
                    value="${config.default}"
-                   min="${config.min}"
-                   max="${config.max}"
-                   step="${config.step || 1}">
+                   ${inputType === 'number' ? `min="${config.min}" max="${config.max}" step="${config.step || 1}"` : ''}>
+        `;
+        container.appendChild(div);
+    }
+}
+
+function updateGridParams() {
+    const strategy = document.getElementById('gridStrategy').value;
+    const params = strategyParams[strategy] || {};
+    const container = document.getElementById('gridParamsContainer');
+    
+    container.innerHTML = '<h6>Parameter Grid</h6>';
+    
+    for (const [key, config] of Object.entries(params)) {
+        if (config.type === 'text') continue;
+        
+        const div = document.createElement('div');
+        div.className = 'mb-3';
+        div.innerHTML = `
+            <label class="form-label">${config.label} Grid</label>
+            <input type="text" 
+                   class="form-control form-control-sm" 
+                   id="grid_${key}"
+                   placeholder="e.g., 10,15,20,25"
+                   value="${config.min},${config.default},${config.max}">
+            <small class="text-muted">Comma-separated values</small>
+        `;
+        container.appendChild(div);
+    }
+}
+
+function updateGAParams() {
+    const strategy = document.getElementById('gaStrategy').value;
+    const params = strategyParams[strategy] || {};
+    const container = document.getElementById('gaParamsContainer');
+    
+    container.innerHTML = '<h6>Parameter Ranges</h6>';
+    
+    for (const [key, config] of Object.entries(params)) {
+        if (config.type === 'text') continue;
+        
+        const div = document.createElement('div');
+        div.className = 'row mb-2';
+        div.innerHTML = `
+            <div class="col-12">
+                <label class="form-label">${config.label} Range</label>
+            </div>
+            <div class="col-6">
+                <input type="number" 
+                       class="form-control form-control-sm" 
+                       id="ga_${key}_min"
+                       placeholder="Min"
+                       value="${config.min}">
+            </div>
+            <div class="col-6">
+                <input type="number" 
+                       class="form-control form-control-sm" 
+                       id="ga_${key}_max"
+                       placeholder="Max"
+                       value="${config.max}">
+            </div>
         `;
         container.appendChild(div);
     }
@@ -250,7 +554,8 @@ async function runBacktest(e) {
     for (const key of Object.keys(strategyParams[strategy] || {})) {
         const input = document.getElementById(`param_${key}`);
         if (input) {
-            params[key] = parseFloat(input.value);
+            params[key] = strategyParams[strategy][key].type === 'text' ? 
+                input.value : parseFloat(input.value);
         }
     }
     
@@ -261,7 +566,11 @@ async function runBacktest(e) {
         start: document.getElementById('btStartDate').value,
         end: document.getElementById('btEndDate').value,
         strategy: strategy,
-        params: params
+        params: params,
+        config: {
+            commission_bps: parseFloat(document.getElementById('commissionBps').value),
+            slippage_bps: parseFloat(document.getElementById('slippageBps').value)
+        }
     };
     
     try {
@@ -284,6 +593,146 @@ async function runBacktest(e) {
     }
 }
 
+async function runGridSearch(e) {
+    e.preventDefault();
+    
+    // Show spinner
+    document.getElementById('gridBtnText').textContent = 'Running Grid Search...';
+    document.getElementById('gridSpinner').classList.remove('d-none');
+    
+    const strategy = document.getElementById('gridStrategy').value;
+    const paramGrid = {};
+    
+    // Parse grid parameters
+    for (const key of Object.keys(strategyParams[strategy] || {})) {
+        const input = document.getElementById(`grid_${key}`);
+        if (input && input.value) {
+            paramGrid[key] = input.value.split(',').map(v => parseFloat(v.trim()));
+        }
+    }
+    
+    const request = {
+        symbol: document.getElementById('gridSymbol').value,
+        timeframe: '1h',
+        start: document.getElementById('gridStartDate').value,
+        end: document.getElementById('gridEndDate').value,
+        strategy: strategy,
+        param_grid: paramGrid
+    };
+    
+    try {
+        const response = await apiFetch('/api/backtest/grid', {
+            method: 'POST',
+            body: JSON.stringify(request)
+        });
+        
+        displayGridResults(response);
+        
+    } catch (error) {
+        console.error('Grid search failed:', error);
+        showToast('Grid search failed: ' + error.message, 'danger');
+    } finally {
+        document.getElementById('gridBtnText').textContent = 'Run Grid Search';
+        document.getElementById('gridSpinner').classList.add('d-none');
+    }
+}
+
+async function runGeneticAlgorithm(e) {
+    e.preventDefault();
+    
+    // Show spinner
+    document.getElementById('gaBtnText').textContent = 'Running GA...';
+    document.getElementById('gaSpinner').classList.remove('d-none');
+    
+    const strategy = document.getElementById('gaStrategy').value;
+    const paramRanges = {};
+    
+    // Parse parameter ranges
+    for (const key of Object.keys(strategyParams[strategy] || {})) {
+        const minInput = document.getElementById(`ga_${key}_min`);
+        const maxInput = document.getElementById(`ga_${key}_max`);
+        if (minInput && maxInput) {
+            paramRanges[key] = [parseFloat(minInput.value), parseFloat(maxInput.value)];
+        }
+    }
+    
+    const request = {
+        symbol: document.getElementById('gaSymbol').value,
+        timeframe: '1h',
+        start: '2024-01-01',
+        end: new Date().toISOString().split('T')[0],
+        strategy: strategy,
+        param_ranges: paramRanges,
+        population_size: parseInt(document.getElementById('gaPopulation').value),
+        generations: parseInt(document.getElementById('gaGenerations').value),
+        elite_size: 2
+    };
+    
+    try {
+        const response = await apiFetch('/api/backtest/ga', {
+            method: 'POST',
+            body: JSON.stringify(request)
+        });
+        
+        displayGAResults(response);
+        
+    } catch (error) {
+        console.error('GA failed:', error);
+        showToast('GA optimization failed: ' + error.message, 'danger');
+    } finally {
+        document.getElementById('gaBtnText').textContent = 'Run GA Optimization';
+        document.getElementById('gaSpinner').classList.add('d-none');
+    }
+}
+
+async function runWalkForward(e) {
+    e.preventDefault();
+    
+    // Show spinner
+    document.getElementById('wfoBtnText').textContent = 'Running WFO...';
+    document.getElementById('wfoSpinner').classList.remove('d-none');
+    
+    const strategy = document.getElementById('wfoStrategy').value;
+    const paramGrid = {};
+    
+    // Create simple grid for WFO
+    if (strategy === 'sma_cross') {
+        paramGrid.fast = [10, 20, 30, 40];
+        paramGrid.slow = [40, 50, 60, 80];
+    } else if (strategy === 'rsi_revert') {
+        paramGrid.period = [10, 14, 20];
+        paramGrid.oversold = [20, 30, 40];
+        paramGrid.overbought = [60, 70, 80];
+    }
+    
+    const request = {
+        symbol: document.getElementById('wfoSymbol').value,
+        timeframe: '1h',
+        start: '2023-01-01',
+        end: new Date().toISOString().split('T')[0],
+        strategy: strategy,
+        param_grid: paramGrid,
+        n_splits: parseInt(document.getElementById('wfoSplits').value),
+        train_ratio: parseFloat(document.getElementById('wfoTrainRatio').value)
+    };
+    
+    try {
+        const response = await apiFetch('/api/backtest/wfo', {
+            method: 'POST',
+            body: JSON.stringify(request)
+        });
+        
+        displayWFOResults(response);
+        
+    } catch (error) {
+        console.error('WFO failed:', error);
+        showToast('Walk-forward optimization failed: ' + error.message, 'danger');
+    } finally {
+        document.getElementById('wfoBtnText').textContent = 'Run Walk-Forward';
+        document.getElementById('wfoSpinner').classList.add('d-none');
+    }
+}
+
 function displayResults(results) {
     // Update statistics
     const stats = results.stats || {};
@@ -292,6 +741,10 @@ function displayResults(results) {
     document.getElementById('statSharpe').textContent = stats.sharpe_ratio || '-';
     document.getElementById('statDrawdown').textContent = `${stats.max_drawdown || 0}%`;
     document.getElementById('statWinRate').textContent = `${stats.win_rate || 0}%`;
+    document.getElementById('statTrades').textContent = stats.total_trades || '0';
+    document.getElementById('statPF').textContent = (stats.profit_factor || 0).toFixed(2);
+    document.getElementById('statFees').textContent = `$${(stats.total_fees || 0).toFixed(2)}`;
+    document.getElementById('statFinal').textContent = `$${(stats.final_equity || 10000).toFixed(2)}`;
     
     // Show export section
     if (results.run_id) {
@@ -299,16 +752,114 @@ function displayResults(results) {
         document.getElementById('exportSection').classList.remove('d-none');
     }
     
-    // Update equity chart
+    // Update charts
     updateEquityChart(results.equity_curve || []);
-    
-    // Update drawdown chart
     updateDrawdownChart(results.drawdown || []);
     
-    // Update trades table
-    updateTradesTable(results.trades || []);
-    
     showToast('Backtest completed successfully', 'success');
+}
+
+function displayGridResults(results) {
+    const container = document.getElementById('gridResults');
+    
+    if (results.best_params) {
+        let html = `
+            <div class="alert alert-success">
+                <h6>Best Parameters (Sharpe: ${results.best_sharpe})</h6>
+                <ul class="mb-0">
+        `;
+        
+        for (const [key, value] of Object.entries(results.best_params)) {
+            html += `<li>${key}: ${value}</li>`;
+        }
+        
+        html += `</ul></div>`;
+        
+        // Show top 10 results
+        html += `<h6>Top Results</h6>
+                 <table class="table table-sm">
+                 <thead><tr><th>Parameters</th><th>Sharpe</th><th>Return</th><th>Max DD</th></tr></thead>
+                 <tbody>`;
+        
+        const sorted = results.grid_results.sort((a, b) => b.sharpe - a.sharpe);
+        sorted.slice(0, 10).forEach(r => {
+            html += `<tr>
+                       <td>${JSON.stringify(r.params)}</td>
+                       <td>${r.sharpe}</td>
+                       <td>${r.return}%</td>
+                       <td>${r.max_dd}%</td>
+                     </tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    }
+}
+
+function displayGAResults(results) {
+    const container = document.getElementById('gaBestParams');
+    
+    if (results.best_params) {
+        let html = `
+            <div class="alert alert-success">
+                <h6>Best Individual (Fitness: ${results.best_fitness})</h6>
+                <ul class="mb-0">
+        `;
+        
+        for (const [key, value] of Object.entries(results.best_params)) {
+            html += `<li>${key}: ${value.toFixed(2)}</li>`;
+        }
+        
+        html += `</ul></div>`;
+        
+        if (results.best_result && results.best_result.stats) {
+            const stats = results.best_result.stats;
+            html += `
+                <div class="row mt-3">
+                    <div class="col-3">Return: ${stats.total_return}%</div>
+                    <div class="col-3">Sharpe: ${stats.sharpe_ratio}</div>
+                    <div class="col-3">Max DD: ${stats.max_drawdown}%</div>
+                    <div class="col-3">Win Rate: ${stats.win_rate}%</div>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = html;
+        
+        // Update evolution chart
+        if (results.generation_history) {
+            updateEvolutionChart(results.generation_history);
+        }
+    }
+}
+
+function displayWFOResults(results) {
+    const container = document.getElementById('wfoResults');
+    const table = document.getElementById('wfoTable');
+    const tbody = document.getElementById('wfoTableBody');
+    
+    container.innerHTML = `
+        <div class="alert alert-info">
+            <h6>Walk-Forward Summary</h6>
+            <p>Average OOS Sharpe: ${results.avg_oos_sharpe}</p>
+            <p>Average OOS Return: ${results.avg_oos_return}%</p>
+        </div>
+    `;
+    
+    tbody.innerHTML = '';
+    results.wfo_results.forEach(r => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${r.split + 1}</td>
+            <td>${r.train_period}</td>
+            <td>${r.test_period}</td>
+            <td>${r.in_sample_sharpe.toFixed(2)}</td>
+            <td class="${r.oos_sharpe > 0 ? 'text-success' : 'text-danger'}">${r.oos_sharpe.toFixed(2)}</td>
+            <td class="${r.oos_return > 0 ? 'text-success' : 'text-danger'}">${r.oos_return.toFixed(2)}%</td>
+        `;
+    });
+    
+    table.classList.remove('d-none');
 }
 
 function initBacktestCharts() {
@@ -329,12 +880,8 @@ function initBacktestCharts() {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: {
-                    display: false
-                },
-                y: {
-                    beginAtZero: false
-                }
+                x: { display: false },
+                y: { beginAtZero: false }
             }
         }
     });
@@ -356,14 +903,32 @@ function initBacktestCharts() {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: {
-                    display: false
-                },
-                y: {
-                    beginAtZero: true,
-                    reverse: true
-                }
+                x: { display: false },
+                y: { beginAtZero: true, reverse: true }
             }
+        }
+    });
+    
+    const gaCtx = document.getElementById('gaEvolutionChart').getContext('2d');
+    gaEvolutionChart = new Chart(gaCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Best Fitness',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }, {
+                label: 'Avg Fitness',
+                data: [],
+                borderColor: 'rgb(255, 206, 86)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
         }
     });
 }
@@ -384,24 +949,13 @@ function updateDrawdownChart(data) {
     drawdownChart.update();
 }
 
-function updateTradesTable(trades) {
-    const tbody = document.getElementById('tradesTable');
-    tbody.innerHTML = '';
+function updateEvolutionChart(data) {
+    if (!gaEvolutionChart || !data.length) return;
     
-    if (trades.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No trades executed</td></tr>';
-        return;
-    }
-    
-    trades.slice(0, 50).forEach(trade => {
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${new Date(trade.timestamp).toLocaleString()}</td>
-            <td><span class="badge bg-${trade.side === 'buy' ? 'success' : 'danger'}">${trade.side}</span></td>
-            <td>$${trade.price.toFixed(2)}</td>
-            <td>${trade.size.toFixed(4)}</td>
-        `;
-    });
+    gaEvolutionChart.data.labels = data.map(d => `Gen ${d.generation}`);
+    gaEvolutionChart.data.datasets[0].data = data.map(d => d.best_fitness);
+    gaEvolutionChart.data.datasets[1].data = data.map(d => d.avg_fitness);
+    gaEvolutionChart.update();
 }
 
 async function exportCSV() {

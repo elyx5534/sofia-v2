@@ -52,15 +52,71 @@
         </div>
     </div>
     
-    <!-- Quick Actions Card -->
+    <!-- Trading Control Card -->
     <div class="col-md-3">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Quick Actions</h5>
+                <h5 class="card-title">Trading Control</h5>
+                <div class="mb-2">
+                    <small>Mode: <span id="trading-mode" class="badge bg-info">Paper</span></small>
+                </div>
                 <div class="d-grid gap-2">
                     <button class="btn btn-sm btn-primary" id="btnStartPaper">Start Paper</button>
                     <button class="btn btn-sm btn-danger" id="btnStopPaper" disabled>Stop Paper</button>
                     <button class="btn btn-sm btn-info" id="btnStartArb">Start Arb</button>
+                    <button class="btn btn-sm btn-warning" id="btnResetDay">Reset Day</button>
+                    <button class="btn btn-sm btn-dark d-none" id="btnSwitchLive">Switch Live</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Watchlists Row -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-pills card-header-pills" id="watchlistTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="crypto-tab" data-bs-toggle="tab" data-bs-target="#crypto-watchlist" type="button">
+                            Crypto
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="stocks-tab" data-bs-toggle="tab" data-bs-target="#stocks-watchlist" type="button">
+                            Stocks
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="forex-tab" data-bs-toggle="tab" data-bs-target="#forex-watchlist" type="button">
+                            Forex
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="watchlistContent">
+                    <!-- Crypto Watchlist -->
+                    <div class="tab-pane fade show active" id="crypto-watchlist" role="tabpanel">
+                        <div class="row" id="crypto-tickers">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Stocks Watchlist -->
+                    <div class="tab-pane fade" id="stocks-watchlist" role="tabpanel">
+                        <div class="row" id="stocks-tickers">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Forex Watchlist -->
+                    <div class="tab-pane fade" id="forex-watchlist" role="tabpanel">
+                        <div class="row" id="forex-tickers">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -201,6 +257,10 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(updateDashboard, 3000);
     updateDashboard();
     
+    // Update watchlists
+    updateWatchlists();
+    setInterval(updateWatchlists, 10000); // Update every 10 seconds
+    
     // Paper trading controls
     document.getElementById('btnStartPaper').addEventListener('click', () => {
         new bootstrap.Modal(document.getElementById('paperModal')).show();
@@ -269,7 +329,172 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+    
+    // Reset Day button
+    document.getElementById('btnResetDay').addEventListener('click', async () => {
+        if (confirm('Reset daily P&L and kill switch?')) {
+            const response = await apiFetch('/api/live/risk/reset_kill_switch', {
+                method: 'POST'
+            });
+            
+            if (response.success) {
+                showToast('Daily limits reset', 'success');
+                updateDashboard();
+            }
+        }
+    });
+    
+    // Check for live mode availability
+    checkLiveModeAuth();
+    
+    // Switch Live button (only if authorized)
+    document.getElementById('btnSwitchLive').addEventListener('click', async () => {
+        if (confirm('Switch to LIVE trading mode? This will use real money!')) {
+            const response = await apiFetch('/api/live/switch_mode', {
+                method: 'POST',
+                body: JSON.stringify({
+                    mode: 'live',
+                    confirm: true
+                })
+            });
+            
+            if (response.success) {
+                document.getElementById('trading-mode').textContent = 'LIVE';
+                document.getElementById('trading-mode').classList.remove('bg-info');
+                document.getElementById('trading-mode').classList.add('bg-danger');
+                document.getElementById('btnSwitchLive').textContent = 'Switch Paper';
+                showToast('Switched to LIVE mode', 'warning');
+            }
+        }
+    });
 });
+
+async function checkLiveModeAuth() {
+    try {
+        const response = await apiFetch('/api/live/auth/status');
+        if (response.live_mode_available) {
+            document.getElementById('btnSwitchLive').classList.remove('d-none');
+        }
+    } catch (error) {
+        console.error('Failed to check live mode auth:', error);
+    }
+}
+
+// Watchlist management
+const watchlists = {
+    crypto: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT', 'AVAX/USDT', 'DOT/USDT'],
+    stocks: ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'META', 'AMD'],
+    forex: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'EUR/GBP', 'USD/TRY']
+};
+
+async function updateWatchlists() {
+    // Update crypto watchlist
+    const cryptoContainer = document.getElementById('crypto-tickers');
+    if (cryptoContainer && watchlists.crypto.length > 0) {
+        let html = '';
+        for (const symbol of watchlists.crypto) {
+            try {
+                const ticker = await apiFetch(`/api/quotes/ticker?symbol=${symbol}`);
+                const change = ((ticker.last - ticker.open) / ticker.open * 100).toFixed(2);
+                const changeClass = change >= 0 ? 'text-success' : 'text-danger';
+                
+                html += `
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card ticker-card" data-symbol="${symbol}">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">${symbol}</small>
+                                        <h6 class="mb-0">$${ticker.last.toFixed(2)}</h6>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="${changeClass}">${change >= 0 ? '+' : ''}${change}%</small>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary btn-add-studio" data-symbol="${symbol}">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error(`Failed to fetch ${symbol}:`, error);
+            }
+        }
+        cryptoContainer.innerHTML = html;
+        
+        // Add click handlers for "Add to Studio" buttons
+        document.querySelectorAll('.btn-add-studio').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const symbol = e.target.closest('.btn-add-studio').dataset.symbol;
+                window.location.href = `/backtest-studio?symbol=${symbol}`;
+            });
+        });
+    }
+    
+    // Simulate stock prices (in production, fetch from stock API)
+    const stocksContainer = document.getElementById('stocks-tickers');
+    if (stocksContainer) {
+        let html = '';
+        for (const symbol of watchlists.stocks) {
+            const price = (Math.random() * 500 + 100).toFixed(2);
+            const change = (Math.random() * 10 - 5).toFixed(2);
+            const changeClass = change >= 0 ? 'text-success' : 'text-danger';
+            
+            html += `
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card ticker-card">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">${symbol}</small>
+                                    <h6 class="mb-0">$${price}</h6>
+                                </div>
+                                <div class="text-end">
+                                    <small class="${changeClass}">${change >= 0 ? '+' : ''}${change}%</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        stocksContainer.innerHTML = html;
+    }
+    
+    // Simulate forex prices
+    const forexContainer = document.getElementById('forex-tickers');
+    if (forexContainer) {
+        let html = '';
+        for (const pair of watchlists.forex) {
+            const price = pair.includes('JPY') ? (Math.random() * 50 + 100).toFixed(3) : (Math.random() * 0.5 + 0.8).toFixed(5);
+            const change = (Math.random() * 2 - 1).toFixed(2);
+            const changeClass = change >= 0 ? 'text-success' : 'text-danger';
+            
+            html += `
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card ticker-card">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">${pair}</small>
+                                    <h6 class="mb-0">${price}</h6>
+                                </div>
+                                <div class="text-end">
+                                    <small class="${changeClass}">${change >= 0 ? '+' : ''}${change}%</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        forexContainer.innerHTML = html;
+    }
+}
 
 async function updateDashboard() {
     // Update paper trading status

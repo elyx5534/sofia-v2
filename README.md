@@ -1,564 +1,385 @@
-# Sofia V2 - AI-Powered Trading Platform 🚀
+# Sofia V2 - Quantitative Trading Platform 🚀
 
-> **Professional-grade algorithmic trading system with real-time data, backtesting, and AI-powered strategies**
+> **Enterprise-grade algorithmic trading system with portfolio backtesting, live trading, and production monitoring**
 
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green.svg)](https://fastapi.tiangolo.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Lines of Code](https://img.shields.io/badge/Lines%20of%20Code-50K+-purple.svg)]()
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
+[![Prometheus](https://img.shields.io/badge/Prometheus-Metrics-orange.svg)](https://prometheus.io)
+[![Coverage](https://img.shields.io/badge/Coverage-70%25+-green.svg)]()
 
 ## 🚀 Quick Start
 
-### Local UI Quickstart
+### Windows Quick Start (PowerShell)
 
-Start both API and Dashboard with a single command:
+```powershell
+# 1. Clone the repository
+git clone https://github.com/yourusername/sofia-v2.git
+cd sofia-v2
+
+# 2. Run production with single command (API + Paper Trading + UI)
+.\scripts\prod_run.ps1
+
+# Options:
+.\scripts\prod_run.ps1 -NoPaper  # Skip paper trading
+.\scripts\prod_run.ps1 -NoArb    # Skip arbitrage radar
+.\scripts\prod_run.ps1 -NoUI     # Skip browser launch
+.\scripts\prod_run.ps1 -Port 9000  # Custom port
+```
+
+### Docker Quick Start
+
+```bash
+# 1. Copy environment template
+cp .env.example .env
+# Edit .env with your API keys and passwords
+
+# 2. Start all services
+docker-compose up -d
+
+# 3. Access services
+# API: http://localhost:8000
+# Grafana: http://localhost:3000 (admin/your_password)
+# Prometheus: http://localhost:9090
+# RabbitMQ: http://localhost:15672
+
+# 4. Stop all services
+docker-compose down
+```
+
+### Manual Setup (Development)
 
 ```bash
 # Setup virtual environment (first time only)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Start everything (API + Dashboard)
-make up
+# Run tests
+pytest tests/smoke -v
 
-# The browser will automatically open:
-# - http://localhost:8002/dev - Development Console
-# - http://localhost:5000/ - Trading Dashboard
+# Start API server
+uvicorn src.api.main:app --reload --port 8000
+```
 
-# Stop everything
-make down
+## 📍 API Endpoints
+
+### Core Endpoints
+- `http://localhost:8000/docs` - Interactive API documentation (Swagger UI)
+- `http://localhost:8000/health` - Detailed health with system metrics
+- `http://localhost:8000/metrics` - Prometheus metrics endpoint
+- `http://localhost:8000/api/health` - Simple health check
+
+### Trading Dashboards
+- `http://localhost:8000/dashboard` - **Main Trading Dashboard** with P&L, charts, watchlists
+- `http://localhost:8000/backtest-studio` - **Backtest Studio** for strategy testing
+
+### Paper Trading
+- `POST /api/paper/start` - Start paper trading session
+- `POST /api/paper/stop` - Stop paper trading
+- `GET /api/paper/status` - Get current status and P&L
+- `GET /api/paper/trades` - List all trades
+
+### Live Trading
+- `POST /api/live/mode` - Switch between paper/live mode
+- `POST /api/live/order` - Place an order
+- `GET /api/live/balance` - Get account balance
+- `GET /api/live/positions` - Get open positions
+- `POST /api/live/risk/config` - Configure risk limits
+
+### Arbitrage Monitoring
+- `POST /api/arb/start` - Start arbitrage radar
+- `GET /api/arb/opportunities` - Get current opportunities
+- `POST /api/arb/stop` - Stop monitoring
+
+## 🌟 Key Features
+
+### 📊 Portfolio Backtesting
+- **Walk-Forward Optimization** - Out-of-sample validation
+- **Genetic Algorithm** - Automatic parameter optimization
+- **Grid Search** - Exhaustive parameter exploration
+- **Transaction Costs** - Commission, slippage, funding fees
+- **Multiple Strategies** - SMA, RSI, Breakout, Pairs trading
+
+### 🚀 Live Trading
+- **Paper/Live Mode** - Seamless switching with safety checks
+- **Risk Management** - Position limits, daily loss limits, kill-switch
+- **Order Routing** - Smart routing to multiple exchanges
+- **State Persistence** - Resume trading after restarts
+
+### 🎯 Turkish Arbitrage
+- **Multi-Exchange** - Monitor BtcTurk, Paribu, Binance
+- **Real-time Detection** - Sub-second opportunity scanning
+- **Fee Calculation** - Account for exchange fees and spreads
+- **Threshold Alerts** - Configurable profit thresholds
+
+### 📈 Production Monitoring
+- **Prometheus Metrics** - Export metrics in Prometheus format
+- **Health Checks** - Comprehensive health endpoints
+- **Grafana Dashboards** - Pre-configured visualization
+- **Alert System** - Slack/email notifications
+
+### 🏆 Strategy Leaderboard
+- **Nightly Optimization** - Automatic parameter tuning
+- **Performance Ranking** - Sort by Sharpe, returns, drawdown
+- **HTML Reports** - Beautiful leaderboard reports
+- **Parameter History** - Track optimal parameters over time
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
+# Full test suite with coverage
+pytest tests/ --cov=src --cov-report=term-missing
+
+# Quick smoke tests
+pytest tests/smoke -v
+
+# Specific module tests
+pytest tests/test_backtester.py -v
+pytest tests/test_execution.py -v
+pytest tests/test_metrics_health.py -v
+```
+
+### Test Coverage Goals
+- Overall: ≥70%
+- New modules: ≥80%
+- Critical paths: 100%
+
+## 🚢 Production Deployment
+
+### Using Docker Compose
+```bash
+# Start all services
+docker-compose up -d
 
 # View logs
-make logs
+docker-compose logs -f app
+
+# Scale workers
+docker-compose up -d --scale worker=3
+
+# Backup database
+docker-compose exec postgres pg_dump -U sofia sofia > backup.sql
 ```
 
-### Running the API
-
-Start the FastAPI server with:
-
+### Monitoring Setup
 ```bash
-# Development mode with auto-reload
-uvicorn src.api.main:app --port 8000 --reload
-
-# Production mode
-uvicorn src.api.main:app --port 8000 --workers 4
+# Access monitoring dashboards
+open http://localhost:3000     # Grafana
+open http://localhost:9090     # Prometheus
+open http://localhost:15672    # RabbitMQ Management
 ```
 
-#### API Endpoints:
-- `http://localhost:8000/docs` - Interactive API documentation (Swagger UI)
-- `http://localhost:8000/api/health` - Health check (returns `{"status": "ok"}`)
-- `http://localhost:8000/live-proof?symbol=BTC/USDT` - Live Binance data proof
-- `http://localhost:8000/health` - Detailed health with service status
-- `http://localhost:8000/dashboard` - **P&L Dashboard** with real-time charts and trading stats
+### Nightly Leaderboard
+```powershell
+# Run strategy optimization and generate leaderboard
+.\scripts\nightly_leaderboard.ps1
 
-### 📊 P&L Dashboard
+# Schedule for 2 AM daily (Windows Task Scheduler)
+schtasks /create /tn "Sofia Leaderboard" /tr "powershell.exe -File D:\BORSA2\sofia-v2\scripts\nightly_leaderboard.ps1" /sc daily /st 02:00
+```
 
-Access the real-time dashboard at `http://localhost:8000/dashboard` after starting the API server.
+## 🔒 Security & Best Practices
 
-**Features:**
-- **Today's P&L** - Real-time profit/loss tracking with percentage returns
-- **Equity Chart** - Live equity curve visualization using Chart.js
-- **Trading Stats** - Total trades, win rate, current equity
-- **Live Market Data** - Real-time BTC/USDT bid/ask/last prices from Binance
-- **Recent Trades** - Table showing last 10 executed trades
-- **Auto-refresh** - Updates every 5 seconds
-
-The dashboard automatically reads from:
-- `logs/pnl_summary.json` - Session P&L summary (if available)
-- `logs/paper_audit.log` - Trade-by-trade audit log
-
-### Smoke Tests
-
-Run smoke tests to verify system health:
-
+### Environment Variables
 ```bash
-# Run all smoke tests
-pytest -q tests/smoke
+# Required for production
+DATABASE_URL=postgresql://user:pass@localhost/sofia
+REDIS_URL=redis://localhost:6379
+API_KEY=your_exchange_api_key
+API_SECRET=your_exchange_api_secret
 
-# Run specific test
-pytest tests/smoke/test_live_proof.py -v
-pytest tests/smoke/test_orderbook_sanity.py -v
+# Optional monitoring
+SENTRY_DSN=your_sentry_dsn
+SLACK_WEBHOOK=your_slack_webhook
+GRAFANA_PASSWORD=secure_password
 ```
-
-### UI Smoke Tests
-
-Run end-to-end tests for the dashboard:
-
-```bash
-# First, start the API server
-uvicorn src.api.main:app --port 8000
-
-# In a separate terminal, run dashboard E2E tests
-npm run test:e2e:dash
-
-# Or run all E2E tests
-npm run test:e2e
-```
-
-The dashboard E2E tests verify:
-- ✅ Today's P&L card is displayed
-- ✅ Live market data (BID/ASK/LAST) is visible
-- ✅ Last trades table renders correctly
-- ✅ Equity chart container is present
-- ✅ Auto-refresh functionality works
-- ✅ Responsive design on mobile/tablet
-
-### Paper Trading Proof Session (30 minutes)
-
-Run a complete paper trading session with Grid Monster strategy:
-
-```bash
-# Start API server
-uvicorn src.api.main:app --port 8000 &
-
-# Run 30-minute paper session
-python tools/run_paper_session.py
-
-# Monitor audit log in real-time
-tail -f logs/paper_audit.log
-
-# Or use Makefile
-make proof-today
-```
-
-After the session, check:
-- `logs/paper_audit.log` - All trades with timestamps and price sources
-- `logs/paper_session_summary.json` - P&L summary and statistics
-
-### Turkish Arbitrage (Coming Tomorrow)
-
-Turkish exchange arbitrage system is ready but currently disabled:
-- **Exchanges**: Binance TR, BTCTurk, Paribu
-- **Config**: `config/strategies/turkish_arbitrage.yaml`
-- **Status**: Skeleton ready, will be activated tomorrow
-- **Fees**: Configured (Binance 0.10%, BTCTurk 0.25%, Paribu 0.20%)
-
-## 🔒 Security & Hygiene
-
-### Environment Setup
-1. Copy `.env.example` to `.env`
-2. Add your API keys (never commit `.env` files!)
-3. See `SECURITY/ROTATE.md` for key rotation guide
-
-### Important Directories
-- `logs/` - Auto-generated logs (gitignored)
-- `backups/` - Database backups (gitignored)
-- `node_modules/` - Dependencies (gitignored)
 
 ### Security Checklist
-- ✅ All `.env` files gitignored
-- ✅ Database files (`*.db`) gitignored
-- ✅ Log files (`*.log`) gitignored
-- ✅ API keys use environment variables
-- ✅ Regular key rotation recommended
+- ✅ Never commit `.env` files or secrets
+- ✅ Use read-only API keys for paper trading
+- ✅ Enable 2FA on exchange accounts
+- ✅ Set up IP whitelisting on exchanges
+- ✅ Rotate API keys monthly
+- ✅ Monitor for abnormal trading patterns
+- ✅ Use kill-switch for risk management
 
-## 🌟 Overview
-
-Sofia V2 is an enterprise-grade algorithmic trading platform that combines:
-- **Real-time market data** from multiple sources (YFinance, CCXT)
-- **AI-powered trading strategies** with machine learning models
-- **Professional backtesting engine** with advanced metrics
-- **Modern web UI** with real-time dashboards
-- **Risk management system** with position sizing and stop-losses
-- **Multi-asset support** (Crypto, Stocks, Forex)
-
-## 🔥 Key Features
-
-### 📊 Trading Engine
-- **5+ Built-in Strategies**: SMA, RSI, MACD, Bollinger Bands, Multi-indicator
-- **Custom Strategy Framework**: Easy to extend and customize
-- **Real-time Execution**: Async trading engine with WebSocket support
-- **Risk Management**: Position sizing, stop-loss, take-profit automation
-
-### 📈 Backtesting System
-- **Historical Data**: Multi-year datasets with 1-minute resolution
-- **Performance Metrics**: Sharpe ratio, max drawdown, win rate, profit factor
-- **Portfolio Simulation**: Realistic trading costs and slippage
-- **API Integration**: RESTful API for programmatic access
-
-### 🧠 AI/ML Components
-- **Price Prediction**: XGBoost and Random Forest models
-- **Sentiment Analysis**: Social media and news sentiment integration
-- **Genetic Algorithm**: Strategy parameter optimization
-- **Technical Indicators**: 20+ custom technical analysis tools
-
-### 🌐 Web Interface
-- **Modern Dashboard**: Real-time portfolio tracking
-- **Interactive Charts**: Advanced charting with Chart.js
-- **Strategy Management**: Deploy and monitor strategies
-- **Market Analysis**: Live cryptocurrency and stock data
-- **Automated Scheduler**: Background jobs for data fetching, scanning, and news updates
-- **Comprehensive CLI**: Full command-line interface for all operations
-- **REST API**: Complete API for integration with external tools
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.9+ 
-- Node.js 16+ (for web UI)
-- Git
-
-### Installation
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/elyx5534/sofia-v2.git
-cd sofia-v2
-
-# 2. Create virtual environment (Windows)
-py -m venv .venv
-.venv\Scripts\activate
-
-# For Mac/Linux:
-# python -m venv .venv
-# source .venv/bin/activate
-
-# 3. Install Python dependencies
-python -m pip install -r requirements.txt
-
-# 4. Install frontend dependencies
-cd sofia_ui
-npm install
-cd ..
-```
-
-### Running the Application
-
-#### Option 1: Use the startup script (Recommended)
-```bash
-# Windows
-.\start.bat
-
-# Mac/Linux
-./start.sh
-```
-
-#### Option 2: Manual start
-```bash
-# Terminal 1: Start the backend API
-cd sofia_ui
-python -m uvicorn server:app --reload --port 8000
-
-# Terminal 2: Start the frontend
-cd sofia_ui
-npm run dev
-```
-
-### Access the Application
-- **Web UI**: http://localhost:3000
-- **API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
-
-## 📋 Requirements
-
-- **Python 3.11+**
-- **Node.js 16+** (for UI dependencies)
-- **Windows 10/11** (PowerShell scripts provided)
-
-## ⚡ Quick Start
-
-### 1. Clone and Setup
-
-```bash
-git clone <repository-url>
-cd sofia-v2
-```
-
-### 2. One-Click Startup (Windows)
-
-```powershell
-# Full setup and startup
-.\run.ps1
-
-# Skip initial data fetch
-.\run.ps1 -SkipFetch
-
-# Skip news updates  
-.\run.ps1 -SkipNews
-
-# Custom port
-.\run.ps1 -Port 9000
-```
-
-### 3. Manual Setup
-
-```bash
-# Install Python dependencies
-pip install fastapi uvicorn[standard] ccxt pandas pyarrow polars httpx apscheduler loguru python-dotenv jinja2
-
-# Install Node.js dependencies
-npm install
-
-# Copy UI libraries
-cp node_modules/lightweight-charts/dist/lightweight-charts.standalone.production.js static/js/
-```
-
-## 🖥️ Web Interface
-
-After startup, access the web interface:
-
-- **Signals Dashboard**: http://127.0.0.1:8000/signals
-- **Signal Heatmap**: http://127.0.0.1:8000/heatmap  
-- **Interactive Charts**: http://127.0.0.1:8000/chart/BTC/USDT
-- **News Aggregation**: http://127.0.0.1:8000/news
-- **System Status**: http://127.0.0.1:8000/api/status
-
-## 🔧 Command Line Interface
-
-### Data Management
-```bash
-# Fetch all USDT pairs data (last 30 days)
-python sofia_cli.py fetch-all --days 30
-
-# Update recent data (last 24 hours)  
-python sofia_cli.py update --hours 24
-
-# List available symbols
-python sofia_cli.py list-symbols --limit 20
-```
-
-### Signal Scanning
-```bash
-# Run signal scan on 1h timeframe
-python sofia_cli.py scan --timeframe 1h
-
-# View system status
-python sofia_cli.py status
-```
-
-### News Updates
-```bash
-# Update news from all sources
-python sofia_cli.py news --hours 24 --symbol-limit 10
-```
-
-### Web Server
-```bash
-# Start web server
-python sofia_cli.py web --host 127.0.0.1 --port 8000 --reload
-
-# Production mode
-python sofia_cli.py web --host 0.0.0.0 --port 80
-```
-
-### Automated Scheduler
-```bash
-# Start scheduler (runs background jobs)
-python sofia_cli.py scheduler start
-
-# Check scheduler status
-python sofia_cli.py scheduler status
-
-# Run specific job manually
-python sofia_cli.py scheduler run --job fetch_data
-```
-
-## 📊 Signal Scanning Rules
-
-The scanner uses 6 different technical analysis rules:
-
-1. **RSI Rebound** (Weight: 2.0): Detects recovery from oversold conditions (RSI < 30)
-2. **SMA Cross** (Weight: 1.5): Identifies bullish crossover of SMA 20 over SMA 50
-3. **Bollinger Bands Bounce** (Weight: 1.0): Catches bounces from lower Bollinger Band
-4. **Volume Breakout** (Weight: 1.0): High volume above 2x average volume
-5. **MACD Signal** (Weight: 1.5): Bullish MACD line crossover above signal line
-6. **Price Action** (Weight: 1.0): Strong 1h momentum with reasonable 24h performance
-
-**Signal Scoring**: Combines all rule weights for final signal strength (0-10+ scale)
-
-## 📈 Technical Indicators
-
-### Supported Indicators:
-- **Trend**: SMA (20, 50), EMA (12, 26), MACD
-- **Momentum**: RSI (14), Stochastic (14, 3)  
-- **Volatility**: Bollinger Bands (20, 2), ATR (14)
-- **Volume**: Volume SMA (20)
-- **Price Action**: 1h and 24h percentage changes
-
-## 📰 News Integration
-
-### Sources:
-- **CryptoPanic**: Community-driven crypto news with sentiment voting
-- **GDELT**: Global news analysis with tone scoring
-- **Coverage**: Real-time news for major cryptocurrencies and market events
-
-### Features:
-- Sentiment analysis and impact scoring
-- Symbol-specific news filtering
-- Global market trend detection
-- Automatic news updates every 15 minutes
-
-## 🗂️ Project Structure
+## 📂 Project Structure
 
 ```
 sofia-v2/
 ├── src/
-│   ├── data/           # CCXT exchange interfaces and data pipeline
-│   ├── metrics/        # Technical indicators calculation
-│   ├── scan/           # Signal scanning rules and engine
-│   ├── news/           # News aggregation (CryptoPanic + GDELT)
-│   ├── web/            # FastAPI web application
-│   ├── scheduler/      # Background job scheduling
+│   ├── api/            # FastAPI application and routes
+│   │   ├── main.py     # Main API with health/metrics
+│   │   └── routes/     # API route modules
+│   ├── services/       # Core business logic
+│   │   ├── backtester.py      # Portfolio backtesting engine
+│   │   ├── execution.py       # Order routing and risk management
+│   │   ├── paper_engine.py    # Paper trading simulator
+│   │   └── arb_tl_radar.py   # Turkish arbitrage monitor
+│   ├── ui/             # Web UI templates
+│   │   └── templates/  # HTML dashboards
 │   └── utils/          # Utility functions
-├── templates/          # Jinja2 HTML templates
-├── static/            # CSS, JS, and static assets
-├── data/              # Parquet data storage
-├── outputs/           # JSON outputs and logs
-├── tests/             # Test suite
-├── sofia_cli.py       # Main CLI interface
-├── run.ps1           # PowerShell startup script
-└── requirements.txt   # Python dependencies
-```
+├── tests/              # Test suite
+│   ├── smoke/          # Quick validation tests
+│   └── test_*.py       # Module tests
+├── scripts/            # Automation scripts
+│   ├── prod_run.ps1    # Production launcher
+│   └── nightly_leaderboard.ps1  # Strategy optimizer
+├── docker/             # Container configuration
+│   └── Dockerfile      # Application image
+├── monitoring/         # Observability configs
+│   ├── prometheus.yml  # Metrics collection
+│   └── grafana/        # Dashboard definitions
+└── reports/            # Generated reports
 
-## ⚙️ Configuration
+## 🛠️ Development Guide
 
-### Environment Variables (.env)
+### Adding New Strategies
 
-```bash
-# CryptoPanic API (optional)
-CRYPTOPANIC_TOKEN=your_token_here
-
-# Server settings
-HOST=127.0.0.1
-PORT=8000
-DEBUG=true
-
-# Data storage paths
-DATA_DIR=./data
-OUTPUTS_DIR=./outputs
-```
-
-### Scheduler Jobs (Automatic)
-
-- **Data Fetch**: Every 15 minutes (recent data updates)
-- **Signal Scan**: Every 5 minutes (signal detection)
-- **News Update**: Every 15 minutes (news aggregation)
-- **Health Check**: Every 10 minutes (system monitoring)
-- **Full Data Sync**: Daily at 2:00 AM UTC (comprehensive update)
-- **Cleanup**: Weekly (maintenance tasks)
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-python -m pytest tests/ -v
-
-# Test specific module
-python -m pytest tests/test_indicators.py -v
-
-# Test with coverage
-pip install pytest-cov
-python -m pytest tests/ --cov=src --cov-report=html
-```
-
-## 🚀 API Reference
-
-### Core Endpoints:
-- `GET /api/signals` - Current signal data
-- `GET /api/heatmap` - Signal heatmap visualization  
-- `GET /api/ohlcv?symbol=BTC/USDT&timeframe=1h` - Chart data
-- `GET /api/news?symbol=BTC/USDT&limit=20` - News articles
-- `GET /api/status` - System health status
-- `GET /api/search?q=BTC` - Symbol search
-
-### Response Format:
-```json
-{
-  "signals": [
-    {
-      "symbol": "BTC/USDT",
-      "score": 3.5,
-      "signals": [
-        {
-          "rule_name": "RSI Rebound",
-          "signal_strength": 1.8,
-          "message": "RSI rebounding from oversold (28.5)"
-        }
-      ],
-      "indicators": {
-        "close": 43250.50,
-        "rsi": 28.5,
-        "price_change_24h": 2.1
-      }
-    }
-  ]
-}
-```
-
-## 🛠️ Development
-
-### Adding New Scan Rules:
-
-1. Create rule class in `src/scan/rules.py`:
 ```python
-class MyCustomRule(ScanRule):
-    def __init__(self):
-        super().__init__("My Rule", weight=1.5)
+# src/services/backtester.py
+class MyStrategy(Strategy):
+    def __init__(self, param1: float = 10):
+        self.param1 = param1
     
-    def evaluate(self, df: pd.DataFrame, indicators: Dict) -> Dict:
+    def generate_signals(self, data: pd.DataFrame) -> pd.Series:
         # Your logic here
-        return {'signal': strength, 'message': 'Rule triggered'}
+        signals = pd.Series(0, index=data.index)
+        signals[condition] = 1  # Buy
+        signals[other_condition] = -1  # Sell
+        return signals
 ```
 
-2. Add to `DEFAULT_RULES` list in same file
+### Creating API Endpoints
 
-### Adding New Indicators:
-
-1. Add function to `src/metrics/indicators.py`:
 ```python
-def my_indicator(df: pd.DataFrame, period: int = 14) -> pd.Series:
-    # Your calculation
-    return result_series
+# src/api/routes/myroute.py
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/api/custom")
+
+@router.get("/endpoint")
+async def my_endpoint():
+    return {"message": "Hello"}
+
+# Register in src/api/main.py
+from src.api.routes.myroute import router as custom_router
+app.include_router(custom_router)
 ```
 
-2. Include in `add_all_indicators()` function
+### Writing Tests
+
+```python
+# tests/test_mymodule.py
+import pytest
+
+def test_my_function():
+    result = my_function(input_data)
+    assert result.expected_field == expected_value
+```
+
+## 📚 Documentation
+
+### Example: Running a Backtest
+
+```python
+from src.services.backtester import Backtester, BacktestConfig
+from src.services.backtester import SMAStrategy
+
+# Configure backtest
+config = BacktestConfig(
+    symbol="BTC/USDT",
+    start_date="2024-01-01",
+    end_date="2024-03-01",
+    initial_capital=10000,
+    commission_bps=10,  # 0.10%
+    slippage_bps=5
+)
+
+# Run backtest
+backtester = Backtester(config)
+results = backtester.run(SMAStrategy(fast=20, slow=50))
+
+print(f"Total Return: {results['total_return']:.2%}")
+print(f"Sharpe Ratio: {results['sharpe_ratio']:.2f}")
+print(f"Max Drawdown: {results['max_drawdown']:.2%}")
+```
+
+### Example: Starting Paper Trading
+
+```python
+import requests
+
+# Start paper trading
+response = requests.post("http://localhost:8000/api/paper/start", json={
+    "session": "grid",
+    "symbol": "BTC/USDT",
+    "params": {
+        "grid_spacing": 0.01,
+        "grid_levels": 5
+    }
+})
+
+# Check status
+status = requests.get("http://localhost:8000/api/paper/status")
+print(status.json())
+```
 
 ## 🔧 Troubleshooting
 
-### Common Issues:
+### Common Issues
 
-**"No data available"**: Run initial data fetch
-```bash
-python sofia_cli.py fetch-all --days 30
-```
+| Issue | Solution |
+|-------|----------|
+| API won't start | Check port availability: `netstat -an \| findstr 8000` |
+| Tests failing | Run `pip install -r requirements-dev.txt` |
+| Memory issues | Reduce `batch_size` in backtester config |
+| Slow backtests | Use smaller date ranges or fewer strategies |
+| Docker build fails | Ensure Docker Desktop is running |
 
-**"Exchange connection failed"**: Check internet connection, exchange status
+### Performance Optimization
 
-**"Port already in use"**: Change port in run.ps1 or web command
-```bash
-python sofia_cli.py web --port 8001
-```
-
-**"Module not found"**: Reinstall dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### Performance Tuning:
-
-- Reduce `--max-workers` for data fetching on slower systems
-- Increase scan intervals in scheduler for less frequent updates
-- Limit symbol count for news updates to reduce API calls
-
-## 📄 License
-
-MIT License - See LICENSE file for details.
+- **Backtesting**: Use parallel processing with `n_jobs=-1`
+- **Data Loading**: Cache frequently used data in Redis
+- **API Response**: Enable response caching for read endpoints
+- **Database**: Add indexes on frequently queried columns
 
 ## 🤝 Contributing
 
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Workflow
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+2. Create a feature branch
+3. Write tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - See [LICENSE](LICENSE) file for details.
 
 ## ⚠️ Disclaimer
 
-This software is for educational and research purposes only. Not financial advice. Use at your own risk. Always do your own research before making investment decisions.
+**IMPORTANT**: This software is for educational and research purposes only. 
+
+- Not financial advice
+- No warranty provided
+- Use at your own risk
+- Past performance doesn't guarantee future results
+- Always do your own research before trading
+- Never risk more than you can afford to lose
+
+## 📞 Support
+
+- **Documentation**: [https://docs.sofia-v2.io](https://docs.sofia-v2.io)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/sofia-v2/issues)
+- **Discord**: [Join our community](https://discord.gg/sofia-v2)
 
 ---
 
-**Sofia V2** - Professional Crypto Signal Scanner 📊⚡
+Built with ❤️ by the Sofia Team | **Sofia V2** - Enterprise Quantitative Trading Platform

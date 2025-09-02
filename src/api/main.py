@@ -50,10 +50,10 @@ except ImportError:
     pnl_router = None
 
 try:
-    from src.api.dashboard import router as dashboard_router
+    from src.api.dashboard import router as old_dashboard_router
 except ImportError:
-    logger.warning("Dashboard router not available")
-    dashboard_router = None
+    logger.warning("Old dashboard router not available")
+    old_dashboard_router = None
 import yfinance as yf
 import pandas as pd
 import os
@@ -87,8 +87,9 @@ if live_router:
     app.include_router(live_router)
 if pnl_router:
     app.include_router(pnl_router)
-if dashboard_router:
-    app.include_router(dashboard_router)
+# Don't include old dashboard router - using new UI templates instead
+# if old_dashboard_router:
+#     app.include_router(old_dashboard_router)
 
 # Try to include backtester router
 try:
@@ -107,6 +108,13 @@ try:
 except ImportError as e:
     logger.warning(f"Quotes router not available: {e}")
 
+# Include enhanced quotes v2 router
+try:
+    from src.api.routes.quotes_v2 import router as quotes_v2_router
+    app.include_router(quotes_v2_router, prefix="/v2")
+except ImportError as e:
+    logger.warning(f"Quotes v2 router not available: {e}")
+
 try:
     from src.api.routes.backtest import router as new_backtest_router
     app.include_router(new_backtest_router)
@@ -118,6 +126,12 @@ try:
     app.include_router(paper_router)
 except ImportError as e:
     logger.warning(f"Paper router not available: {e}")
+
+try:
+    from src.api.routes.live import router as live_trading_router
+    app.include_router(live_trading_router)
+except ImportError as e:
+    logger.warning(f"Live trading router not available: {e}")
 
 try:
     from src.api.routes.arbitrage import router as arb_router
@@ -582,6 +596,9 @@ async def api_health_check():
 @app.get("/health")
 async def health_check():
     """Detailed health check with service status."""
+    import psutil
+    import time
+    
     services = {}
     
     try:
@@ -603,12 +620,96 @@ async def health_check():
     except:
         services["data_sources"] = 0
     
+    # Add system metrics
+    process = psutil.Process()
+    
     return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
+        "uptime": time.time() - process.create_time(),
+        "memory_mb": process.memory_info().rss / 1024 / 1024,
+        "cpu_percent": process.cpu_percent(),
         "services": services
     }
 
+@app.get("/metrics")
+async def prometheus_metrics():
+    """Prometheus-compatible metrics endpoint."""
+    import time
+    from fastapi import Request
+    
+    # Collect metrics
+    process = psutil.Process()
+    memory_mb = process.memory_info().rss / 1024 / 1024
+    cpu_percent = process.cpu_percent()
+    uptime = time.time() - process.create_time()
+    
+    # Get request metrics (would need middleware to track properly)
+    request_count = getattr(app.state, 'request_count', 0)
+    request_latency = getattr(app.state, 'avg_latency_ms', 0)
+    
+    # Format as Prometheus text format
+    metrics = []
+    metrics.append(f"# HELP sofia_uptime_seconds API uptime in seconds")
+    metrics.append(f"# TYPE sofia_uptime_seconds gauge")
+    metrics.append(f"sofia_uptime_seconds {uptime:.2f}")
+    
+    metrics.append(f"# HELP sofia_memory_mb Memory usage in MB")
+    metrics.append(f"# TYPE sofia_memory_mb gauge")
+    metrics.append(f"sofia_memory_mb {memory_mb:.2f}")
+    
+    metrics.append(f"# HELP sofia_cpu_percent CPU usage percentage")
+    metrics.append(f"# TYPE sofia_cpu_percent gauge")
+    metrics.append(f"sofia_cpu_percent {cpu_percent:.2f}")
+    
+    metrics.append(f"# HELP sofia_request_total Total number of requests")
+    metrics.append(f"# TYPE sofia_request_total counter")
+    metrics.append(f"sofia_request_total {request_count}")
+    
+    metrics.append(f"# HELP sofia_request_latency_ms Average request latency")
+    metrics.append(f"# TYPE sofia_request_latency_ms gauge")
+    metrics.append(f"sofia_request_latency_ms {request_latency:.2f}")
+    
+    # Add trading metrics if available
+    try:
+        from src.services.paper_engine import paper_engine
+        status = paper_engine.get_status()
+        if status["running"]:
+            metrics.append(f"# HELP sofia_paper_pnl Paper trading P&L")
+            metrics.append(f"# TYPE sofia_paper_pnl gauge")
+            metrics.append(f"sofia_paper_pnl {status['pnl']:.2f}")
+            
+            metrics.append(f"# HELP sofia_paper_trades_total Total paper trades")
+            metrics.append(f"# TYPE sofia_paper_trades_total counter")
+            metrics.append(f"sofia_paper_trades_total {status['num_trades']}")
+    except:
+        pass
+    
+    return "\n".join(metrics)
+
+# Add middleware for request tracking
+@app.middleware("http")
+async def track_requests(request, call_next):
+    """Track request metrics for Prometheus."""
+    import time
+    
+    # Initialize state if needed
+    if not hasattr(app.state, 'request_count'):
+        app.state.request_count = 0
+        app.state.total_latency_ms = 0
+        app.state.avg_latency_ms = 0
+    
+    # Track request
+    start_time = time.time()
+    response = await call_next(request)
+    latency_ms = (time.time() - start_time) * 1000
+    
+    # Update metrics
+    app.state.request_count += 1
+    app.state.total_latency_ms += latency_ms
+    app.state.avg_latency_ms = app.state.total_latency_ms / app.state.request_count
+    
+    return response
 
 # ==================== Missing Dashboard Endpoints ====================
 
