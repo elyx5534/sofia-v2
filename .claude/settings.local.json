@@ -42,7 +42,10 @@
       "Bash(.venv/Scripts/python.exe -m pytest tests/smoke/test_basic_imports.py -v)",
       "Bash(.venv/Scripts/python.exe -m pytest tests/test_indicators.py tests/test_datahub_fast.py tests/test_backtest_fast.py tests/smoke/test_smoke.py -q --cov=src --cov-report=term --no-header)",
       "Bash(.venv/Scripts/python.exe -m pytest tests/ --ignore=tests/e2e --ignore=tests/test_datahub_fast.py --ignore=tests/test_backtest_fast.py -x -q --cov=src --cov-report=term --no-header)",
-      "Bash(.venv/Scripts/python.exe -m pytest tests/test_indicators.py tests/smoke/test_smoke.py tests/test_portfolio.py tests/test_risk_manager.py -x --cov=src --cov-report=term-missing:skip-covered)"
+      "Bash(.venv/Scripts/python.exe -m pytest tests/test_indicators.py tests/smoke/test_smoke.py tests/test_portfolio.py tests/test_risk_manager.py -x --cov=src --cov-report=term-missing:skip-covered)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/smoke/test_basic_imports.py -v --no-cov)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/unit tests/api -q --no-cov)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/test_coverage_boost.py tests/test_indicators.py tests/smoke/test_basic_imports.py -v --cov=src --cov-report=term)"
     ],
     "deny": [],
     "ask": []

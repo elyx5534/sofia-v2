@@ -4,6 +4,10 @@ Regression tests for Walk-Forward Optimization and Genetic Algorithm
 
 import numpy as np
 import pandas as pd
+import pytest
+from unittest.mock import patch, Mock
+import random
+from fastapi.testclient import TestClient
 
 
 def test_walk_forward_optimization():
