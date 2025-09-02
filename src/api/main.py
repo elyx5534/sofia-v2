@@ -687,10 +687,27 @@ async def dev_actions(action_data: Dict[str, Any], background_tasks: BackgroundT
 
 async def run_demo_task(job_id: str, minutes: int):
     """Background task to run demo."""
+    import subprocess
     logger.info(f"Starting demo task {job_id} for {minutes} minutes")
-    # This would call tools/run_paper_session.py
-    await asyncio.sleep(5)  # Placeholder
-    logger.info(f"Demo task {job_id} completed")
+    
+    try:
+        # Run the actual demo script
+        result = subprocess.run(
+            ["python", "tools/run_simple_demo.py", str(minutes)],
+            capture_output=True,
+            text=True,
+            timeout=minutes * 60 + 30  # Give extra 30 seconds
+        )
+        
+        if result.returncode == 0:
+            logger.info(f"Demo task {job_id} completed successfully")
+            logger.info(f"Output: {result.stdout}")
+        else:
+            logger.error(f"Demo task {job_id} failed: {result.stderr}")
+    except subprocess.TimeoutExpired:
+        logger.error(f"Demo task {job_id} timed out")
+    except Exception as e:
+        logger.error(f"Demo task {job_id} error: {e}")
 
 async def run_qa_task(job_id: str):
     """Background task to run QA."""

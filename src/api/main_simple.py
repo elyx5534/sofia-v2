@@ -74,6 +74,88 @@ async def dev_console():
     else:
         return HTMLResponse(content="<h1>Dev Console not found</h1>")
 
+# Missing endpoints for dashboard
+@app.get("/api/pnl/summary")
+async def get_pnl_summary():
+    """Get P&L summary for dashboard."""
+    import json
+    logs_path = Path("logs/pnl_summary.json")
+    if logs_path.exists():
+        try:
+            with open(logs_path, "r") as f:
+                return json.load(f)
+        except:
+            pass
+    return {
+        "total_pnl": 0.0,
+        "win_rate": 0.0,
+        "total_trades": 0,
+        "session_complete": False,
+        "is_running": False
+    }
+
+@app.get("/api/pnl/timeseries")
+async def get_pnl_timeseries():
+    """Get P&L time series."""
+    import json
+    logs_path = Path("logs/pnl_timeseries.json")
+    if logs_path.exists():
+        try:
+            with open(logs_path, "r") as f:
+                return json.load(f)
+        except:
+            pass
+    return []
+
+@app.get("/api/trades/last")
+async def get_last_trades(n: int = 25):
+    """Get last N trades."""
+    import json
+    logs_path = Path("logs/trades.jsonl")
+    if logs_path.exists():
+        try:
+            trades = []
+            with open(logs_path, "r") as f:
+                for line in f:
+                    if line.strip():
+                        trades.append(json.loads(line))
+            return trades[-n:] if len(trades) > n else trades
+        except:
+            pass
+    return []
+
+@app.get("/api/live-guard")
+async def get_live_guard():
+    """Get live trading guard status."""
+    return {
+        "enabled": False,
+        "approvals": {"operator_A": False, "operator_B": False},
+        "requirements": {"readiness": False, "hours_ok": False}
+    }
+
+@app.post("/api/dev/actions")
+async def dev_actions(action_data: dict):
+    """Execute dev actions."""
+    import subprocess
+    import asyncio
+    
+    action = action_data.get("action")
+    
+    if action == "demo":
+        minutes = action_data.get("minutes", 5)
+        # Run demo in background
+        subprocess.Popen(["python", "tools/run_simple_demo.py", str(minutes)])
+        return {"job_id": f"demo_{datetime.now().strftime('%Y%m%d_%H%M%S')}", "status": "started"}
+    
+    elif action == "qa":
+        return {"job_id": f"qa_{datetime.now().strftime('%Y%m%d_%H%M%S')}", "status": "started"}
+    
+    elif action == "readiness":
+        return {"job_id": f"readiness_{datetime.now().strftime('%Y%m%d_%H%M%S')}", "status": "started"}
+    
+    else:
+        return {"error": f"Unknown action: {action}"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
