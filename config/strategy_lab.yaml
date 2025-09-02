@@ -1,0 +1,45 @@
+# Strategy Lab Configuration
+# PASS/FAIL rules for each strategy
+
+strategies:
+  grid:
+    enabled: true
+    test_duration_mins: 15
+    pass_rules:
+      maker_fill_rate: 0.60  # >= 60%
+      avg_time_to_fill_ms: 20000  # < 20 seconds
+      pnl_pct: 0.0  # > 0%
+    command: ["python", "run_paper_session.py", "15"]
+    
+  turkish_arbitrage:
+    enabled: true
+    test_duration_mins: 15
+    pass_rules:
+      tl_pnl: 0.0  # >= 0 TL
+      success_rate: 0.55  # >= 55%
+      avg_latency_ms: 250  # < 250ms
+    command: ["python", "tools/run_tr_arbitrage_session.py", "15"]
+    
+  liquidation_hunter:
+    enabled: true
+    test_duration_mins: 15
+    pass_rules:
+      pnl_pct: 0.0  # > 0%
+      win_rate: 52  # >= 52%
+    command: ["python", "tools/run_liquidation_hunter.py", "--mins", "15"]
+    
+  funding_farmer:
+    enabled: true
+    test_duration_mins: 15
+    pass_rules:
+      pnl_usdt: 0.0  # > 0 USDT
+      exposure_ratio: 0.30  # <= 30%
+    command: ["python", "tools/run_funding_farmer.py", "--mins", "15"]
+    
+  grid_monster:
+    enabled: true
+    test_duration_mins: 15
+    pass_rules:
+      pnl_pct: 0.0  # > 0%
+      dd_pct: -1.0  # >= -1.0% (max drawdown)
+    command: ["python", "run_paper_session.py", "15", "--strategy", "grid_monster"]

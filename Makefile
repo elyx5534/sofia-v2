@@ -154,6 +154,124 @@ deploy:
 	@echo "Deploying to production..."
 	# Add your deployment commands here
 
+# Advanced Features (AA-DD)
+qa-proof:
+	@echo "Running QA Proof: Consistency + Shadow Comparison"
+	python tools/qa_proof.py
+
+consistency:
+	@echo "Checking P&L Consistency"
+	python tools/consistency_check.py
+
+shadow:
+	@echo "Running Shadow Mode Comparison"
+	python tools/shadow_comparison.py
+
+arbitrage:
+	@echo "Starting Turkish Arbitrage Session (30 min)"
+	python tools/run_tr_arbitrage_session.py 30
+
+readiness:
+	@echo "Checking Live Pilot Readiness"
+	python tools/live_readiness.py
+
+demo:
+	@echo "Running 5-minute Paper Trading Demo"
+	python run_paper_session.py 5
+
+# Daily Operations (EE-II)
+daily-validate:
+	@echo "Running Daily Session Orchestrator"
+	python tools/session_orchestrator.py --grid-mins 60 --arb-mins 30
+
+adapt:
+	@echo "Applying Adaptive Parameter Tuning"
+	python tools/apply_adaptive_params.py
+
+pilot-plan:
+	@echo "Generating 48-72 Hour Pilot Preparation Plan"
+	python tools/pilot_plan.py
+
+fx-test:
+	@echo "Testing USDTRY FX Provider"
+	python -c "from src.providers.fx import fx_provider; print(f'USDTRY: {fx_provider.get_usdtry()}')"
+
+pricer-test:
+	@echo "Testing Arbitrage Pricer"
+	python -m pytest tests/test_arbitrage_pricer.py -v
+
+# Campaign & Testing (JJ-NN)
+campaign:
+	@echo "Starting 3-day paper trading campaign"
+	python tools/run_paper_campaign.py --days 3
+
+grid-sweep:
+	@echo "Running grid parameter sweep"
+	python tools/grid_sweeper.py
+
+shadow-report:
+	@echo "Generating shadow vs paper report"
+	python tools/shadow_report.py
+
+live-guard:
+	@echo "Checking live trading guard status"
+	python -c "from src.core.live_switch import live_switch; import json; print(json.dumps(live_switch.get_guard_status(), indent=2))"
+
+fault-test:
+	@echo "Running kill-switch fault injection tests"
+	python tools/fault_injector.py
+
+# 24-Hour Quick Campaign (FINAL-1)
+quick-campaign:
+	@echo "========================================="
+	@echo "Starting 24-Hour Quick Campaign"
+	@echo "3 sessions of Grid + TR Arbitrage"
+	@echo "========================================="
+	python tools/run_quick_campaign.py
+
+# Strict Readiness Check (FINAL-2)
+readiness-v2:
+	@echo "========================================="
+	@echo "Live Readiness Check V2 - STRICT 3/3"
+	@echo "========================================="
+	python tools/live_readiness_v2.py
+
+# Live Pilot Control (FINAL-3 & FINAL-4)
+live-on:
+	@echo "========================================="
+	@echo "Enabling Micro Live Pilot"
+	@echo "TR Arbitrage Only - 250 TL cap"
+	@echo "========================================="
+	python tools/live_toggle.py --enable
+
+live-off:
+	@echo "========================================="
+	@echo "Disabling Live Trading"
+	@echo "========================================="
+	python tools/live_toggle.py --disable
+
+pilot-status:
+	@echo "========================================="
+	@echo "Live Pilot Status"
+	@echo "========================================="
+	python tools/pilot_status.py
+
+pilot-off:
+	@echo "========================================="
+	@echo "EMERGENCY PILOT SHUTDOWN"
+	@echo "========================================="
+	python tools/pilot_off.py
+
+# Local UI Development (NEW)
+up:
+	@python scripts/dev_up.py
+
+down:
+	@python scripts/dev_down.py
+
+logs:
+	@tail -n 100 -f logs/dev/api.out.log logs/dev/dash.out.log
+
 # Development shortcuts
 d: dev
 t: test

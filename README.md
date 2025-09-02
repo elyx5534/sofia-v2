@@ -9,6 +9,32 @@
 
 ## 🚀 Quick Start
 
+### Local UI Quickstart
+
+Start both API and Dashboard with a single command:
+
+```bash
+# Setup virtual environment (first time only)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start everything (API + Dashboard)
+make up
+
+# The browser will automatically open:
+# - http://localhost:8002/dev - Development Console
+# - http://localhost:5000/ - Trading Dashboard
+
+# Stop everything
+make down
+
+# View logs
+make logs
+```
+
 ### Running the API
 
 Start the FastAPI server with:

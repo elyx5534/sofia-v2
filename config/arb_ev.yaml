@@ -1,0 +1,3 @@
+enabled: true
+latency_penalty_bps: 2
+min_ev_tl: 1

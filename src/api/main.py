@@ -18,6 +18,9 @@ from src.api.pnl import router as pnl_router
 from src.api.dashboard import router as dashboard_router
 import yfinance as yf
 import pandas as pd
+import os
+import psutil
+from fastapi import status
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +50,91 @@ app.include_router(live_router)
 app.include_router(pnl_router)
 app.include_router(dashboard_router)
 
+# ==================== Health Check Endpoints ====================
+
+@app.get("/api/health", status_code=status.HTTP_200_OK)
+async def health_check():
+    """Basic health check endpoint for deployment."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "deployment": os.getenv("DEPLOYMENT", "local"),
+        "version": "2.0.0"
+    }
+
+
+@app.get("/api/dev/status")
+async def dev_status():
+    """Detailed status for developers (fast endpoint)."""
+    try:
+        # Get system metrics
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        memory = psutil.virtual_memory()
+        
+        return {
+            "status": "operational",
+            "timestamp": datetime.now().isoformat(),
+            "deployment": os.getenv("DEPLOYMENT", "local"),
+            "system": {
+                "cpu_percent": cpu_percent,
+                "memory_percent": memory.percent,
+                "memory_available_gb": memory.available / (1024**3)
+            },
+            "services": {
+                "optimizer_queue": "running" if optimizer_queue else "stopped",
+                "strategy_registry": "loaded" if strategy_registry else "not_loaded",
+                "ml_predictor": "ready" if ml_predictor else "not_ready"
+            },
+            "uptime_seconds": (datetime.now() - app.state.startup_time).total_seconds() if hasattr(app.state, 'startup_time') else 0
+        }
+    except Exception as e:
+        logger.error(f"Error getting dev status: {e}")
+        return {
+            "status": "degraded",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
+
+
+@app.get("/api/readiness")
+async def readiness_check():
+    """Readiness probe for Kubernetes/Docker."""
+    # Check if critical services are ready
+    checks = {
+        "optimizer": optimizer_queue is not None,
+        "strategies": len(strategy_registry.list_strategies()) > 0,
+        "data_provider": data_provider is not None
+    }
+    
+    all_ready = all(checks.values())
+    
+    return {
+        "ready": all_ready,
+        "checks": checks,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get("/api/liveness")
+async def liveness_check():
+    """Liveness probe - always returns OK if app is running."""
+    return {
+        "alive": True,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup."""
+    # Record startup time
+    app.state.startup_time = datetime.now()
+    
     # Start optimizer queue
     await optimizer_queue.start()
     logger.info("Optimizer queue started")
+    
+    logger.info(f"API started in {os.getenv('DEPLOYMENT', 'local')} mode")
 
 
 @app.on_event("shutdown")

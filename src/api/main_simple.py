@@ -2,12 +2,17 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from datetime import datetime
+from pathlib import Path
 
 # Import only the working routers
 from src.api.live_proof import router as live_router
 from src.api.pnl import router as pnl_router
 from src.api.dashboard import router as dashboard_router
+from src.api.dev_actions import router as dev_actions_router
+from src.api.dev_status import router as dev_status_router
+from src.api.strategies import router as strategies_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,6 +34,9 @@ app.add_middleware(
 app.include_router(live_router)
 app.include_router(pnl_router)
 app.include_router(dashboard_router)
+app.include_router(dev_actions_router)
+app.include_router(dev_status_router)
+app.include_router(strategies_router)
 
 @app.get("/api/health")
 async def api_health_check():
@@ -56,6 +64,15 @@ async def root():
         "dashboard": "http://localhost:8000/dashboard",
         "docs": "http://localhost:8000/docs"
     }
+
+@app.get("/dev", response_class=HTMLResponse)
+async def dev_console():
+    """Serve developer console."""
+    dev_html = Path(__file__).parent.parent.parent / "templates" / "dev.html"
+    if dev_html.exists():
+        return HTMLResponse(content=dev_html.read_text())
+    else:
+        return HTMLResponse(content="<h1>Dev Console not found</h1>")
 
 if __name__ == "__main__":
     import uvicorn

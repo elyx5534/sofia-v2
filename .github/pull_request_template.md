@@ -1,78 +1,49 @@
-## 📋 PR Açıklaması
-<!-- PR'ın ne yaptığını kısaca açıklayın -->
+## Summary
 
-## 🎯 Değişiklik Türü
-<!-- İlgili olanları işaretleyin -->
-- [ ] 🐛 Bug fix (breaking olmayan değişiklik)
-- [ ] ✨ Yeni özellik (breaking olmayan değişiklik)
-- [ ] 💥 Breaking change (mevcut işlevselliği etkileyen değişiklik)
-- [ ] 📝 Dokümantasyon güncelleme
-- [ ] ♻️ Refactoring
-- [ ] 🎨 UI/UX iyileştirme
-- [ ] ⚡ Performans iyileştirme
-- [ ] 🔧 Konfigürasyon değişikliği
+Brief description of changes in this PR.
 
-## ✅ Checklist
-<!-- Tamamladığınız maddeleri işaretleyin -->
-- [ ] Kodum proje standartlarına uygun
-- [ ] Self-review yaptım
-- [ ] Koduma yorum ekledim (özellikle karmaşık kısımlara)
-- [ ] Dokümantasyonu güncelledim
-- [ ] Değişikliklerim breaking change içermiyor
-- [ ] Yeni ve mevcut unit testler başarıyla geçiyor
-- [ ] Test coverage %80'in üzerinde
-- [ ] Lint kontrollerinden geçti (black, ruff, mypy)
-- [ ] Pre-commit hook'ları çalıştı
-- [ ] İlgili issue'ya referans verdim (varsa)
+## Type of Change
 
-## 🧪 Test Detayları
-<!-- Test stratejinizi açıklayın -->
-- [ ] Unit testler eklendi/güncellendi
-- [ ] Integration testler eklendi/güncellendi
-- [ ] Manuel test yapıldı
+- [ ] Bug fix (non-breaking change which fixes an issue)
+- [ ] New feature (non-breaking change which adds functionality)
+- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Documentation update
+- [ ] Performance improvement
+- [ ] Security fix
 
-### Test Komutları
-```bash
-# Testleri çalıştır
-pytest -v
+## Testing
 
-# Coverage raporu
-pytest --cov=. --cov-report=html
+- [ ] Unit tests pass locally
+- [ ] Integration tests pass locally
+- [ ] Manual testing completed
+- [ ] No secrets or sensitive data included
 
-# Linting
-black --check .
-ruff check .
-mypy .
-```
+## Deployment Risks
 
-## 📸 Ekran Çıktıları
-<!-- Varsa ekran görüntüleri veya demo GIF'leri ekleyin -->
+### Potential Risks
+- List any potential risks with this deployment
 
-### Öncesi
-<!-- Değişiklik öncesi ekran görüntüsü -->
+### Rollback Plan
+- Steps to rollback if issues occur
 
-### Sonrası
-<!-- Değişiklik sonrası ekran görüntüsü -->
+## Checklist
 
-## 📊 Performans Etkisi
-<!-- Varsa performans üzerindeki etkiyi belirtin -->
-- [ ] Performans testi yapıldı
-- [ ] Bellek kullanımı kontrol edildi
-- [ ] API yanıt süreleri kontrol edildi
+- [ ] My code follows the style guidelines of this project
+- [ ] I have performed a self-review of my own code
+- [ ] I have commented my code, particularly in hard-to-understand areas
+- [ ] I have made corresponding changes to the documentation
+- [ ] My changes generate no new warnings
+- [ ] I have added tests that prove my fix is effective or that my feature works
+- [ ] New and existing unit tests pass locally with my changes
+- [ ] Any dependent changes have been merged and published
+- [ ] I have checked my code and corrected any misspellings
+- [ ] No hardcoded secrets, API keys, or passwords
+- [ ] All .env files are in .gitignore
 
-## 🔗 İlgili Issue/PR
-<!-- İlgili issue veya PR'ları linkleyin -->
-Closes #
+## Screenshots (if applicable)
 
-## 📝 Ek Notlar
-<!-- Reviewers için ek bilgiler -->
+Add screenshots here if UI changes are included.
 
-## 🚀 Deployment Notları
-<!-- Deployment için özel gereksinimler varsa belirtin -->
-- [ ] Migration gerekiyor
-- [ ] Environment variable eklenmesi gerekiyor
-- [ ] Cache temizlenmesi gerekiyor
-- [ ] Dependency güncellenmesi gerekiyor
+## Additional Notes
 
----
-**Review için hazır:** ✅
+Add any additional context about the PR here.

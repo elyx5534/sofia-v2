@@ -1,0 +1,63 @@
+# Live Trading Configuration
+# Two-man approval required for activation
+
+# Main switch (DO NOT CHANGE without approval)
+enable_real_trading: false
+
+# Trading limits
+limits:
+  max_notional_tl: 1000      # Maximum total position in TL
+  per_trade_tl_cap: 250       # Maximum per trade in TL
+  max_open_positions: 3       # Maximum concurrent positions
+  daily_loss_limit_tl: 100    # Daily loss limit in TL
+
+# Allowed symbols for live trading
+whitelisted_symbols:
+  - "BTC/USDT"
+  - "ETH/USDT"
+
+# Trading hours (Europe/Istanbul timezone)
+live_hours:
+  - "10:00-18:00"  # Normal trading hours
+  # - "09:00-09:30"  # Pre-market testing (disabled)
+  # - "18:00-19:00"  # After-hours testing (disabled)
+
+# Two-man approval system
+operators:
+  operator_A: "emre"
+  operator_B: "reviewer"
+
+approvals:
+  operator_A: false   # Primary operator approval
+  operator_B: false   # Secondary reviewer approval
+  timestamp_A: null   # When operator_A approved
+  timestamp_B: null   # When operator_B approved
+
+# Required conditions for live trading
+requirements:
+  min_paper_trades: 500       # Minimum paper trades executed
+  min_fill_rate: 60          # Minimum maker fill rate %
+  max_shadow_diff_bps: 5     # Maximum shadow diff in bps
+  min_readiness_score: 80    # Minimum readiness score
+  consistency_check: "PASS"   # P&L consistency must pass
+
+# Safety features
+safety:
+  enable_kill_switch: true      # Emergency stop enabled
+  enable_profit_guard: true     # Profit protection enabled
+  enable_watchdog: true         # System monitoring enabled
+  max_api_errors_per_min: 5    # API error threshold
+  max_latency_ms: 100          # Maximum acceptable latency
+
+# Notification settings
+notifications:
+  on_approval_change: true      # Notify on approval status change
+  on_limit_breach: true         # Notify on limit breach
+  on_emergency_stop: true       # Notify on kill switch activation
+  webhook_url: null             # Slack/Discord webhook (optional)
+
+# Audit trail
+audit:
+  log_all_decisions: true       # Log all trade decisions
+  log_approval_changes: true    # Log approval status changes
+  archive_daily: true           # Archive logs daily

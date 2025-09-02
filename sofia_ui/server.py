@@ -201,22 +201,16 @@ def get_live_btc_data():
     """BTC için canlı veri döndürür"""
     try:
         return live_data_service.get_live_price("BTC-USD")
->>>>>>> 96de1d9
     except Exception as e:
         print(f"Live data error: {e}")
         # Fallback to mock data
         return {
-<<<<<<< HEAD
-            "symbol": "BTC/USDT",
-=======
-            "symbol": "BTC-USD",
->>>>>>> 96de1d9
+            "symbol": "BTC/USDT"
             "name": "Bitcoin",
             "price": 67845.32,
             "change": 2.45,
             "change_percent": 3.74,
-            "volume": "28.5B",
-<<<<<<< HEAD
+            "volume": "28.5B"
             "high_24h": 68500.0,
             "low_24h": 67200.0,
             "last_updated": datetime.now().strftime("%H:%M:%S")

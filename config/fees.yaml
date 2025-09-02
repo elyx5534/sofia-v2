@@ -1,0 +1,70 @@
+# Exchange Fee Configuration
+# All fees in percentage (0.1 = 0.1%)
+
+binance:
+  spot:
+    maker: 0.10
+    taker: 0.10
+    # VIP tiers (volume-based)
+    vip_tiers:
+      vip1:
+        volume_usd: 15000000
+        maker: 0.09
+        taker: 0.10
+      vip2:
+        volume_usd: 80000000
+        maker: 0.08
+        taker: 0.10
+  
+  withdrawal:
+    BTC: 0.0005  # fixed amount
+    ETH: 0.005   # fixed amount
+    USDT_TRC20: 1.0  # fixed amount
+    USDT_ERC20: 15.0 # fixed amount
+    TRY: 3.0     # percentage
+
+btcturk:
+  spot:
+    maker: 0.08
+    taker: 0.12
+    # Volume discounts
+    volume_tiers:
+      tier1:
+        volume_tl: 1000000
+        maker: 0.07
+        taker: 0.11
+      tier2:
+        volume_tl: 5000000
+        maker: 0.06
+        taker: 0.10
+  
+  withdrawal:
+    BTC: 0.0004   # fixed amount
+    ETH: 0.0045   # fixed amount
+    USDT: 10.0    # fixed TL equivalent
+    TRY: 0.0      # free TRY withdrawal
+
+# TL conversion gateway fees
+tl_gateway:
+  deposit_fee: 0.0    # no fee for deposits
+  withdrawal_fee: 0.5  # 0.5% for withdrawals
+  min_fee_tl: 10.0    # minimum 10 TL
+  max_fee_tl: 500.0   # maximum 500 TL
+
+# Slippage estimates (in basis points)
+slippage:
+  binance:
+    small_order: 2    # < $10k
+    medium_order: 5   # $10k - $50k
+    large_order: 10   # > $50k
+  
+  btcturk:
+    small_order: 5    # < 100k TL
+    medium_order: 10  # 100k - 500k TL
+    large_order: 20   # > 500k TL
+
+# Minimum profitable spread (basis points)
+min_profitable_spread:
+  default: 30         # 0.30%
+  with_vip: 20       # 0.20% with VIP discounts
+  high_volatility: 50 # 0.50% during volatile periods

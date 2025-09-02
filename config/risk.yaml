@@ -1,0 +1,50 @@
+# Risk Management Configuration
+
+daily_targets:
+  # Daily profit targets and risk limits
+  profit_target_pct: 0.5  # 0.5% daily target
+  max_drawdown_pct: -1.0  # -1% max daily drawdown
+  
+  # Scaling based on performance
+  scale_on_profit:
+    0.3: 0.8   # At 0.3% profit, scale to 80% position size
+    0.5: 0.5   # At 0.5% profit, scale to 50% position size
+    0.7: 0.2   # At 0.7% profit, scale to 20% position size
+  
+  # Trailing profit lock
+  trailing_lock:
+    enabled: true
+    lock_profit_at: 0.4  # Lock profits when reaching 0.4%
+    trail_distance: 0.1  # Trail by 0.1%
+    
+position_limits:
+  # Maximum position sizes
+  max_position_size_pct: 20  # Max 20% of capital per position
+  max_total_exposure_pct: 60  # Max 60% total exposure
+  max_concurrent_positions: 5
+  
+  # Per-asset limits
+  asset_limits:
+    BTC: 0.3   # Max 30% in BTC
+    ETH: 0.2   # Max 20% in ETH
+    default: 0.1  # Max 10% in other assets
+    
+risk_checks:
+  # Pre-trade checks
+  min_liquidity_usd: 100000  # Minimum 24h volume
+  max_spread_pct: 0.1  # Max 0.1% spread
+  min_market_cap_usd: 1000000000  # Min $1B market cap
+  
+  # Runtime checks
+  max_slippage_pct: 0.2  # Max 0.2% slippage
+  max_latency_ms: 100  # Max 100ms latency
+  
+emergency_stops:
+  # Kill switches
+  daily_loss_limit_pct: -2.0  # Emergency stop at -2%
+  consecutive_losses: 5  # Stop after 5 consecutive losses
+  error_rate_threshold: 0.1  # Stop if error rate > 10%
+  
+  # Recovery
+  cooldown_minutes: 30  # Wait 30 minutes after emergency stop
+  reset_at_utc: "00:00"  # Reset daily limits at midnight UTC
