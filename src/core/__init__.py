@@ -7,7 +7,6 @@ from .position_manager import Position, PositionManager
 from .risk_manager import RiskManager, RiskParameters
 
 __version__ = "0.1.0"
-
 __all__ = [
     "TradingEngine",
     "OrderManager",

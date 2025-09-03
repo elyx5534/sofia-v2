@@ -1,2 +1,4 @@
+min_edge_bps: 3
 min_health_score: 0.7
 prefer_fastest: false
+step_in_k: 3

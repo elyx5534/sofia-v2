@@ -6,9 +6,10 @@ Turkish arbitrage radar endpoints
 import logging
 from typing import Dict, List
 
-from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from src.services.arb_tl_radar import arb_radar
+
+import src.services.arb_tl_radar as arb_api
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/arb", tags=["arbitrage"])
@@ -24,16 +25,13 @@ class StartRadarRequest(BaseModel):
 async def start_radar(request: StartRadarRequest) -> Dict:
     """Start arbitrage radar monitoring"""
     try:
-        result = arb_radar.start_radar(
+        result = arb_api.start(
             mode=request.mode, pairs=request.pairs, threshold_bps=request.threshold_bps
         )
-
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
-
         logger.info(f"Started arbitrage radar: {request.mode}")
         return result
-
     except Exception as e:
         logger.error(f"Start radar error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -43,14 +41,11 @@ async def start_radar(request: StartRadarRequest) -> Dict:
 async def stop_radar() -> Dict:
     """Stop arbitrage radar"""
     try:
-        result = arb_radar.stop_radar()
-
+        result = arb_api.stop()
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
-
         logger.info("Stopped arbitrage radar")
         return result
-
     except Exception as e:
         logger.error(f"Stop radar error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -60,7 +55,7 @@ async def stop_radar() -> Dict:
 async def get_snapshot() -> Dict:
     """Get current arbitrage radar snapshot"""
     try:
-        return arb_radar.get_snapshot()
+        return arb_api.snap()
     except Exception as e:
         logger.error(f"Get snapshot error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

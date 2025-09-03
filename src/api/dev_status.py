@@ -8,10 +8,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter
+from src.adapters.web.fastapi_adapter import APIRouter
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from src.core.live_switch import live_switch
 
 router = APIRouter(prefix="/api", tags=["status"])
@@ -46,19 +45,10 @@ def check_service_health(url: str) -> str:
 @router.get("/dev/status")
 async def get_system_status():
     """Get overall system status"""
-
-    # Check API health
     api_status = check_service_health("http://localhost:8001/health")
-
-    # Check dashboard
     dashboard_status = check_service_health("http://localhost:5000/api/status")
-
-    # Check watchdog state (from file or memory)
-    watchdog_status = "RUNNING"  # Default, could check actual state
-
-    # Check paper trading state
-    paper_status = "IDLE"  # Default, could check if session is running
-
+    watchdog_status = "RUNNING"
+    paper_status = "IDLE"
     return {
         "api": api_status,
         "watchdog": watchdog_status,
@@ -72,11 +62,7 @@ async def get_system_status():
 @router.get("/live-guard")
 async def get_live_guard_status():
     """Get live trading guard status"""
-
-    # Get guard status from live switch
     guard_status = live_switch.get_guard_status()
-
-    # Determine mode
     if not guard_status["main_switch"]:
         mode = "PAPER"
     elif not guard_status["approvals"].get("operator_A") or not guard_status["approvals"].get(
@@ -87,21 +73,14 @@ async def get_live_guard_status():
         mode = "LIVE"
     else:
         mode = "PILOT"
-
-    # Extract blockers
     blockers = guard_status.get("reasons", [])
-
-    # Build requirements status
     requirements = {
         "readiness": guard_status.get("requirements_met", False),
-        "two_man": (
-            guard_status["approvals"].get("operator_A", False)
-            and guard_status["approvals"].get("operator_B", False)
-        ),
-        "caps_ok": True,  # Assume caps are OK if limits are set
+        "two_man": guard_status["approvals"].get("operator_A", False)
+        and guard_status["approvals"].get("operator_B", False),
+        "caps_ok": True,
         "hours_ok": guard_status.get("in_trading_hours", False),
     }
-
     return {
         "enabled": guard_status["live_enabled"],
         "approvals": guard_status["approvals"],

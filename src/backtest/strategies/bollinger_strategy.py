@@ -30,17 +30,11 @@ class BollingerBandsStrategy(BaseStrategy):
         Returns:
             Tuple of (Upper band, Middle band (SMA), Lower band)
         """
-        # Middle Band (SMA)
         middle = prices.rolling(window=self.bb_period).mean()
-
-        # Standard deviation
         std = prices.rolling(window=self.bb_period).std()
-
-        # Upper and Lower Bands
-        upper = middle + (std * self.bb_std)
-        lower = middle - (std * self.bb_std)
-
-        return upper, middle, lower
+        upper = middle + std * self.bb_std
+        lower = middle - std * self.bb_std
+        return (upper, middle, lower)
 
     def generate_signals(self, data: pd.DataFrame) -> pd.Series:
         """
@@ -53,21 +47,8 @@ class BollingerBandsStrategy(BaseStrategy):
         Returns:
             Series with values: 1 (buy), -1 (sell), 0 (hold)
         """
-        # Calculate Bollinger Bands
         upper, middle, lower = self.calculate_bollinger_bands(data["Close"])
-
-        # Generate signals
         signals = pd.Series(0, index=data.index)
-
-        # Buy when price crosses below lower band
         signals[(data["Close"] <= lower) & (data["Close"].shift(1) > lower.shift(1))] = 1
-
-        # Sell when price crosses above upper band
         signals[(data["Close"] >= upper) & (data["Close"].shift(1) < upper.shift(1))] = -1
-
-        # Alternative: Mean reversion signals
-        # Buy at lower band, sell at middle band
-        # signals[data['Close'] <= lower] = 1
-        # signals[data['Close'] >= middle] = -1
-
         return signals

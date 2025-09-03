@@ -20,8 +20,6 @@ class RealTimeDataFetcher:
         self.session = None
         self.cache = {}
         self.last_update = {}
-
-        # Public API endpoints (no API key needed)
         self.endpoints = {
             "coingecko": "https://api.coingecko.com/api/v3",
             "binance": "https://api.binance.com/api/v3",
@@ -42,7 +40,6 @@ class RealTimeDataFetcher:
     async def get_price(self, symbol: str, vs_currency: str = "usd") -> Optional[float]:
         """Get current price for a symbol"""
         try:
-            # Try CoinGecko first (most reliable, no rate limits for basic)
             url = f"{self.endpoints['coingecko']}/simple/price"
             params = {
                 "ids": symbol.lower(),
@@ -50,23 +47,18 @@ class RealTimeDataFetcher:
                 "include_24hr_change": "true",
                 "include_24hr_vol": "true",
             }
-
             async with self.session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
                     if symbol.lower() in data:
                         return data[symbol.lower()][vs_currency.lower()]
-
-            # Fallback to Binance
             binance_symbol = f"{symbol.upper()}USDT"
             url = f"{self.endpoints['binance']}/ticker/price"
             params = {"symbol": binance_symbol}
-
             async with self.session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
                     return float(data["price"])
-
         except Exception as e:
             logger.error(f"Error fetching price for {symbol}: {e}")
             return None
@@ -74,10 +66,7 @@ class RealTimeDataFetcher:
     async def get_market_data(self, symbols: List[str]) -> Dict:
         """Get market data for multiple symbols"""
         await self.start()
-
         market_data = {}
-
-        # Batch request to CoinGecko
         try:
             ids = ",".join([s.lower() for s in symbols])
             url = f"{self.endpoints['coingecko']}/coins/markets"
@@ -88,7 +77,6 @@ class RealTimeDataFetcher:
                 "sparkline": "true",
                 "price_change_percentage": "1h,24h,7d",
             }
-
             async with self.session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -101,25 +89,19 @@ class RealTimeDataFetcher:
                             "change_7d": coin.get("price_change_percentage_7d_in_currency", 0),
                             "high_24h": coin["high_24h"],
                             "low_24h": coin["low_24h"],
-                            "sparkline": coin.get("sparkline_in_7d", {}).get("price", [])[
-                                -24:
-                            ],  # Last 24 hours
+                            "sparkline": coin.get("sparkline_in_7d", {}).get("price", [])[-24:],
                             "last_updated": datetime.now(timezone.utc).isoformat(),
                         }
-
         except Exception as e:
             logger.error(f"Error fetching market data: {e}")
-
         return market_data
 
     async def get_orderbook(self, symbol: str, limit: int = 20) -> Dict:
         """Get order book data"""
         try:
-            # Use Binance for orderbook
             binance_symbol = f"{symbol.upper()}USDT"
             url = f"{self.endpoints['binance']}/depth"
             params = {"symbol": binance_symbol, "limit": limit}
-
             async with self.session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -128,7 +110,6 @@ class RealTimeDataFetcher:
                         "asks": [[float(p), float(q)] for p, q in data["asks"]],
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     }
-
         except Exception as e:
             logger.error(f"Error fetching orderbook for {symbol}: {e}")
             return {"bids": [], "asks": [], "timestamp": datetime.now(timezone.utc).isoformat()}
@@ -139,7 +120,6 @@ class RealTimeDataFetcher:
             binance_symbol = f"{symbol.upper()}USDT"
             url = f"{self.endpoints['binance']}/trades"
             params = {"symbol": binance_symbol, "limit": limit}
-
             async with self.session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -156,7 +136,6 @@ class RealTimeDataFetcher:
                             }
                         )
                     return trades
-
         except Exception as e:
             logger.error(f"Error fetching trades for {symbol}: {e}")
             return []
@@ -167,7 +146,6 @@ class RealTimeDataFetcher:
             binance_symbol = f"{symbol.upper()}USDT"
             url = f"{self.endpoints['binance']}/klines"
             params = {"symbol": binance_symbol, "interval": interval, "limit": limit}
-
             async with self.session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
@@ -186,7 +164,6 @@ class RealTimeDataFetcher:
                             }
                         )
                     return klines
-
         except Exception as e:
             logger.error(f"Error fetching klines for {symbol}: {e}")
             return []
@@ -202,21 +179,16 @@ class RealTimeDataFetcher:
                 "page": 1,
                 "price_change_percentage": "24h",
             }
-
             async with self.session.get(url, params=params) as response:
                 if response.status == 200:
                     data = await response.json()
-
-                    # Sort by 24h change
                     sorted_data = sorted(
                         data,
                         key=lambda x: x.get("price_change_percentage_24h", 0) or 0,
                         reverse=True,
                     )
-
                     gainers = []
                     losers = []
-
                     for coin in sorted_data[:limit]:
                         if coin.get("price_change_percentage_24h", 0) > 0:
                             gainers.append(
@@ -228,7 +200,6 @@ class RealTimeDataFetcher:
                                     "volume": coin["total_volume"],
                                 }
                             )
-
                     for coin in sorted_data[-limit:]:
                         if coin.get("price_change_percentage_24h", 0) < 0:
                             losers.append(
@@ -240,9 +211,7 @@ class RealTimeDataFetcher:
                                     "volume": coin["total_volume"],
                                 }
                             )
-
                     return {"gainers": gainers, "losers": losers}
-
         except Exception as e:
             logger.error(f"Error fetching top gainers/losers: {e}")
             return {"gainers": [], "losers": []}
@@ -250,18 +219,15 @@ class RealTimeDataFetcher:
     async def stream_prices(self, symbols: List[str], callback):
         """Stream real-time prices"""
         await self.start()
-
         while True:
             try:
                 market_data = await self.get_market_data(symbols)
                 if market_data:
                     await callback(market_data)
-                await asyncio.sleep(2)  # Update every 2 seconds
-
+                await asyncio.sleep(2)
             except Exception as e:
                 logger.error(f"Error in price stream: {e}")
                 await asyncio.sleep(5)
 
 
-# Singleton instance
 fetcher = RealTimeDataFetcher()

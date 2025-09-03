@@ -8,23 +8,21 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 from scripts.paper_replay import PaperReplay
+
+from src.adapters.web.fastapi_adapter import APIRouter, BackgroundTasks, HTTPException
 from src.paper.runner import PaperTradingRunner
 from src.reports.paper_report import PaperTradingReport
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/api/paper", tags=["paper_trading"])
-
-# Global paper trading runner instance
 paper_runner = None
 paper_report = None
 
 
 class TradingModeRequest(BaseModel):
-    mode: str  # 'paper' or 'off'
+    mode: str
 
 
 class PaperTradingState(BaseModel):
@@ -51,34 +49,23 @@ class ReplayRequest(BaseModel):
 async def set_trading_mode(request: TradingModeRequest, background_tasks: BackgroundTasks):
     """Set paper trading mode ON/OFF"""
     global paper_runner, paper_report
-
     try:
         if request.mode == "paper":
             if paper_runner and paper_runner.running:
                 return {"status": "already_running", "message": "Paper trading is already running"}
-
-            # Start paper trading
             paper_runner = PaperTradingRunner()
             paper_report = PaperTradingReport(runner=paper_runner)
-
-            # Start in background
             background_tasks.add_task(paper_runner.run)
-
-            # Wait a moment for initialization
             await asyncio.sleep(2)
-
             return {"status": "success", "message": "Paper trading started", "mode": "paper"}
-
         elif request.mode == "off":
             if paper_runner:
                 await paper_runner.stop()
                 paper_runner = None
                 paper_report = None
-
             return {"status": "success", "message": "Paper trading stopped", "mode": "off"}
         else:
             raise HTTPException(status_code=400, detail="Invalid mode. Use 'paper' or 'off'")
-
     except Exception as e:
         logger.error(f"Failed to set trading mode: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -88,7 +75,6 @@ async def set_trading_mode(request: TradingModeRequest, background_tasks: Backgr
 async def get_paper_trading_state() -> PaperTradingState:
     """Get current paper trading state"""
     global paper_runner, paper_report
-
     if not paper_runner:
         return PaperTradingState(
             status="not_started",
@@ -105,8 +91,6 @@ async def get_paper_trading_state() -> PaperTradingState:
             k_factor=os.getenv("K_FACTOR", "0.25"),
             timestamp=datetime.now().isoformat(),
         )
-
-    # Get live metrics from report
     if paper_report:
         metrics = paper_report.get_live_metrics()
     else:
@@ -124,7 +108,6 @@ async def get_paper_trading_state() -> PaperTradingState:
             "max_drawdown": 0,
             "k_factor": state.get("k_factor", "0.25"),
         }
-
     return PaperTradingState(
         status=metrics["status"],
         mode="paper" if metrics["status"] == "running" else "off",
@@ -146,10 +129,8 @@ async def get_paper_trading_state() -> PaperTradingState:
 async def get_paper_trading_metrics() -> Dict[str, Any]:
     """Get detailed paper trading metrics"""
     global paper_report
-
     if not paper_report:
         return {"error": "Paper trading not running"}
-
     return paper_report.get_live_metrics()
 
 
@@ -157,10 +138,8 @@ async def get_paper_trading_metrics() -> Dict[str, Any]:
 async def get_positions() -> List[Dict[str, Any]]:
     """Get current open positions"""
     global paper_runner
-
     if not paper_runner:
         return []
-
     state = paper_runner.get_state()
     return list(state["positions"].values())
 
@@ -169,10 +148,8 @@ async def get_positions() -> List[Dict[str, Any]]:
 async def get_trades(limit: int = 50) -> List[Dict[str, Any]]:
     """Get recent trades"""
     global paper_runner
-
     if not paper_runner:
         return []
-
     trades = []
     for order in paper_runner.orders[-limit:]:
         trades.append(
@@ -189,7 +166,6 @@ async def get_trades(limit: int = 50) -> List[Dict[str, Any]]:
                 "status": order.status,
             }
         )
-
     return trades
 
 
@@ -199,21 +175,17 @@ async def run_replay_simulation(request: ReplayRequest, background_tasks: Backgr
     try:
         replay = PaperReplay(hours=request.hours)
 
-        # Run replay asynchronously
         async def run_replay_task():
             report = await replay.run_replay()
             return report
 
-        # Start in background
         background_tasks.add_task(run_replay_task)
-
         return {
             "status": "started",
             "message": f"Replay simulation started for {request.hours} hours",
             "report_path": "reports/paper/replay_report.json",
             "quickcheck_path": "reports/paper/quickcheck.html",
         }
-
     except Exception as e:
         logger.error(f"Failed to start replay: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -226,14 +198,11 @@ async def get_replay_status():
     import os
 
     report_file = "reports/paper/replay_report.json"
-
     if not os.path.exists(report_file):
         return {"status": "not_found", "message": "No replay report found"}
-
     try:
         with open(report_file) as f:
             report = json.load(f)
-
         return {
             "status": "completed",
             "timestamp": report["timestamp"],
@@ -251,15 +220,11 @@ async def get_replay_status():
 async def generate_report(background_tasks: BackgroundTasks):
     """Generate EOD report"""
     global paper_report
-
     if not paper_report:
         raise HTTPException(status_code=400, detail="Paper trading not running")
-
     try:
-        # Generate in background
         background_tasks.add_task(paper_report.generate_eod_report)
         background_tasks.add_task(paper_report.generate_csv_report)
-
         return {"status": "generating", "message": "Report generation started"}
     except Exception as e:
         logger.error(f"Failed to generate report: {e}")
@@ -270,10 +235,8 @@ async def generate_report(background_tasks: BackgroundTasks):
 async def get_profitability_alerts() -> Optional[Dict[str, Any]]:
     """Get profitability alerts if any"""
     global paper_report
-
     if not paper_report:
         return None
-
     return paper_report.check_profitability_alert()
 
 
@@ -281,22 +244,17 @@ async def get_profitability_alerts() -> Optional[Dict[str, Any]]:
 async def activate_kill_switch():
     """Emergency stop for paper trading"""
     global paper_runner
-
     if not paper_runner:
         return {"status": "not_running", "message": "Paper trading is not running"}
-
     try:
-        # Immediate stop
         paper_runner.kill_switch = True
         await paper_runner.stop()
-
         return {"status": "success", "message": "Kill switch activated - paper trading stopped"}
     except Exception as e:
         logger.error(f"Failed to activate kill switch: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Dashboard widget endpoints for auto-refresh
 @router.get("/widgets/pnl-total")
 async def get_widget_pnl_total():
     """Widget: Total P&L"""
@@ -305,7 +263,7 @@ async def get_widget_pnl_total():
         "value": state.total_pnl,
         "label": "Total P&L",
         "change_pct": (
-            (float(state.total_pnl) / float(state.balance) * 100) if float(state.balance) > 0 else 0
+            float(state.total_pnl) / float(state.balance) * 100 if float(state.balance) > 0 else 0
         ),
         "data_testid": "paper-pnl-total",
     }
@@ -333,14 +291,10 @@ async def get_widget_positions_count():
 async def get_widget_trades_today():
     """Widget: Trades Today"""
     global paper_runner
-
     if not paper_runner:
         return {"value": 0, "label": "Trades Today", "data_testid": "paper-trades-today"}
-
-    # Count today's trades
     from datetime import date
 
     today = date.today()
     today_trades = sum(1 for order in paper_runner.orders if order.timestamp.date() == today)
-
     return {"value": today_trades, "label": "Trades Today", "data_testid": "paper-trades-today"}

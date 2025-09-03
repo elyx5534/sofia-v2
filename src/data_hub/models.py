@@ -4,8 +4,9 @@ from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field
-from sqlmodel import Field as SQLField
-from sqlmodel import SQLModel
+
+from src.adapters.db.sqlmodel_adapter import Field as SQLField
+from src.adapters.db.sqlmodel_adapter import SQLModel
 
 
 class AssetType(str, Enum):
@@ -29,7 +30,6 @@ class Timeframe(str, Enum):
     ONE_MONTH = "1M"
 
 
-# Pydantic Models (API Request/Response)
 class SymbolInfo(BaseModel):
     """Symbol information model for API responses."""
 
@@ -88,12 +88,10 @@ class ErrorResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
 
 
-# SQLModel Models (Database)
 class CandleCache(SQLModel, table=True):
     """SQLModel for caching OHLCV data."""
 
     __tablename__ = "candle_cache"
-
     id: int | None = SQLField(default=None, primary_key=True)
     symbol: str = SQLField(index=True, nullable=False)
     asset_type: str = SQLField(nullable=False)
@@ -118,7 +116,6 @@ class SymbolCache(SQLModel, table=True):
     """SQLModel for caching symbol information."""
 
     __tablename__ = "symbol_cache"
-
     id: int | None = SQLField(default=None, primary_key=True)
     symbol: str = SQLField(index=True, unique=True, nullable=False)
     name: str | None = SQLField(default=None)

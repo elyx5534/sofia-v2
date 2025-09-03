@@ -7,18 +7,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-from fastapi import APIRouter, HTTPException
-from src.trading.ultimate_trading_system import (
-    ExecutionMode,
-    UltimateConfig,
-    UltimateTradingSystem,
-)
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException
+from src.trading.ultimate_trading_system import ExecutionMode, UltimateConfig, UltimateTradingSystem
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/api/ultimate", tags=["Ultimate Trading"])
-
-# Global system instance
 system: Optional[UltimateTradingSystem] = None
 
 
@@ -26,13 +19,10 @@ system: Optional[UltimateTradingSystem] = None
 async def start_ultimate_system(config: Optional[Dict] = None):
     """Start the ultimate trading system"""
     global system
-
     try:
-        # Create config from params if provided
         if config:
             ultimate_config = UltimateConfig(**config)
         else:
-            # Default config with Turkish Lira
             ultimate_config = UltimateConfig(
                 initial_balance_try=100000.0,
                 use_turkish_lira=True,
@@ -62,10 +52,8 @@ async def start_ultimate_system(config: Optional[Dict] = None):
                     "SEI/USDT",
                 ],
             )
-
         system = UltimateTradingSystem(ultimate_config)
         result = await system.start()
-
         return {
             "message": "Ultimate Trading System started! 🚀",
             "status": "running",
@@ -82,7 +70,6 @@ async def start_ultimate_system(config: Optional[Dict] = None):
                 "aggressive": ultimate_config.use_aggressive_strategies,
             },
         }
-
     except Exception as e:
         logger.error(f"Failed to start ultimate system: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -92,25 +79,17 @@ async def start_ultimate_system(config: Optional[Dict] = None):
 async def get_ultimate_status():
     """Get current system status"""
     global system
-
     if not system:
         return {"status": "stopped", "message": "System not running"}
-
     try:
         status = system.get_status()
-
-        # Add real-time prices
         if system.price_cache:
             status["live_prices"] = {
                 symbol: price for symbol, price in list(system.price_cache.items())[:10]
             }
-
-        # Add market stats
         if system.market_stats:
             status["market_stats"] = system.market_stats
-
         return status
-
     except Exception as e:
         logger.error(f"Error getting status: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -120,16 +99,12 @@ async def get_ultimate_status():
 async def stop_ultimate_system():
     """Stop the trading system"""
     global system
-
     if not system:
         return {"message": "System not running"}
-
     try:
         await system.stop()
         system = None
-
         return {"message": "Ultimate Trading System stopped", "status": "stopped"}
-
     except Exception as e:
         logger.error(f"Error stopping system: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -139,10 +114,8 @@ async def stop_ultimate_system():
 async def get_positions():
     """Get current positions"""
     global system
-
     if not system:
         raise HTTPException(status_code=400, detail="System not running")
-
     positions = []
     for symbol, pos in system.positions.items():
         current_price = system.price_cache.get(symbol, pos.avg_price)
@@ -153,10 +126,9 @@ async def get_positions():
                 "avg_price": pos.avg_price,
                 "current_price": current_price,
                 "unrealized_pnl": pos.unrealized_pnl,
-                "pnl_percent": ((current_price - pos.avg_price) / pos.avg_price) * 100,
+                "pnl_percent": (current_price - pos.avg_price) / pos.avg_price * 100,
             }
         )
-
     return {
         "positions": positions,
         "count": len(positions),
@@ -168,10 +140,8 @@ async def get_positions():
 async def get_trades(limit: int = 50):
     """Get trade history"""
     global system
-
     if not system:
         raise HTTPException(status_code=400, detail="System not running")
-
     trades = []
     for order in system.portfolio.orders[-limit:]:
         trades.append(
@@ -185,7 +155,6 @@ async def get_trades(limit: int = 50):
                 "timestamp": order.created_at.isoformat(),
             }
         )
-
     return {"trades": trades, "total": len(system.portfolio.orders), "displayed": len(trades)}
 
 
@@ -193,13 +162,10 @@ async def get_trades(limit: int = 50):
 async def get_performance():
     """Get performance metrics"""
     global system
-
     if not system:
         raise HTTPException(status_code=400, detail="System not running")
-
     currency = "TRY" if system.config.use_turkish_lira else "USD"
     symbol = "₺" if system.config.use_turkish_lira else "$"
-
     return {
         "currency": currency,
         "total_trades": system.total_trades,
@@ -212,9 +178,9 @@ async def get_performance():
         "current_balance": f"{symbol}{system.portfolio.balance:,.2f}",
         "total_value": f"{symbol}{system.portfolio.total_value:,.2f}",
         "roi": (
-            f"{((system.portfolio.total_value - system.config.initial_balance_try) / system.config.initial_balance_try * 100):.2f}%"
+            f"{(system.portfolio.total_value - system.config.initial_balance_try) / system.config.initial_balance_try * 100:.2f}%"
             if system.config.use_turkish_lira
-            else f"{((system.portfolio.total_value - system.config.initial_balance_usd) / system.config.initial_balance_usd * 100):.2f}%"
+            else f"{(system.portfolio.total_value - system.config.initial_balance_usd) / system.config.initial_balance_usd * 100:.2f}%"
         ),
     }
 
@@ -223,16 +189,10 @@ async def get_performance():
 async def get_current_signals():
     """Get current trading signals"""
     global system
-
     if not system:
         raise HTTPException(status_code=400, detail="System not running")
-
-    # Get latest signals
     signals = await system._analyze_all_coins()
-
-    # Sort by confidence
     sorted_signals = sorted(signals.items(), key=lambda x: x[1].get("confidence", 0), reverse=True)
-
     return {
         "signals": [
             {
@@ -252,16 +212,12 @@ async def get_current_signals():
 async def update_config(updates: Dict):
     """Update system configuration"""
     global system
-
     if not system:
         raise HTTPException(status_code=400, detail="System not running")
-
     try:
-        # Update config
         for key, value in updates.items():
             if hasattr(system.config, key):
                 setattr(system.config, key, value)
-
         return {
             "message": "Configuration updated",
             "config": {
@@ -271,7 +227,6 @@ async def update_config(updates: Dict):
                 "execution_mode": system.config.execution_mode.value,
             },
         }
-
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -280,10 +235,8 @@ async def update_config(updates: Dict):
 async def get_live_prices():
     """Get real-time Binance prices"""
     global system
-
     if not system:
         raise HTTPException(status_code=400, detail="System not running")
-
     return {
         "prices": system.price_cache,
         "stats": system.market_stats,

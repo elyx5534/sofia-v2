@@ -3,8 +3,7 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Query
-
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException, Query
 from src.data_hub.models import AssetType
 
 from .data_adapters.data_hub import DataHubAdapter
@@ -41,18 +40,13 @@ async def run_backtest(
         Backtest results including metrics, equity curve, and trades
     """
     try:
-        # Parse strategy parameters
         import json
 
         try:
             strategy_params = json.loads(params) if params else {}
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid strategy parameters JSON")
-
-        # Initialize data adapter
         adapter = DataHubAdapter()
-
-        # Fetch data
         try:
             data = adapter.fetch_ohlcv(
                 symbol=symbol,
@@ -66,33 +60,23 @@ async def run_backtest(
             raise HTTPException(status_code=404, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to fetch data: {e!s}")
-
         if data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for {symbol}")
-
-        # Select strategy
         if strategy.lower() == "sma":
             strategy_instance = SMAStrategy()
         else:
             raise HTTPException(status_code=400, detail=f"Unknown strategy: {strategy}")
-
-        # Run backtest
         engine = BacktestEngine(
             initial_capital=strategy_params.get("initial_capital", 10000.0),
             commission=strategy_params.get("commission", 0.001),
             slippage=strategy_params.get("slippage", 0.0),
         )
-
         results = engine.run(data, strategy_instance, **strategy_params)
-
-        # Calculate metrics
         metrics = calculate_metrics(
             equity_curve=results["equity_curve"],
             trades=results["trades"],
             initial_capital=engine.initial_capital,
         )
-
-        # Format trades for JSON serialization
         formatted_trades = []
         for trade in results["trades"]:
             formatted_trade = {
@@ -108,7 +92,6 @@ async def run_backtest(
                 "commission": trade["commission"],
             }
             formatted_trades.append(formatted_trade)
-
         return {
             "metrics": metrics,
             "equity_curve": results["equity_curve"],
@@ -126,7 +109,6 @@ async def run_backtest(
                 "total_return": results["return"],
             },
         }
-
     except HTTPException:
         raise
     except Exception as e:

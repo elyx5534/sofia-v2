@@ -7,22 +7,17 @@ import logging
 from typing import List
 
 import aiohttp
-from fastapi import APIRouter
-from fastapi.responses import JSONResponse
+
+from src.adapters.web.fastapi_adapter import APIRouter, JSONResponse
 from src.trading.simple_bot import BotStatus
 from src.trading.strategies import StrategyType
 from src.trading.trade_simulator import TradingSimulator
 from src.trading.turkish_bot import TurkishTradingBot
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/api/bot", tags=["Trading Bot"])
-
-# Global bot instance - now using Turkish bot with 100K TRY
 bot = TurkishTradingBot(initial_balance_try=100000.0)
-bot_tasks = {}  # Store tasks for each coin
-
-# Initialize simulator for generating trades
+bot_tasks = {}
 simulator = TradingSimulator(bot)
 simulation_task = None
 
@@ -45,31 +40,21 @@ async def fetch_prices(symbol: str = "BTC/USDT", limit: int = 50) -> List[float]
 async def bot_loop_for_coin(symbol: str):
     """Bot loop for a specific coin"""
     global bot
-
     while bot.status == BotStatus.RUNNING:
         try:
-            # Fetch latest prices
             prices = await fetch_prices(symbol)
-
-            if prices and len(prices) >= 30:  # Need enough data for indicators
+            if prices and len(prices) >= 30:
                 current_price = prices[-1]
-
-                # Update position price
                 if symbol in bot.positions:
                     bot.positions[symbol].update_pnl(current_price)
-
-                # Calculate indicators for Turkish bot
                 bot.indicators[symbol] = {
                     "rsi": bot.strategies.calculate_rsi(prices),
                     "macd": bot.strategies.calculate_macd(prices),
                     "ma_crossover": bot.strategies.calculate_ma_crossover(prices),
                     "bollinger": bot.strategies.calculate_bollinger_bands(prices),
                 }
-
-                # Get trading signal
                 signal = None
                 confidence = "medium"
-
                 if bot.strategy_type == StrategyType.RSI:
                     signal = bot.strategies.get_rsi_signal(prices)
                 elif bot.strategy_type == StrategyType.MACD:
@@ -78,47 +63,36 @@ async def bot_loop_for_coin(symbol: str):
                     signal = bot.strategies.get_ma_crossover_signal(prices)
                 elif bot.strategy_type == StrategyType.BOLLINGER:
                     signal = bot.strategies.get_bollinger_signal(prices)
-                else:  # COMBINED
+                else:
                     signal, metadata = bot.strategies.get_combined_signal(prices)
                     if metadata:
                         confidence = metadata.get("confidence", "medium")
-
                 if signal:
-                    # Execute trade
                     trade = bot.execute_trade(symbol, signal, current_price, confidence)
                     if trade["amount"] > 0:
                         logger.info(f"Trade executed for {symbol}: {trade}")
-
-            # Wait before next check (30 seconds)
             await asyncio.sleep(30)
-
         except Exception as e:
             logger.error(f"Bot error for {symbol}: {e}")
-            await asyncio.sleep(60)  # Wait longer on error
+            await asyncio.sleep(60)
 
 
 async def bot_main_loop():
     """Main bot loop that manages all coins"""
     global bot, bot_tasks
-
     while bot.status == BotStatus.RUNNING:
         try:
-            # Create tasks for coins in watchlist
             for symbol in bot.watchlist:
                 if symbol not in bot_tasks or bot_tasks[symbol].done():
                     bot_tasks[symbol] = asyncio.create_task(bot_loop_for_coin(symbol))
                     logger.info(f"Started monitoring {symbol}")
-
-            # Clean up completed tasks
             for symbol in list(bot_tasks.keys()):
                 if symbol not in bot.watchlist and symbol != "__main__":
                     if not bot_tasks[symbol].done():
                         bot_tasks[symbol].cancel()
                     del bot_tasks[symbol]
                     logger.info(f"Stopped monitoring {symbol}")
-
             await asyncio.sleep(5)
-
         except Exception as e:
             logger.error(f"Main bot loop error: {e}")
             bot.status = BotStatus.ERROR
@@ -129,16 +103,11 @@ async def bot_main_loop():
 async def start_bot():
     """Start the trading bot with simulator"""
     global bot, bot_tasks, simulator, simulation_task
-
     if bot.status == BotStatus.RUNNING:
         return {"message": "Bot is already running"}
-
     bot.start()
-
-    # Start the trading simulator instead of real API calls
     simulation_task = asyncio.create_task(simulator.run_simulation())
     bot_tasks["__simulator__"] = simulation_task
-
     return {
         "message": "Bot started successfully with simulator",
         "status": bot.status.value,
@@ -153,19 +122,14 @@ async def start_bot():
 async def stop_bot():
     """Stop the trading bot"""
     global bot, bot_tasks, simulator
-
     if bot.status != BotStatus.RUNNING:
         return {"message": "Bot is not running"}
-
     bot.stop()
     simulator.stop()
-
-    # Cancel all tasks
     for task in bot_tasks.values():
         if not task.done():
             task.cancel()
     bot_tasks.clear()
-
     return {"message": "Bot stopped successfully", "status": bot.status.value}
 
 
@@ -173,15 +137,12 @@ async def stop_bot():
 async def get_bot_status():
     """Get bot status and statistics"""
     global bot, simulator
-
-    # Get current prices from simulator if running
     if bot.status == BotStatus.RUNNING:
         for symbol in bot.active_coins:
             if hasattr(simulator, "price_simulator"):
                 price_data = simulator.price_simulator.get_price_data(symbol)
                 if symbol in bot.positions:
                     bot.positions[symbol].update_pnl(price_data["price"], bot.usd_to_try)
-
     return bot.get_portfolio_stats()
 
 
@@ -189,9 +150,7 @@ async def get_bot_status():
 async def get_trades(limit: int = 50):
     """Get trade history"""
     global bot
-
     trades = bot.all_trades[-limit:] if bot.all_trades else []
-
     return {"trades": trades, "total": len(bot.all_trades), "displayed": len(trades)}
 
 
@@ -199,17 +158,13 @@ async def get_trades(limit: int = 50):
 async def reset_bot():
     """Reset bot to initial state"""
     global bot, bot_tasks
-
-    # Stop bot if running
     if bot.status == BotStatus.RUNNING:
         bot.stop()
         for task in bot_tasks.values():
             if not task.done():
                 task.cancel()
         bot_tasks.clear()
-
     bot.reset()
-
     return {
         "message": "Bot reset successfully",
         "status": bot.status.value,
@@ -221,12 +176,10 @@ async def reset_bot():
 async def set_strategy(strategy: str):
     """Change trading strategy"""
     global bot
-
     if bot.status == BotStatus.RUNNING:
         return JSONResponse(
             status_code=400, content={"error": "Cannot change strategy while bot is running"}
         )
-
     try:
         strategy_type = StrategyType(strategy)
         bot.set_strategy(strategy_type)
@@ -244,7 +197,6 @@ async def set_strategy(strategy: str):
 async def add_coin(symbol: str):
     """Add a coin to track"""
     global bot
-
     bot.add_coin(symbol)
     return {"message": f"Added {symbol} to tracking", "active_coins": bot.active_coins}
 
@@ -253,7 +205,6 @@ async def add_coin(symbol: str):
 async def remove_coin(symbol: str):
     """Remove a coin from tracking"""
     global bot
-
     bot.remove_coin(symbol)
     return {"message": f"Removed {symbol} from tracking", "active_coins": bot.active_coins}
 
@@ -317,16 +268,13 @@ async def update_settings(
 ):
     """Update bot settings"""
     global bot
-
     if bot.status == BotStatus.RUNNING:
         return JSONResponse(
             status_code=400, content={"error": "Cannot update settings while bot is running"}
         )
-
     bot.rsi_oversold = rsi_oversold
     bot.rsi_overbought = rsi_overbought
     bot.position_size = position_size
-
     return {
         "message": "Settings updated successfully",
         "settings": {

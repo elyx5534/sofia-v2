@@ -14,20 +14,14 @@ def rsi(df: pd.DataFrame, period: int = 14, column: str = "close") -> pd.Series:
     try:
         if len(df) < period:
             return pd.Series(index=df.index, dtype=float)
-
         delta = df[column].diff()
         gain = delta.where(delta > 0, 0)
         loss = -delta.where(delta < 0, 0)
-
         avg_gain = gain.rolling(window=period).mean()
         avg_loss = loss.rolling(window=period).mean()
-
         rs = avg_gain / avg_loss
-        rsi_values = 100 - (100 / (1 + rs))
-
-        # Return RSI values with NaN for initial period (correct behavior)
+        rsi_values = 100 - 100 / (1 + rs)
         return rsi_values
-
     except Exception as e:
         logger.error(f"Error calculating RSI: {e}")
         return pd.Series(index=df.index, dtype=float)
@@ -58,20 +52,16 @@ def bbands(
     try:
         if len(df) < period:
             empty_series = pd.Series(index=df.index, dtype=float)
-            return empty_series, empty_series, empty_series
-
+            return (empty_series, empty_series, empty_series)
         middle = sma(df, period, column)
         std = df[column].rolling(window=period).std()
-
-        upper = middle + (std * std_dev)
-        lower = middle - (std * std_dev)
-
-        return upper, middle, lower
-
+        upper = middle + std * std_dev
+        lower = middle - std * std_dev
+        return (upper, middle, lower)
     except Exception as e:
         logger.error(f"Error calculating Bollinger Bands: {e}")
         empty_series = pd.Series(index=df.index, dtype=float)
-        return empty_series, empty_series, empty_series
+        return (empty_series, empty_series, empty_series)
 
 
 def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -80,12 +70,9 @@ def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
         high_low = df["high"] - df["low"]
         high_close = np.abs(df["high"] - df["close"].shift())
         low_close = np.abs(df["low"] - df["close"].shift())
-
         true_range = np.maximum(high_low, np.maximum(high_close, low_close))
         atr_values = pd.Series(true_range).rolling(window=period).mean()
-
         return atr_values
-
     except Exception as e:
         logger.error(f"Error calculating ATR: {e}")
         return pd.Series(index=df.index, dtype=float)
@@ -98,17 +85,14 @@ def macd(
     try:
         ema_fast = ema(df, fast, column)
         ema_slow = ema(df, slow, column)
-
         macd_line = ema_fast - ema_slow
         signal_line = macd_line.ewm(span=signal).mean()
         histogram = macd_line - signal_line
-
-        return macd_line, signal_line, histogram
-
+        return (macd_line, signal_line, histogram)
     except Exception as e:
         logger.error(f"Error calculating MACD: {e}")
         empty_series = pd.Series(index=df.index, dtype=float)
-        return empty_series, empty_series, empty_series
+        return (empty_series, empty_series, empty_series)
 
 
 def stochastic(
@@ -118,20 +102,16 @@ def stochastic(
     try:
         if len(df) < k_period:
             empty_series = pd.Series(index=df.index, dtype=float)
-            return empty_series, empty_series
-
+            return (empty_series, empty_series)
         lowest_low = df["low"].rolling(window=k_period).min()
         highest_high = df["high"].rolling(window=k_period).max()
-
         k_percent = 100 * ((df["close"] - lowest_low) / (highest_high - lowest_low))
         d_percent = k_percent.rolling(window=d_period).mean()
-
-        return k_percent, d_percent
-
+        return (k_percent, d_percent)
     except Exception as e:
         logger.error(f"Error calculating Stochastic: {e}")
         empty_series = pd.Series(index=df.index, dtype=float)
-        return empty_series, empty_series
+        return (empty_series, empty_series)
 
 
 def volume_sma(df: pd.DataFrame, period: int = 20) -> pd.Series:
@@ -155,50 +135,30 @@ def price_change_percent(df: pd.DataFrame, periods: int = 1, column: str = "clos
 def add_all_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """Add all technical indicators to a DataFrame"""
     try:
-        if df.empty or len(df) < 26:  # Need at least 26 periods for MACD
+        if df.empty or len(df) < 26:
             return df
-
-        # Make a copy to avoid modifying original data
         df_with_indicators = df.copy()
-
-        # RSI
         df_with_indicators["rsi"] = rsi(df)
-
-        # Moving Averages
         df_with_indicators["sma_20"] = sma(df, 20)
         df_with_indicators["sma_50"] = sma(df, 50)
         df_with_indicators["ema_12"] = ema(df, 12)
         df_with_indicators["ema_26"] = ema(df, 26)
-
-        # Bollinger Bands
         bb_upper, bb_middle, bb_lower = bbands(df)
         df_with_indicators["bb_upper"] = bb_upper
         df_with_indicators["bb_middle"] = bb_middle
         df_with_indicators["bb_lower"] = bb_lower
-
-        # ATR
         df_with_indicators["atr"] = atr(df)
-
-        # MACD
         macd_line, signal_line, histogram = macd(df)
         df_with_indicators["macd"] = macd_line
         df_with_indicators["macd_signal"] = signal_line
         df_with_indicators["macd_histogram"] = histogram
-
-        # Stochastic
         stoch_k, stoch_d = stochastic(df)
         df_with_indicators["stoch_k"] = stoch_k
         df_with_indicators["stoch_d"] = stoch_d
-
-        # Volume indicators
         df_with_indicators["volume_sma"] = volume_sma(df)
-
-        # Price changes
         df_with_indicators["price_change_1h"] = price_change_percent(df, 1)
         df_with_indicators["price_change_24h"] = price_change_percent(df, 24)
-
         return df_with_indicators
-
     except Exception as e:
         logger.error(f"Error adding indicators: {e}")
         return df
@@ -209,14 +169,10 @@ def get_latest_indicators(df: pd.DataFrame) -> dict:
     try:
         if df.empty:
             return {}
-
         df_with_indicators = add_all_indicators(df)
-
         if df_with_indicators.empty:
             return {}
-
         latest = df_with_indicators.iloc[-1]
-
         return {
             "timestamp": latest.name,
             "open": float(latest.get("open", 0)),
@@ -238,7 +194,6 @@ def get_latest_indicators(df: pd.DataFrame) -> dict:
             "price_change_1h": float(latest.get("price_change_1h", 0)),
             "price_change_24h": float(latest.get("price_change_24h", 0)),
         }
-
     except Exception as e:
         logger.error(f"Error getting latest indicators: {e}")
         return {}

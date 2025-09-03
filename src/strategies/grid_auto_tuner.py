@@ -15,11 +15,11 @@ class GridParameters:
     """Grid trading parameters"""
 
     num_grids: int = 10
-    grid_spacing_pct: float = 0.5  # Percentage between grids
+    grid_spacing_pct: float = 0.5
     upper_price: float = 0
     lower_price: float = 0
-    position_size_per_grid: float = 100  # USD per grid
-    rebalance_threshold_pct: float = 5  # Rebalance when price moves 5% outside range
+    position_size_per_grid: float = 100
+    rebalance_threshold_pct: float = 5
 
     def to_dict(self) -> Dict:
         return {
@@ -36,15 +36,12 @@ class GridParameters:
         """Calculate actual grid price levels"""
         if not self.upper_price or not self.lower_price:
             return []
-
         levels = []
         price_range = self.upper_price - self.lower_price
         step = price_range / (self.num_grids - 1)
-
         for i in range(self.num_grids):
-            level = self.lower_price + (step * i)
+            level = self.lower_price + step * i
             levels.append(round(level, 2))
-
         return levels
 
 
@@ -52,12 +49,12 @@ class GridParameters:
 class MarketConditions:
     """Current market conditions"""
 
-    atr: float = 0  # Average True Range
-    atr_pct: float = 0  # ATR as percentage of price
-    volatility_regime: str = "normal"  # low, normal, high, extreme
-    trend_direction: str = "neutral"  # up, down, neutral
-    volume_profile: str = "normal"  # low, normal, high
-    spread_bps: float = 0  # Current spread in basis points
+    atr: float = 0
+    atr_pct: float = 0
+    volatility_regime: str = "normal"
+    trend_direction: str = "neutral"
+    volume_profile: str = "normal"
+    spread_bps: float = 0
 
 
 class GridAutoTuner:
@@ -67,53 +64,26 @@ class GridAutoTuner:
         self.logger = logging.getLogger(f"{__name__}.GridAutoTuner")
         self.current_params = GridParameters()
         self.market_conditions = MarketConditions()
-
-        # Tuning configuration
-        self.atr_multipliers = {
-            "low": 1.5,  # Tight grids in low volatility
-            "normal": 2.0,  # Standard spacing
-            "high": 3.0,  # Wide grids in high volatility
-            "extreme": 4.0,  # Very wide grids in extreme volatility
-        }
-
-        self.grid_counts = {
-            "low": 15,  # More grids in low volatility
-            "normal": 10,  # Standard grid count
-            "high": 7,  # Fewer grids in high volatility
-            "extreme": 5,  # Minimal grids in extreme volatility
-        }
-
-        self.position_scaling = {
-            "low": 1.2,  # Larger positions in low volatility
-            "normal": 1.0,  # Standard position size
-            "high": 0.7,  # Smaller positions in high volatility
-            "extreme": 0.4,  # Minimal positions in extreme volatility
-        }
+        self.atr_multipliers = {"low": 1.5, "normal": 2.0, "high": 3.0, "extreme": 4.0}
+        self.grid_counts = {"low": 15, "normal": 10, "high": 7, "extreme": 5}
+        self.position_scaling = {"low": 1.2, "normal": 1.0, "high": 0.7, "extreme": 0.4}
 
     def calculate_atr(self, candles: List[Dict], period: int = 14) -> float:
         """Calculate Average True Range"""
         if len(candles) < period + 1:
             return 0
-
         true_ranges = []
-
         for i in range(1, len(candles)):
             high = candles[i]["high"]
             low = candles[i]["low"]
             prev_close = candles[i - 1]["close"]
-
             true_range = max(high - low, abs(high - prev_close), abs(low - prev_close))
             true_ranges.append(true_range)
-
-        # Calculate ATR using exponential moving average
         if len(true_ranges) < period:
             return 0
-
         atr = sum(true_ranges[:period]) / period
-
         for i in range(period, len(true_ranges)):
-            atr = ((atr * (period - 1)) + true_ranges[i]) / period
-
+            atr = (atr * (period - 1) + true_ranges[i]) / period
         return atr
 
     def classify_volatility(self, atr_pct: float) -> str:
@@ -131,18 +101,13 @@ class GridAutoTuner:
         """Detect trend direction using simple moving average"""
         if len(candles) < period:
             return "neutral"
-
         recent_prices = [c["close"] for c in candles[-period:]]
         older_prices = [c["close"] for c in candles[-period * 2 : -period]]
-
         if not older_prices:
             return "neutral"
-
         recent_avg = sum(recent_prices) / len(recent_prices)
         older_avg = sum(older_prices) / len(older_prices)
-
         change_pct = (recent_avg - older_avg) / older_avg * 100
-
         if change_pct > 2:
             return "up"
         elif change_pct < -2:
@@ -153,23 +118,14 @@ class GridAutoTuner:
     def analyze_market(self, candles: List[Dict], current_price: float) -> MarketConditions:
         """Analyze current market conditions"""
         conditions = MarketConditions()
-
-        # Calculate ATR
         atr = self.calculate_atr(candles)
         conditions.atr = atr
-        conditions.atr_pct = (atr / current_price * 100) if current_price > 0 else 0
-
-        # Classify volatility
+        conditions.atr_pct = atr / current_price * 100 if current_price > 0 else 0
         conditions.volatility_regime = self.classify_volatility(conditions.atr_pct)
-
-        # Detect trend
         conditions.trend_direction = self.detect_trend(candles)
-
-        # Analyze volume (simplified)
         if candles:
             recent_volumes = [c.get("volume", 0) for c in candles[-10:]]
             avg_volume = sum(recent_volumes) / len(recent_volumes) if recent_volumes else 0
-
             last_volume = candles[-1].get("volume", 0)
             if last_volume > avg_volume * 1.5:
                 conditions.volume_profile = "high"
@@ -177,7 +133,6 @@ class GridAutoTuner:
                 conditions.volume_profile = "low"
             else:
                 conditions.volume_profile = "normal"
-
         self.market_conditions = conditions
         return conditions
 
@@ -185,86 +140,54 @@ class GridAutoTuner:
         self, symbol: str, current_price: float, candles: List[Dict], base_capital: float = 1000
     ) -> GridParameters:
         """Tune grid parameters based on market conditions"""
-        # Analyze market
         conditions = self.analyze_market(candles, current_price)
-
-        # Get multipliers based on volatility
         volatility = conditions.volatility_regime
         atr_multiplier = self.atr_multipliers.get(volatility, 2.0)
         grid_count = self.grid_counts.get(volatility, 10)
         position_scale = self.position_scaling.get(volatility, 1.0)
-
-        # Calculate grid range based on ATR
         atr = conditions.atr
-
-        # Set range as ATR multiple
         price_range = atr * atr_multiplier
-
-        # Adjust for trend
         if conditions.trend_direction == "up":
-            # Shift range up in uptrend
-            lower_price = current_price - (price_range * 0.4)
-            upper_price = current_price + (price_range * 0.6)
+            lower_price = current_price - price_range * 0.4
+            upper_price = current_price + price_range * 0.6
         elif conditions.trend_direction == "down":
-            # Shift range down in downtrend
-            lower_price = current_price - (price_range * 0.6)
-            upper_price = current_price + (price_range * 0.4)
+            lower_price = current_price - price_range * 0.6
+            upper_price = current_price + price_range * 0.4
         else:
-            # Centered range in neutral market
-            lower_price = current_price - (price_range * 0.5)
-            upper_price = current_price + (price_range * 0.5)
-
-        # Calculate grid spacing
+            lower_price = current_price - price_range * 0.5
+            upper_price = current_price + price_range * 0.5
         grid_spacing_pct = (upper_price - lower_price) / current_price / grid_count * 100
-
-        # Calculate position size per grid
-        position_size = (base_capital / grid_count) * position_scale
-
-        # Adjust for volume profile
+        position_size = base_capital / grid_count * position_scale
         if conditions.volume_profile == "low":
-            position_size *= 0.7  # Reduce size in low volume
+            position_size *= 0.7
         elif conditions.volume_profile == "high":
-            position_size *= 1.2  # Increase size in high volume
-
-        # Create tuned parameters
+            position_size *= 1.2
         params = GridParameters(
             num_grids=grid_count,
             grid_spacing_pct=grid_spacing_pct,
             upper_price=upper_price,
             lower_price=lower_price,
             position_size_per_grid=position_size,
-            rebalance_threshold_pct=max(5, conditions.atr_pct * 2),  # Dynamic rebalance threshold
+            rebalance_threshold_pct=max(5, conditions.atr_pct * 2),
         )
-
         self.current_params = params
-
         self.logger.info(
-            f"Grid parameters tuned for {symbol}: "
-            f"Volatility={volatility}, Trend={conditions.trend_direction}, "
-            f"Grids={grid_count}, Range=${lower_price:.2f}-${upper_price:.2f}, "
-            f"Size/grid=${position_size:.2f}"
+            f"Grid parameters tuned for {symbol}: Volatility={volatility}, Trend={conditions.trend_direction}, Grids={grid_count}, Range=${lower_price:.2f}-${upper_price:.2f}, Size/grid=${position_size:.2f}"
         )
-
         return params
 
     def should_rebalance(self, current_price: float) -> bool:
         """Check if grid should be rebalanced"""
         if not self.current_params.upper_price or not self.current_params.lower_price:
             return True
-
-        # Check if price is outside rebalance threshold
         threshold = self.current_params.rebalance_threshold_pct / 100
-
         upper_threshold = self.current_params.upper_price * (1 + threshold)
         lower_threshold = self.current_params.lower_price * (1 - threshold)
-
         if current_price > upper_threshold or current_price < lower_threshold:
             self.logger.info(
-                f"Rebalance triggered: Price ${current_price:.2f} outside range "
-                f"${lower_threshold:.2f}-${upper_threshold:.2f}"
+                f"Rebalance triggered: Price ${current_price:.2f} outside range ${lower_threshold:.2f}-${upper_threshold:.2f}"
             )
             return True
-
         return False
 
     def get_grid_orders(
@@ -273,22 +196,16 @@ class GridAutoTuner:
         """Generate grid orders based on current parameters"""
         if not self.current_params.upper_price:
             return []
-
         orders = []
         grid_levels = self.current_params.calculate_grid_levels()
-
-        # Filter out existing order levels
         existing_levels = set()
         if existing_orders:
             for order in existing_orders:
                 existing_levels.add(round(order["price"], 2))
-
         for level in grid_levels:
             if level in existing_levels:
-                continue  # Skip existing orders
-
+                continue
             if level < current_price:
-                # Buy order below current price
                 orders.append(
                     {
                         "side": "buy",
@@ -298,7 +215,6 @@ class GridAutoTuner:
                     }
                 )
             elif level > current_price:
-                # Sell order above current price
                 orders.append(
                     {
                         "side": "sell",
@@ -307,68 +223,47 @@ class GridAutoTuner:
                         "type": "limit",
                     }
                 )
-
         return orders
 
     def adjust_for_bollinger_bands(self, candles: List[Dict], period: int = 20, num_std: float = 2):
         """Adjust grid parameters using Bollinger Bands"""
         if len(candles) < period:
             return
-
-        # Calculate Bollinger Bands
         closes = [c["close"] for c in candles[-period:]]
         sma = sum(closes) / period
-
         variance = sum((x - sma) ** 2 for x in closes) / period
         std_dev = variance**0.5
-
-        upper_band = sma + (std_dev * num_std)
-        lower_band = sma - (std_dev * num_std)
-
-        # Adjust grid range to Bollinger Bands
+        upper_band = sma + std_dev * num_std
+        lower_band = sma - std_dev * num_std
         self.current_params.upper_price = upper_band
         self.current_params.lower_price = lower_band
-
         self.logger.info(
-            f"Grid adjusted to Bollinger Bands: " f"Range=${lower_band:.2f}-${upper_band:.2f}"
+            f"Grid adjusted to Bollinger Bands: Range=${lower_band:.2f}-${upper_band:.2f}"
         )
 
     def get_performance_metrics(self, filled_orders: List[Dict]) -> Dict:
         """Calculate grid trading performance metrics"""
         if not filled_orders:
-            return {
-                "total_trades": 0,
-                "profit_loss": 0,
-                "win_rate": 0,
-                "avg_profit_per_trade": 0,
-            }
-
+            return {"total_trades": 0, "profit_loss": 0, "win_rate": 0, "avg_profit_per_trade": 0}
         total_trades = len(filled_orders)
         profits = []
-
-        # Match buy and sell orders (simplified)
         buys = [o for o in filled_orders if o["side"] == "buy"]
         sells = [o for o in filled_orders if o["side"] == "sell"]
-
         for sell in sells:
-            # Find matching buy (simplified FIFO)
             for buy in buys:
                 if buy.get("matched"):
                     continue
-
                 profit = (sell["price"] - buy["price"]) * min(sell["quantity"], buy["quantity"])
                 profits.append(profit)
                 buy["matched"] = True
                 break
-
         winning_trades = sum(1 for p in profits if p > 0)
         total_profit = sum(profits)
-
         return {
             "total_trades": total_trades,
             "profit_loss": total_profit,
-            "win_rate": (winning_trades / len(profits) * 100) if profits else 0,
-            "avg_profit_per_trade": (total_profit / len(profits)) if profits else 0,
+            "win_rate": winning_trades / len(profits) * 100 if profits else 0,
+            "avg_profit_per_trade": total_profit / len(profits) if profits else 0,
             "grid_efficiency": len(profits) / total_trades * 100 if total_trades > 0 else 0,
         }
 
@@ -394,5 +289,4 @@ class GridAutoTuner:
         }
 
 
-# Global instance
 grid_tuner = GridAutoTuner()

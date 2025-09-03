@@ -35,11 +35,8 @@ class GDELTClient:
         """Fetch news summary from GDELT"""
         try:
             session = await self.get_session()
-
-            # Calculate date range
             end_time = datetime.now()
             start_time = end_time - timedelta(hours=hours_back)
-
             params = {
                 "query": query,
                 "mode": "artlist",
@@ -49,13 +46,10 @@ class GDELTClient:
                 "startdatetime": start_time.strftime("%Y%m%d%H%M%S"),
                 "enddatetime": end_time.strftime("%Y%m%d%H%M%S"),
             }
-
             response = await session.get(f"{self.base_url}/summary/summary", params=params)
             response.raise_for_status()
-
             data = response.json()
             articles = data.get("articles", [])
-
             formatted_articles = []
             for article in articles:
                 try:
@@ -67,17 +61,15 @@ class GDELTClient:
                             "language": article.get("language", "en"),
                             "date": article.get("seendate", ""),
                             "social_image": article.get("socialimage", ""),
-                            "tone": float(article.get("tone", 0)),  # GDELT tone score
+                            "tone": float(article.get("tone", 0)),
                             "source": "gdelt",
                         }
                     )
                 except Exception as e:
                     logger.warning(f"Error parsing GDELT article: {e}")
                     continue
-
             logger.info(f"Fetched {len(formatted_articles)} articles from GDELT")
             return formatted_articles
-
         except Exception as e:
             logger.error(f"Error fetching GDELT summary: {e}")
             return []
@@ -94,36 +86,25 @@ class GDELTClient:
             "DeFi OR decentralized finance",
             "NFT OR non-fungible token",
         ]
-
         all_articles = []
-
         for query in crypto_queries:
             try:
                 articles = await self.fetch_summary_news(
                     query, hours_back=hours_back, limit=limit // len(crypto_queries)
                 )
                 all_articles.extend(articles)
-
-                # Add small delay to avoid rate limiting
                 await asyncio.sleep(0.5)
-
             except Exception as e:
                 logger.warning(f"Error fetching GDELT news for query '{query}': {e}")
                 continue
-
-        # Remove duplicates based on URL
         seen_urls = set()
         unique_articles = []
-
         for article in all_articles:
             url = article.get("url", "")
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique_articles.append(article)
-
-        # Sort by date/relevance (newer first)
         unique_articles.sort(key=lambda x: x.get("date", ""), reverse=True)
-
         logger.info(f"Collected {len(unique_articles)} unique crypto articles from GDELT")
         return unique_articles[:limit]
 
@@ -133,11 +114,8 @@ class GDELTClient:
         """Fetch documents using GDELT Doc 2.0 API"""
         try:
             session = await self.get_session()
-
-            # Calculate date range
             end_time = datetime.now()
             start_time = end_time - timedelta(hours=hours_back)
-
             params = {
                 "query": query,
                 "mode": "artlist",
@@ -146,15 +124,12 @@ class GDELTClient:
                 "format": "json",
                 "startdatetime": start_time.strftime("%Y%m%d%H%M%S"),
                 "enddatetime": end_time.strftime("%Y%m%d%H%M%S"),
-                "trans": "googletrans",  # Auto-translate non-English
+                "trans": "googletrans",
             }
-
             response = await session.get(f"{self.base_url}/doc/doc", params=params)
             response.raise_for_status()
-
             data = response.json()
             articles = data.get("articles", [])
-
             formatted_articles = []
             for article in articles:
                 try:
@@ -172,17 +147,13 @@ class GDELTClient:
                 except Exception as e:
                     logger.warning(f"Error parsing GDELT doc: {e}")
                     continue
-
             return formatted_articles
-
         except Exception as e:
             logger.error(f"Error fetching GDELT docs: {e}")
             return []
 
     def calculate_sentiment_score(self, tone: float) -> float:
         """Convert GDELT tone to 0-1 sentiment score"""
-        # GDELT tone ranges from -100 to +100
-        # Convert to 0-1 scale where 0.5 is neutral
         return max(0, min(1, (tone + 100) / 200))
 
     async def get_trending_crypto_topics(self, hours_back: int = 6) -> List[Dict[str, Any]]:
@@ -196,13 +167,10 @@ class GDELTClient:
             "DeFi hack",
             "NFT marketplace",
         ]
-
         trending_news = []
-
         for query in trending_queries:
             try:
                 articles = await self.fetch_summary_news(query, hours_back=hours_back, limit=5)
-
                 if articles:
                     trending_news.append(
                         {
@@ -212,11 +180,8 @@ class GDELTClient:
                             "avg_tone": sum(a.get("tone", 0) for a in articles) / len(articles),
                         }
                     )
-
-                await asyncio.sleep(0.3)  # Rate limiting
-
+                await asyncio.sleep(0.3)
             except Exception as e:
                 logger.warning(f"Error fetching trending topic '{query}': {e}")
                 continue
-
         return trending_news

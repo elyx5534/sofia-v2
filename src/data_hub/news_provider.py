@@ -34,7 +34,7 @@ class NewsProvider:
 
     def __init__(self):
         self.cache = {}
-        self.cache_ttl = 300  # 5 minutes
+        self.cache_ttl = 300
 
     async def fetch_news(self, symbol: str, limit: int = 10) -> List[NewsItem]:
         """
@@ -47,30 +47,22 @@ class NewsProvider:
         Returns:
             List of NewsItem objects
         """
-        # Check cache
         cache_key = f"{symbol}_{limit}"
         if cache_key in self.cache:
             cached_data, timestamp = self.cache[cache_key]
             if datetime.now(timezone.utc) - timestamp < timedelta(seconds=self.cache_ttl):
                 return cached_data
-
         news_items = []
-
-        # Try Yahoo Finance first
         try:
             yahoo_news = await self._fetch_yahoo_news(symbol, limit)
             news_items.extend(yahoo_news)
         except Exception as e:
             print(f"Error fetching Yahoo news: {e}")
-
-        # Try RSS feeds
         try:
             rss_news = await self._fetch_rss_news(symbol, limit)
             news_items.extend(rss_news)
         except Exception as e:
             print(f"Error fetching RSS news: {e}")
-
-        # Remove duplicates and limit
         seen_titles = set()
         unique_news = []
         for item in news_items:
@@ -79,24 +71,16 @@ class NewsProvider:
                 unique_news.append(item)
                 if len(unique_news) >= limit:
                     break
-
-        # Update cache
         self.cache[cache_key] = (unique_news, datetime.now(timezone.utc))
-
         return unique_news
 
     async def _fetch_yahoo_news(self, symbol: str, limit: int) -> List[NewsItem]:
         """Fetch news from Yahoo Finance."""
         news_items = []
-
         try:
-            # Use yfinance to get ticker info
             ticker = yf.Ticker(symbol)
-
-            # Get news from yfinance (if available)
             if hasattr(ticker, "news"):
                 yahoo_news = ticker.news[:limit] if ticker.news else []
-
                 for article in yahoo_news:
                     news_items.append(
                         NewsItem(
@@ -111,27 +95,20 @@ class NewsProvider:
                     )
         except Exception as e:
             print(f"Yahoo Finance news fetch error: {e}")
-            # Fallback to mock data for demo
             news_items = self._get_mock_news(symbol, limit)
-
         return news_items
 
     async def _fetch_rss_news(self, symbol: str, limit: int) -> List[NewsItem]:
         """Fetch news from RSS feeds."""
         news_items = []
-
-        # Financial RSS feeds
         rss_feeds = {
             "MarketWatch": "https://feeds.content.dowjones.io/public/rss/mw_bulletins",
             "Investing.com": "https://www.investing.com/rss/news.rss",
         }
-
         for source, feed_url in rss_feeds.items():
             try:
                 feed = feedparser.parse(feed_url)
-
-                for entry in feed.entries[:5]:  # Get top 5 from each source
-                    # Check if symbol is mentioned in title or summary
+                for entry in feed.entries[:5]:
                     if (
                         symbol.upper() in entry.title.upper()
                         or symbol.upper() in entry.get("summary", "").upper()
@@ -151,7 +128,6 @@ class NewsProvider:
                         )
             except Exception as e:
                 print(f"RSS feed error for {source}: {e}")
-
         return news_items
 
     def _get_mock_news(self, symbol: str, limit: int) -> List[NewsItem]:
@@ -193,9 +169,7 @@ class NewsProvider:
                 datetime.now(timezone.utc) - timedelta(hours=12),
             ),
         ]
-
         return mock_news[:limit]
 
 
-# Singleton instance
 news_provider = NewsProvider()

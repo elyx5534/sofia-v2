@@ -7,8 +7,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
-
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException, Query
 from src.services.datahub import datahub
 
 logger = logging.getLogger(__name__)
@@ -66,22 +65,16 @@ async def get_ohlcv(
         curl -X GET "http://localhost:8000/api/quotes/ohlcv?symbol=BTC/USDT&tf=1h&start=2024-01-01&end=2024-01-07"
     """
     try:
-        # Default date range if not provided
         if not end:
             end = datetime.now().isoformat()[:10]
         if not start:
-            # Default to 30 days ago
             start = (datetime.now() - timedelta(days=30)).isoformat()[:10]
-
         data = datahub.get_ohlcv(symbol, tf, start, end)
-
         if not data:
             raise HTTPException(
                 status_code=404, detail=f"No data found for {symbol} from {start} to {end}"
             )
-
         return data
-
     except Exception as e:
         logger.error(f"OHLCV error for {symbol}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -90,7 +83,6 @@ async def get_ohlcv(
 @router.get("/symbols")
 async def get_symbols() -> List[str]:
     """Get list of available symbols"""
-    # Return common crypto pairs
     return [
         "BTC/USDT",
         "ETH/USDT",
@@ -109,7 +101,6 @@ async def get_symbols() -> List[str]:
 async def health_check() -> Dict:
     """Check if quotes service is healthy"""
     try:
-        # Try to get BTC price as health check
         result = datahub.get_latest_price("BTC/USDT")
         return {
             "status": "healthy" if result["price"] > 0 else "degraded",

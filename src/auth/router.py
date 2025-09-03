@@ -6,10 +6,11 @@ FastAPI routes for user registration, login, and account management
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
-from sqlalchemy.orm import Session
+
+from src.adapters.db.sqlalchemy_adapter import Session
+from src.adapters.web.fastapi_adapter import APIRouter, Depends, HTTPException, status
 
 from ..data_hub.database import get_db
 from .dependencies import admin_required, get_current_active_user, get_current_user
@@ -19,7 +20,6 @@ from .models import APIKey, SubscriptionTier, UsageLog, User
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-# Pydantic models for request/response
 class UserCreate(BaseModel):
     email: EmailStr
     username: str
@@ -49,7 +49,7 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: int = 1800  # 30 minutes
+    expires_in: int = 1800
 
 
 class APIKeyCreate(BaseModel):
@@ -77,7 +77,7 @@ class APIKeyWithSecret(BaseModel):
 
     id: int
     name: str
-    key: str  # Full API key - only shown once!
+    key: str
     key_prefix: str
     expires_at: Optional[datetime]
 
@@ -85,14 +85,11 @@ class APIKeyWithSecret(BaseModel):
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
     """Register new user account"""
-
-    # Check if user already exists
     existing_user = (
         db.query(User)
         .filter((User.email == user_data.email) | (User.username == user_data.username))
         .first()
     )
-
     if existing_user:
         if existing_user.email == user_data.email:
             raise HTTPException(
@@ -102,8 +99,6 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken"
             )
-
-    # Create new user
     user = User(
         email=user_data.email,
         username=user_data.username,
@@ -112,45 +107,34 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         subscription_active=True,
     )
     user.set_password(user_data.password)
-
     db.add(user)
     db.commit()
     db.refresh(user)
-
     return user
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """User login with email/username and password"""
-
-    # Find user by email or username
     user = (
         db.query(User)
         .filter((User.email == form_data.username) | (User.username == form_data.username))
         .first()
     )
-
     if not user or not user.verify_password(form_data.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email/username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user account")
-
-    # Create tokens
     access_token = jwt_handler.create_access_token(
         user_id=user.id, email=user.email, subscription_tier=user.subscription_tier
     )
     refresh_token = jwt_handler.create_refresh_token(user.id)
-
-    # Update last login
     user.last_login = datetime.utcnow()
     db.commit()
-
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -162,25 +146,20 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
     """Refresh access token using refresh token"""
-
     try:
         payload = jwt_handler.verify_refresh_token(refresh_token)
         user_id = payload.get("user_id")
     except HTTPException:
         raise
-
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         )
-
-    # Create new tokens
     access_token = jwt_handler.create_access_token(
         user_id=user.id, email=user.email, subscription_tier=user.subscription_tier
     )
     new_refresh_token = jwt_handler.create_refresh_token(user.id)
-
     return {
         "access_token": access_token,
         "refresh_token": new_refresh_token,
@@ -199,7 +178,6 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 async def get_user_limits(current_user: User = Depends(get_current_user)):
     """Get current user's rate limits and usage"""
     limits = current_user.get_rate_limits()
-
     return {
         "subscription_tier": current_user.subscription_tier,
         "limits": limits,
@@ -219,36 +197,26 @@ async def create_api_key(
     db: Session = Depends(get_db),
 ):
     """Create new API key for user"""
-
-    # Check if user can create more API keys (limit based on subscription)
     existing_keys = (
         db.query(APIKey).filter(APIKey.user_id == current_user.id, APIKey.is_active == True).count()
     )
-
     max_keys = {
         SubscriptionTier.FREE: 1,
         SubscriptionTier.BASIC: 3,
         SubscriptionTier.PRO: 10,
         SubscriptionTier.ENTERPRISE: 50,
     }.get(current_user.subscription_tier, 1)
-
     if existing_keys >= max_keys:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Maximum {max_keys} API keys allowed for {current_user.subscription_tier} tier",
         )
-
-    # Generate API key
     key = current_user.generate_api_key()
     key_hash = APIKey.hash_key(key)
     key_prefix = key[:12] + "..."
-
-    # Set expiration if specified
     expires_at = None
     if api_key_data.expires_in_days:
         expires_at = datetime.utcnow() + timedelta(days=api_key_data.expires_in_days)
-
-    # Create API key record
     api_key = APIKey(
         user_id=current_user.id,
         key_hash=key_hash,
@@ -256,17 +224,11 @@ async def create_api_key(
         name=api_key_data.name,
         expires_at=expires_at,
     )
-
     db.add(api_key)
     db.commit()
     db.refresh(api_key)
-
     return APIKeyWithSecret(
-        id=api_key.id,
-        name=api_key.name,
-        key=key,  # Only returned once!
-        key_prefix=key_prefix,
-        expires_at=expires_at,
+        id=api_key.id, name=api_key.name, key=key, key_prefix=key_prefix, expires_at=expires_at
     )
 
 
@@ -275,14 +237,12 @@ async def list_api_keys(
     current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db)
 ):
     """List user's API keys"""
-
     api_keys = (
         db.query(APIKey)
         .filter(APIKey.user_id == current_user.id)
         .order_by(APIKey.created_at.desc())
         .all()
     )
-
     return api_keys
 
 
@@ -293,18 +253,13 @@ async def revoke_api_key(
     db: Session = Depends(get_db),
 ):
     """Revoke/delete API key"""
-
     api_key = (
         db.query(APIKey).filter(APIKey.id == key_id, APIKey.user_id == current_user.id).first()
     )
-
     if not api_key:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found")
-
-    # Instead of deleting, deactivate for audit trail
     api_key.is_active = False
     db.commit()
-
     return {"message": "API key revoked successfully"}
 
 
@@ -315,16 +270,12 @@ async def get_usage_statistics(
     days: int = 30,
 ):
     """Get usage statistics for current user"""
-
     since_date = datetime.utcnow() - timedelta(days=days)
-
     usage_logs = (
         db.query(UsageLog)
         .filter(UsageLog.user_id == current_user.id, UsageLog.timestamp >= since_date)
         .all()
     )
-
-    # Aggregate statistics
     stats = {
         "total_requests": len(usage_logs),
         "successful_requests": len([log for log in usage_logs if 200 <= log.status_code < 300]),
@@ -335,11 +286,9 @@ async def get_usage_statistics(
         "endpoints_used": list(set(log.endpoint for log in usage_logs)),
         "period_days": days,
     }
-
     return stats
 
 
-# Admin endpoints
 @router.get("/admin/users", response_model=List[UserResponse])
 async def list_all_users(
     admin_user: User = Depends(admin_required),
@@ -361,21 +310,16 @@ async def update_user_subscription(
     db: Session = Depends(get_db),
 ):
     """Admin: Update user subscription"""
-
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
     user.subscription_tier = tier
     user.subscription_active = True
-
     if expires_in_days:
         user.subscription_expires = datetime.utcnow() + timedelta(days=expires_in_days)
     else:
         user.subscription_expires = None
-
     db.commit()
-
     return {"message": f"User subscription updated to {tier}"}
 
 
@@ -384,20 +328,16 @@ async def get_platform_statistics(
     admin_user: User = Depends(admin_required), db: Session = Depends(get_db)
 ):
     """Admin: Get platform-wide statistics"""
-
     total_users = db.query(User).count()
     active_users = db.query(User).filter(User.is_active == True).count()
     paid_users = db.query(User).filter(User.subscription_tier != SubscriptionTier.FREE).count()
-
-    # Usage in last 24 hours
     since_yesterday = datetime.utcnow() - timedelta(hours=24)
     recent_usage = db.query(UsageLog).filter(UsageLog.timestamp >= since_yesterday).count()
-
     return {
         "total_users": total_users,
         "active_users": active_users,
         "paid_users": paid_users,
         "free_users": total_users - paid_users,
         "api_calls_24h": recent_usage,
-        "conversion_rate": (paid_users / total_users * 100) if total_users > 0 else 0,
+        "conversion_rate": paid_users / total_users * 100 if total_users > 0 else 0,
     }

@@ -1,5 +1,4 @@
-from fastapi import APIRouter
-from fastapi.responses import RedirectResponse
+from src.adapters.web.fastapi_adapter import APIRouter, RedirectResponse
 
 router = APIRouter()
 MAP = {

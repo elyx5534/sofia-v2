@@ -17,8 +17,7 @@ def format_currency(v, symbol="$"):
 
 
 env.filters["format_currency"] = format_currency
-env.filters["currency"] = format_currency  # alias
-
+env.filters["currency"] = format_currency
 templates = Jinja2Templates(env=env)
 
 

@@ -6,10 +6,10 @@ Enhanced with Grid Search, GA, WFO, and Portfolio support
 import logging
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+import src.services.backtester as backtester_api
+from src.adapters.web.fastapi_adapter import APIRouter, FileResponse, HTTPException
 from src.services.backtester import BacktestConfig, backtester
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class GeneticAlgorithmRequest(BaseModel):
     start: str
     end: str
     strategy: str = "sma_cross"
-    param_ranges: Dict[str, List]  # [min, max] for each param
+    param_ranges: Dict[str, List]
     population_size: int = 30
     generations: int = 15
     elite_size: int = 2
@@ -80,35 +80,29 @@ async def run_backtest(request: BacktestRequest) -> Dict:
         HTTPException: If strategy not found or backtest fails
 
     Example:
-        curl -X POST "http://localhost:8000/api/backtest/run" \
-             -H "Content-Type: application/json" \
-             -d '{"symbol": "BTC/USDT", "start": "2024-01-01", "end": "2024-01-31",
+        curl -X POST "http://localhost:8000/api/backtest/run"              -H "Content-Type: application/json"              -d '{"symbol": "BTC/USDT", "start": "2024-01-01", "end": "2024-01-31",
                   "strategy": "sma_cross", "params": {"fast_period": 10, "slow_period": 20}}'
     """
     try:
         logger.info(f"Starting backtest: {request.strategy} on {request.symbol}")
-
-        # Convert config dict to BacktestConfig if provided
         config = None
         if request.config:
             config = BacktestConfig(**request.config)
-
-        result = backtester.run_backtest(
-            symbol=request.symbol,
-            timeframe=request.timeframe,
-            start_date=request.start,
-            end_date=request.end,
-            strategy=request.strategy,
-            params=request.params,
-            config=config,
-        )
-
+        spec = {
+            "symbol": request.symbol,
+            "timeframe": request.timeframe,
+            "start_date": request.start,
+            "end_date": request.end,
+            "strategy": request.strategy,
+            "params": request.params,
+        }
+        if config:
+            spec["config"] = config.__dict__
+        result = backtester_api.run_backtest(spec)
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
-
         logger.info(f"Backtest completed: {result['run_id']}")
         return result
-
     except Exception as e:
         logger.error(f"Backtest error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -128,27 +122,23 @@ async def run_grid_search(request: GridSearchRequest) -> Dict:
         HTTPException: If optimization fails
 
     Example:
-        curl -X POST "http://localhost:8000/api/backtest/grid" \
-             -H "Content-Type: application/json" \
-             -d '{"symbol": "BTC/USDT", "start": "2024-01-01", "end": "2024-01-31",
+        curl -X POST "http://localhost:8000/api/backtest/grid"              -H "Content-Type: application/json"              -d '{"symbol": "BTC/USDT", "start": "2024-01-01", "end": "2024-01-31",
                   "strategy": "sma_cross",
                   "param_grid": {"fast_period": [5, 10, 15], "slow_period": [20, 30, 40]}}'
     """
     try:
         logger.info(f"Starting grid search: {request.strategy} on {request.symbol}")
-
-        result = backtester.run_grid_search(
-            symbol=request.symbol,
-            timeframe=request.timeframe,
-            start_date=request.start,
-            end_date=request.end,
-            strategy=request.strategy,
-            param_grid=request.param_grid,
-        )
-
+        spec = {
+            "symbol": request.symbol,
+            "timeframe": request.timeframe,
+            "start_date": request.start,
+            "end_date": request.end,
+            "strategy": request.strategy,
+            "param_grid": request.param_grid,
+        }
+        result = backtester_api.run_grid(spec)
         logger.info(f"Grid search completed: best Sharpe = {result.get('best_sharpe', 'N/A')}")
         return result
-
     except Exception as e:
         logger.error(f"Grid search error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -159,25 +149,21 @@ async def run_genetic_algorithm(request: GeneticAlgorithmRequest) -> Dict:
     """Run genetic algorithm optimization"""
     try:
         logger.info(f"Starting GA: {request.strategy} on {request.symbol}")
-
-        # Convert param_ranges from list format to tuple format
         param_ranges = {k: tuple(v) for k, v in request.param_ranges.items()}
-
-        result = backtester.run_genetic_algorithm(
-            symbol=request.symbol,
-            timeframe=request.timeframe,
-            start_date=request.start,
-            end_date=request.end,
-            strategy=request.strategy,
-            param_ranges=param_ranges,
-            population_size=request.population_size,
-            generations=request.generations,
-            elite_size=request.elite_size,
-        )
-
+        spec = {
+            "symbol": request.symbol,
+            "timeframe": request.timeframe,
+            "start_date": request.start,
+            "end_date": request.end,
+            "strategy": request.strategy,
+            "param_ranges": param_ranges,
+            "population_size": request.population_size,
+            "generations": request.generations,
+            "elite_size": request.elite_size,
+        }
+        result = backtester_api.run_ga(spec)
         logger.info(f"GA completed: best fitness = {result.get('best_fitness', 'N/A')}")
         return result
-
     except Exception as e:
         logger.error(f"GA error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -188,21 +174,19 @@ async def run_walk_forward(request: WalkForwardRequest) -> Dict:
     """Run walk-forward optimization"""
     try:
         logger.info(f"Starting WFO: {request.strategy} on {request.symbol}")
-
-        result = backtester.run_walk_forward_optimization(
-            symbol=request.symbol,
-            timeframe=request.timeframe,
-            start_date=request.start,
-            end_date=request.end,
-            strategy=request.strategy,
-            param_grid=request.param_grid,
-            n_splits=request.n_splits,
-            train_ratio=request.train_ratio,
-        )
-
+        spec = {
+            "symbol": request.symbol,
+            "timeframe": request.timeframe,
+            "start_date": request.start,
+            "end_date": request.end,
+            "strategy": request.strategy,
+            "param_grid": request.param_grid,
+            "n_splits": request.n_splits,
+            "train_ratio": request.train_ratio,
+        }
+        result = backtester_api.run_wfo(spec)
         logger.info(f"WFO completed: avg OOS Sharpe = {result.get('avg_oos_sharpe', 'N/A')}")
         return result
-
     except Exception as e:
         logger.error(f"WFO error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -228,7 +212,6 @@ async def export_csv(run_id: str):
         csv_path = backtester.export_csv(run_id)
         if not csv_path:
             raise HTTPException(status_code=404, detail=f"CSV not found for {run_id}")
-
         return FileResponse(
             path=str(csv_path), media_type="text/csv", filename=f"backtest_{run_id}.csv"
         )

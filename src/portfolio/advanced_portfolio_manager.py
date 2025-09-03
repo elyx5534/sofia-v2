@@ -63,9 +63,9 @@ class PerformanceMetrics:
     profit_factor: float
     calmar_ratio: float
     sortino_ratio: float
-    beta: float  # vs market (BTC)
-    alpha: float  # vs market
-    var_95: float  # Value at Risk
+    beta: float
+    alpha: float
+    var_95: float
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
@@ -74,14 +74,14 @@ class PerformanceMetrics:
 
 @dataclass
 class RiskMetrics:
-    portfolio_var: float  # Value at Risk
-    expected_shortfall: float  # CVaR
+    portfolio_var: float
+    expected_shortfall: float
     portfolio_volatility: float
     correlation_risk: float
     concentration_risk: float
     leverage_ratio: float
     margin_ratio: float
-    risk_score: float  # Overall risk score 0-100
+    risk_score: float
 
 
 class AdvancedPortfolioManager:
@@ -93,26 +93,20 @@ class AdvancedPortfolioManager:
         self.performance_history: Dict[str, List[PerformanceMetrics]] = {}
         self.alerts: Dict[str, List[PortfolioAlert]] = {}
         self.is_running = False
-
-        # Risk management parameters
-        self.max_position_size = 0.20  # Max 20% per position
-        self.max_portfolio_risk = 0.02  # Max 2% daily VaR
-        self.correlation_threshold = 0.7  # High correlation warning
+        self.max_position_size = 0.2
+        self.max_portfolio_risk = 0.02
+        self.correlation_threshold = 0.7
 
     async def start(self):
         """Start the portfolio manager"""
         if self.is_running:
             return
-
         self.is_running = True
         await fetcher.start()
-
-        # Start monitoring loops
         asyncio.create_task(self._price_monitoring_loop())
         asyncio.create_task(self._performance_calculation_loop())
         asyncio.create_task(self._risk_monitoring_loop())
         asyncio.create_task(self._alert_checking_loop())
-
         logger.info("Advanced Portfolio Manager started")
 
     async def stop(self):
@@ -124,27 +118,15 @@ class AdvancedPortfolioManager:
     async def get_portfolio_analytics(self, user_id: str) -> Dict:
         """Get comprehensive portfolio analytics"""
         try:
-            # Get base portfolio
             portfolio = paper_engine.get_portfolio_summary(user_id)
             if not portfolio:
                 return {"error": "Portfolio not found"}
-
-            # Calculate performance metrics
             performance = await self._calculate_performance_metrics(user_id)
-
-            # Calculate risk metrics
             risk_metrics = await self._calculate_risk_metrics(user_id)
-
-            # Get position analytics
             position_analytics = await self._get_position_analytics(user_id)
-
-            # Get market comparison
             market_comparison = await self._get_market_comparison(user_id)
-
-            # Get alerts
             user_alerts = self.alerts.get(user_id, [])
             active_alerts = [alert.to_dict() for alert in user_alerts if not alert.acknowledged]
-
             return {
                 "portfolio": portfolio,
                 "performance": performance.to_dict() if performance else None,
@@ -154,7 +136,6 @@ class AdvancedPortfolioManager:
                 "alerts": active_alerts,
                 "last_updated": datetime.now(timezone.utc).isoformat(),
             }
-
         except Exception as e:
             logger.error(f"Error getting portfolio analytics for {user_id}: {e}")
             return {"error": str(e)}
@@ -165,11 +146,8 @@ class AdvancedPortfolioManager:
             portfolio = paper_engine.get_portfolio_summary(user_id)
             if not portfolio:
                 return None
-
-            # Get historical performance data
             history = self.performance_history.get(user_id, [])
             if len(history) < 2:
-                # Not enough history yet
                 return PerformanceMetrics(
                     user_id=user_id,
                     total_return=portfolio["total_pnl"],
@@ -188,51 +166,34 @@ class AdvancedPortfolioManager:
                     alpha=0.0,
                     var_95=0.0,
                 )
-
-            # Convert to DataFrame for calculations
             values = [h.total_return for h in history]
             returns = pd.Series(values).pct_change().dropna()
-
-            # Calculate metrics
             total_return = portfolio["total_pnl"]
             total_return_percent = portfolio["total_pnl_percent"]
             daily_return = returns.mean() if len(returns) > 0 else 0.0
-            volatility = returns.std() * np.sqrt(365) if len(returns) > 1 else 0.0  # Annualized
-
-            # Sharpe ratio (assuming 0% risk-free rate)
+            volatility = returns.std() * np.sqrt(365) if len(returns) > 1 else 0.0
             sharpe_ratio = daily_return / volatility if volatility > 0 else 0.0
-
-            # Max drawdown
             cumulative = (1 + returns).cumprod()
             running_max = cumulative.expanding().max()
             drawdown = (cumulative - running_max) / running_max
             max_drawdown = abs(drawdown.min()) if len(drawdown) > 0 else 0.0
-
-            # Win/Loss metrics from trades
             trades = paper_engine.get_trade_history(user_id, 1000)
             winning_trades = [t for t in trades if t.get("pnl", 0) > 0]
             losing_trades = [t for t in trades if t.get("pnl", 0) < 0]
-
-            win_rate = (len(winning_trades) / len(trades) * 100) if trades else 0.0
+            win_rate = len(winning_trades) / len(trades) * 100 if trades else 0.0
             avg_win = np.mean([t["pnl"] for t in winning_trades]) if winning_trades else 0.0
             avg_loss = abs(np.mean([t["pnl"] for t in losing_trades])) if losing_trades else 0.0
             profit_factor = (
-                (avg_win * len(winning_trades)) / (avg_loss * len(losing_trades))
+                avg_win * len(winning_trades) / (avg_loss * len(losing_trades))
                 if avg_loss > 0
                 else 0.0
             )
-
-            # Calmar ratio
             calmar_ratio = total_return_percent / (max_drawdown * 100) if max_drawdown > 0 else 0.0
-
-            # Sortino ratio (downside deviation)
             negative_returns = returns[returns < 0]
             downside_deviation = (
                 negative_returns.std() * np.sqrt(365) if len(negative_returns) > 1 else volatility
             )
             sortino_ratio = daily_return / downside_deviation if downside_deviation > 0 else 0.0
-
-            # Beta and Alpha vs BTC
             btc_prices = self.price_history.get("BTC", [])
             if len(btc_prices) >= len(history):
                 btc_returns = (
@@ -241,28 +202,24 @@ class AdvancedPortfolioManager:
                     .dropna()
                 )
                 portfolio_returns = returns
-
                 if len(btc_returns) == len(portfolio_returns) and len(btc_returns) > 10:
                     covariance = np.cov(portfolio_returns, btc_returns)[0, 1]
                     btc_variance = np.var(btc_returns)
                     beta = covariance / btc_variance if btc_variance > 0 else 1.0
-                    alpha = daily_return - (beta * btc_returns.mean())
+                    alpha = daily_return - beta * btc_returns.mean()
                 else:
-                    beta, alpha = 1.0, 0.0
+                    beta, alpha = (1.0, 0.0)
             else:
-                beta, alpha = 1.0, 0.0
-
-            # VaR 95%
+                beta, alpha = (1.0, 0.0)
             var_95 = abs(np.percentile(returns, 5)) if len(returns) > 20 else 0.0
-
             return PerformanceMetrics(
                 user_id=user_id,
                 total_return=total_return,
                 total_return_percent=total_return_percent,
-                daily_return=daily_return * 100,  # Convert to percentage
-                volatility=volatility * 100,  # Convert to percentage
+                daily_return=daily_return * 100,
+                volatility=volatility * 100,
                 sharpe_ratio=sharpe_ratio,
-                max_drawdown=max_drawdown * 100,  # Convert to percentage
+                max_drawdown=max_drawdown * 100,
                 win_rate=win_rate,
                 avg_win=avg_win,
                 avg_loss=avg_loss,
@@ -270,10 +227,9 @@ class AdvancedPortfolioManager:
                 calmar_ratio=calmar_ratio,
                 sortino_ratio=sortino_ratio,
                 beta=beta,
-                alpha=alpha * 100,  # Convert to percentage
-                var_95=var_95 * 100,  # Convert to percentage
+                alpha=alpha * 100,
+                var_95=var_95 * 100,
             )
-
         except Exception as e:
             logger.error(f"Error calculating performance metrics for {user_id}: {e}")
             return None
@@ -284,53 +240,34 @@ class AdvancedPortfolioManager:
             portfolio = paper_engine.get_portfolio_summary(user_id)
             if not portfolio or not portfolio["positions"]:
                 return None
-
             positions = portfolio["positions"]
             total_value = portfolio["total_value"]
-
-            # Calculate position sizes
             position_sizes = [
                 pos["quantity"] * pos["current_price"] / total_value for pos in positions
             ]
-
-            # Concentration risk (Herfindahl Index)
             concentration_risk = sum([size**2 for size in position_sizes])
-
-            # Portfolio volatility (simplified - would need correlation matrix for accurate calc)
-            avg_volatility = 0.15  # Assume 15% annual volatility for crypto
+            avg_volatility = 0.15
             portfolio_volatility = avg_volatility * np.sqrt(concentration_risk)
-
-            # VaR calculation (simplified)
-            portfolio_var = total_value * 0.05 * 1.645  # 95% confidence, 1-day
-
-            # Expected Shortfall (CVaR) - simplified
+            portfolio_var = total_value * 0.05 * 1.645
             expected_shortfall = portfolio_var * 1.3
-
-            # Leverage ratio (cash vs positions)
             total_position_value = sum(
                 [pos["quantity"] * pos["current_price"] for pos in positions]
             )
             leverage_ratio = total_position_value / total_value
-
-            # Margin ratio (available cash)
             margin_ratio = portfolio["balance"] / total_value
-
-            # Overall risk score (0-100, higher = riskier)
             risk_score = min(
-                100, (concentration_risk * 50 + (leverage_ratio - 1) * 30 + (1 - margin_ratio) * 20)
+                100, concentration_risk * 50 + (leverage_ratio - 1) * 30 + (1 - margin_ratio) * 20
             )
-
             return RiskMetrics(
                 portfolio_var=portfolio_var,
                 expected_shortfall=expected_shortfall,
                 portfolio_volatility=portfolio_volatility * 100,
-                correlation_risk=50.0,  # Placeholder
+                correlation_risk=50.0,
                 concentration_risk=concentration_risk * 100,
                 leverage_ratio=leverage_ratio,
                 margin_ratio=margin_ratio,
                 risk_score=max(0, risk_score),
             )
-
         except Exception as e:
             logger.error(f"Error calculating risk metrics for {user_id}: {e}")
             return None
@@ -341,33 +278,21 @@ class AdvancedPortfolioManager:
             portfolio = paper_engine.get_portfolio_summary(user_id)
             if not portfolio:
                 return {}
-
             analytics = {}
             total_value = portfolio["total_value"]
-
             for position in portfolio["positions"]:
                 symbol = position["symbol"]
-
-                # Get price history for this symbol
                 symbol_history = self.price_history.get(symbol, [])
-
                 if len(symbol_history) > 10:
-                    prices = [p["price"] for p in symbol_history[-30:]]  # Last 30 data points
+                    prices = [p["price"] for p in symbol_history[-30:]]
                     returns = pd.Series(prices).pct_change().dropna()
-
-                    # Calculate position-specific metrics
                     volatility = returns.std() * np.sqrt(365) * 100 if len(returns) > 1 else 15.0
                     var_95 = abs(np.percentile(returns, 5)) * 100 if len(returns) > 20 else 5.0
-
-                    # Support/Resistance levels
                     recent_prices = prices[-20:] if len(prices) >= 20 else prices
                     support = min(recent_prices) * 0.98
                     resistance = max(recent_prices) * 1.02
-
-                    # Position size as % of portfolio
                     position_value = position["quantity"] * position["current_price"]
-                    position_weight = (position_value / total_value) * 100
-
+                    position_weight = position_value / total_value * 100
                     analytics[symbol] = {
                         "volatility": volatility,
                         "var_95": var_95,
@@ -380,14 +305,12 @@ class AdvancedPortfolioManager:
                         ).days,
                         "risk_contribution": position_weight * (volatility / 100),
                         "sharpe_estimate": (
-                            (position["unrealized_pnl"] / position_value) / (volatility / 100)
+                            position["unrealized_pnl"] / position_value / (volatility / 100)
                             if position_value > 0
                             else 0.0
                         ),
                     }
-
             return analytics
-
         except Exception as e:
             logger.error(f"Error getting position analytics for {user_id}: {e}")
             return {}
@@ -398,33 +321,22 @@ class AdvancedPortfolioManager:
             portfolio = paper_engine.get_portfolio_summary(user_id)
             if not portfolio:
                 return {}
-
-            # Get BTC performance for comparison
             btc_history = self.price_history.get("BTC", [])
-
             if len(btc_history) < 2:
                 return {"error": "Insufficient market data"}
-
-            # Calculate BTC return
             btc_start = btc_history[0]["price"] if btc_history else portfolio["total_value"]
             btc_current = btc_history[-1]["price"] if btc_history else btc_start
-            btc_return = ((btc_current - btc_start) / btc_start) * 100
-
-            # Portfolio return
+            btc_return = (btc_current - btc_start) / btc_start * 100
             portfolio_return = portfolio["total_pnl_percent"]
-
-            # Outperformance
             outperformance = portfolio_return - btc_return
-
             return {
                 "btc_return": btc_return,
                 "portfolio_return": portfolio_return,
                 "outperformance": outperformance,
-                "market_correlation": 0.75,  # Placeholder
-                "tracking_error": abs(outperformance) * 0.1,  # Simplified
+                "market_correlation": 0.75,
+                "tracking_error": abs(outperformance) * 0.1,
                 "information_ratio": outperformance / max(0.1, abs(outperformance) * 0.1),
             }
-
         except Exception as e:
             logger.error(f"Error getting market comparison for {user_id}: {e}")
             return {}
@@ -432,22 +344,15 @@ class AdvancedPortfolioManager:
     async def _price_monitoring_loop(self):
         """Monitor prices and store history"""
         symbols = ["BTC", "ETH", "SOL", "BNB", "ADA", "DOT", "LINK", "LTC"]
-
         while self.is_running:
             try:
-                # Get market data
                 market_data = await fetcher.get_market_data([s.lower() for s in symbols])
-
                 if market_data:
                     timestamp = datetime.now(timezone.utc)
-
                     for symbol, data in market_data.items():
                         symbol = symbol.upper()
-
-                        # Store price history
                         if symbol not in self.price_history:
                             self.price_history[symbol] = []
-
                         self.price_history[symbol].append(
                             {
                                 "price": data["price"],
@@ -455,13 +360,9 @@ class AdvancedPortfolioManager:
                                 "timestamp": timestamp.isoformat(),
                             }
                         )
-
-                        # Keep only last 1000 data points
                         if len(self.price_history[symbol]) > 1000:
                             self.price_history[symbol] = self.price_history[symbol][-1000:]
-
-                await asyncio.sleep(60)  # Update every minute
-
+                await asyncio.sleep(60)
             except Exception as e:
                 logger.error(f"Error in price monitoring loop: {e}")
                 await asyncio.sleep(30)
@@ -470,27 +371,20 @@ class AdvancedPortfolioManager:
         """Calculate and store performance metrics"""
         while self.is_running:
             try:
-                # Get all user portfolios
                 for user_id in paper_engine.portfolios.keys():
                     performance = await self._calculate_performance_metrics(user_id)
-
                     if performance:
                         if user_id not in self.performance_history:
                             self.performance_history[user_id] = []
-
                         self.performance_history[user_id].append(performance)
-
-                        # Keep only last 500 records (about 1 month if updated hourly)
                         if len(self.performance_history[user_id]) > 500:
                             self.performance_history[user_id] = self.performance_history[user_id][
                                 -500:
                             ]
-
-                await asyncio.sleep(3600)  # Update every hour
-
+                await asyncio.sleep(3600)
             except Exception as e:
                 logger.error(f"Error in performance calculation loop: {e}")
-                await asyncio.sleep(1800)  # Retry in 30 minutes
+                await asyncio.sleep(1800)
 
     async def _risk_monitoring_loop(self):
         """Monitor portfolio risks and generate alerts"""
@@ -498,9 +392,7 @@ class AdvancedPortfolioManager:
             try:
                 for user_id in paper_engine.portfolios.keys():
                     await self._check_risk_limits(user_id)
-
-                await asyncio.sleep(300)  # Check every 5 minutes
-
+                await asyncio.sleep(300)
             except Exception as e:
                 logger.error(f"Error in risk monitoring loop: {e}")
                 await asyncio.sleep(60)
@@ -511,9 +403,7 @@ class AdvancedPortfolioManager:
             try:
                 for user_id in paper_engine.portfolios.keys():
                     await self._check_alerts(user_id)
-
-                await asyncio.sleep(30)  # Check every 30 seconds
-
+                await asyncio.sleep(30)
             except Exception as e:
                 logger.error(f"Error in alert checking loop: {e}")
                 await asyncio.sleep(60)
@@ -524,14 +414,10 @@ class AdvancedPortfolioManager:
             portfolio = paper_engine.get_portfolio_summary(user_id)
             if not portfolio or not portfolio["positions"]:
                 return
-
             total_value = portfolio["total_value"]
-
-            # Check position concentration
             for position in portfolio["positions"]:
                 position_value = position["quantity"] * position["current_price"]
                 position_weight = position_value / total_value
-
                 if position_weight > self.max_position_size:
                     await self._create_alert(
                         user_id=user_id,
@@ -541,7 +427,6 @@ class AdvancedPortfolioManager:
                         trigger_value=self.max_position_size,
                         current_value=position_weight,
                     )
-
         except Exception as e:
             logger.error(f"Error checking risk limits for {user_id}: {e}")
 
@@ -551,9 +436,7 @@ class AdvancedPortfolioManager:
             portfolio = paper_engine.get_portfolio_summary(user_id)
             if not portfolio:
                 return
-
-            # Check for large P&L changes
-            if abs(portfolio["total_pnl_percent"]) > 10:  # +/- 10% portfolio change
+            if abs(portfolio["total_pnl_percent"]) > 10:
                 await self._create_alert(
                     user_id=user_id,
                     alert_type=AlertType.VOLATILITY_WARNING,
@@ -562,7 +445,6 @@ class AdvancedPortfolioManager:
                     trigger_value=10.0,
                     current_value=abs(portfolio["total_pnl_percent"]),
                 )
-
         except Exception as e:
             logger.error(f"Error checking alerts for {user_id}: {e}")
 
@@ -587,21 +469,16 @@ class AdvancedPortfolioManager:
                 current_value=current_value,
                 timestamp=datetime.now(timezone.utc),
             )
-
             if user_id not in self.alerts:
                 self.alerts[user_id] = []
-
-            # Check if similar alert already exists
             existing = [
                 a
                 for a in self.alerts[user_id]
-                if a.alert_type == alert_type and a.symbol == symbol and not a.acknowledged
+                if a.alert_type == alert_type and a.symbol == symbol and (not a.acknowledged)
             ]
-
             if not existing:
                 self.alerts[user_id].append(alert)
                 logger.info(f"Alert created for {user_id}: {message}")
-
         except Exception as e:
             logger.error(f"Error creating alert: {e}")
 
@@ -614,11 +491,9 @@ class AdvancedPortfolioManager:
                         alert.acknowledged = True
                         return True
             return False
-
         except Exception as e:
             logger.error(f"Error acknowledging alert: {e}")
             return False
 
 
-# Global portfolio manager instance
 portfolio_manager = AdvancedPortfolioManager()

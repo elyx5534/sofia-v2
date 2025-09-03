@@ -33,10 +33,7 @@ class CCXTProvider:
         if not self.exchange:
             exchange_class = getattr(ccxt, self.exchange_name)
             self.exchange = exchange_class(
-                {
-                    "enableRateLimit": True,
-                    "timeout": settings.provider_timeout * 1000,
-                }
+                {"enableRateLimit": True, "timeout": settings.provider_timeout * 1000}
             )
         return self.exchange
 
@@ -73,40 +70,22 @@ class CCXTProvider:
         """
         try:
             exchange = await self._get_exchange()
-
-            # Load markets if not loaded
             if not exchange.markets:
                 await exchange.load_markets()
-
-            # Check if symbol exists
             if symbol not in exchange.markets:
                 raise ValueError(f"Symbol {symbol} not found on {self.exchange_name}")
-
-            # Convert timeframe
             ccxt_timeframe = self.TIMEFRAME_MAP.get(timeframe, "1h")
-
-            # Calculate since timestamp if start_date provided
             since = None
             if start_date:
                 since = int(start_date.timestamp() * 1000)
-
-            # Fetch OHLCV data
             ohlcv = await exchange.fetch_ohlcv(
-                symbol=symbol,
-                timeframe=ccxt_timeframe,
-                since=since,
-                limit=limit,
+                symbol=symbol, timeframe=ccxt_timeframe, since=since, limit=limit
             )
-
-            # Convert to OHLCVData objects
             result = []
             for candle in ohlcv:
                 timestamp = datetime.fromtimestamp(candle[0] / 1000)
-
-                # Filter by end_date if provided
                 if end_date and timestamp > end_date:
                     continue
-
                 result.append(
                     OHLCVData(
                         timestamp=timestamp,
@@ -117,9 +96,7 @@ class CCXTProvider:
                         volume=float(candle[5]),
                     )
                 )
-
             return result
-
         except ccxt.BaseError as e:
             if isinstance(e, ccxt.BadSymbol):
                 raise ValueError(f"Invalid symbol: {symbol}") from e
@@ -140,19 +117,13 @@ class CCXTProvider:
         """
         try:
             exchange = await self._get_exchange()
-
-            # Load markets if not loaded
             if not exchange.markets:
                 await exchange.load_markets()
-
             symbols = []
             query_upper = query.upper()
-
             for symbol, market in exchange.markets.items():
-                # Filter by query if provided
                 if query and query_upper not in symbol.upper():
                     continue
-
                 symbols.append(
                     SymbolInfo(
                         symbol=symbol,
@@ -163,12 +134,9 @@ class CCXTProvider:
                         active=market.get("active", True),
                     )
                 )
-
                 if len(symbols) >= limit:
                     break
-
             return symbols
-
         except ccxt.BaseError as e:
             raise Exception(f"CCXT error: {e!s}") from e
         except Exception as e:
@@ -186,16 +154,11 @@ class CCXTProvider:
         """
         try:
             exchange = await self._get_exchange()
-
-            # Load markets if not loaded
             if not exchange.markets:
                 await exchange.load_markets()
-
             if symbol not in exchange.markets:
                 return None
-
             market = exchange.markets[symbol]
-
             return SymbolInfo(
                 symbol=symbol,
                 name=f"{market['base']}/{market['quote']}",
@@ -204,7 +167,6 @@ class CCXTProvider:
                 currency=market.get("quote", "USDT"),
                 active=market.get("active", True),
             )
-
         except Exception:
             return None
 

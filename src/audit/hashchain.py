@@ -20,13 +20,9 @@ class HashChainAudit:
     def __init__(self, chain_file: str = "logs/audit_chain.jsonl"):
         self.chain_file = Path(chain_file)
         self.chain_file.parent.mkdir(exist_ok=True)
-
-        # Load or initialize chain
         self.chain = []
-        self.last_hash = "0" * 64  # Genesis block
+        self.last_hash = "0" * 64
         self.load_chain()
-
-        # Session info
         self.session_id = hashlib.sha256(
             f"{datetime.now().isoformat()}_{time.time()}".encode()
         ).hexdigest()[:8]
@@ -45,7 +41,6 @@ class HashChainAudit:
 
     def calculate_hash(self, block_data: Dict) -> str:
         """Calculate SHA256 hash of block data"""
-        # Ensure deterministic ordering
         data_str = json.dumps(block_data, sort_keys=True)
         return hashlib.sha256(data_str.encode()).hexdigest()
 
@@ -53,7 +48,6 @@ class HashChainAudit:
         self, event_type: str, event_data: Dict, metadata: Optional[Dict] = None
     ) -> Dict:
         """Create a new block in the chain"""
-
         block = {
             "index": len(self.chain),
             "timestamp": datetime.now().isoformat(),
@@ -65,25 +59,16 @@ class HashChainAudit:
             "prev_hash": self.last_hash,
             "nonce": 0,
         }
-
-        # Calculate hash including previous hash
         block["hash"] = self.calculate_hash({"prev_hash": block["prev_hash"], "data": block})
-
         return block
 
     def log_event(self, event_type: str, event_data: Dict, metadata: Optional[Dict] = None) -> str:
         """Log an audit event to the chain"""
-
         block = self.create_block(event_type, event_data, metadata)
-
-        # Append to chain
         self.chain.append(block)
         self.last_hash = block["hash"]
-
-        # Write to file (append mode)
         with open(self.chain_file, "a") as f:
             f.write(json.dumps(block) + "\n")
-
         return block["hash"]
 
     def log_trade(
@@ -98,7 +83,6 @@ class HashChainAudit:
         pnl: Optional[float] = None,
     ) -> str:
         """Log a trade execution"""
-
         event_data = {
             "trade_id": trade_id,
             "symbol": symbol,
@@ -109,67 +93,46 @@ class HashChainAudit:
             "strategy": strategy,
             "pnl": pnl,
         }
-
         return self.log_event("TRADE", event_data)
 
     def log_risk_event(self, event_name: str, severity: str, details: Dict) -> str:
         """Log a risk management event"""
-
-        event_data = {
-            "event_name": event_name,
-            "severity": severity,  # INFO, WARNING, CRITICAL
-            "details": details,
-        }
-
+        event_data = {"event_name": event_name, "severity": severity, "details": details}
         return self.log_event("RISK", event_data)
 
     def log_config_change(
         self, parameter: str, old_value: any, new_value: any, changed_by: str
     ) -> str:
         """Log a configuration change"""
-
         event_data = {
             "parameter": parameter,
             "old_value": old_value,
             "new_value": new_value,
             "changed_by": changed_by,
         }
-
         return self.log_event("CONFIG", event_data)
 
     def verify_chain(self) -> tuple[bool, List[str]]:
         """Verify integrity of the entire chain"""
-
         errors = []
-
         if not self.chain:
-            return True, []
-
-        # Check genesis block
+            return (True, [])
         if self.chain[0]["prev_hash"] != "0" * 64:
             errors.append("Block 0: Invalid genesis block")
-
-        # Verify each block
         for i in range(len(self.chain)):
             block = self.chain[i]
-
-            # Verify hash
             calculated_hash = self.calculate_hash(
                 {
                     "prev_hash": block["prev_hash"],
                     "data": {k: v for k, v in block.items() if k != "hash"},
                 }
             )
-
             if calculated_hash != block["hash"]:
                 errors.append(f"Block {i}: Hash mismatch")
-
-            # Verify chain linkage
             if i > 0:
                 if block["prev_hash"] != self.chain[i - 1]["hash"]:
                     errors.append(f"Block {i}: Broken chain link")
-
-        return len(errors) == 0, errors
+        return (len(errors) == 0, errors)
 
     def get_events_by_type(self, event_type: str) -> List[Dict]:
         """Get all events of a specific type"""
@@ -187,7 +150,6 @@ class HashChainAudit:
         """Export entire chain to a file"""
         output_path = Path(output_file)
         output_path.parent.mkdir(exist_ok=True)
-
         with open(output_path, "w") as f:
             json.dump(
                 {
@@ -199,12 +161,10 @@ class HashChainAudit:
                 f,
                 indent=2,
             )
-
         logger.info(f"Chain exported to {output_path}")
 
     def print_summary(self):
         """Print chain summary"""
-
         print("\n" + "=" * 60)
         print(" AUDIT CHAIN SUMMARY")
         print("=" * 60)
@@ -212,28 +172,21 @@ class HashChainAudit:
         print(f"Chain Length: {len(self.chain)} blocks")
         print(f"Last Hash: {self.last_hash[:16]}...")
         print(f"Session ID: {self.session_id}")
-
-        # Verify integrity
         valid, errors = self.verify_chain()
         if valid:
             print("Chain Integrity: [OK] VALID")
         else:
             print("Chain Integrity: [FAIL] CORRUPTED")
-            for error in errors[:5]:  # Show first 5 errors
+            for error in errors[:5]:
                 print(f"  - {error}")
-
-        # Event type breakdown
         event_types = {}
         for block in self.chain:
             event_type = block["event_type"]
             event_types[event_type] = event_types.get(event_type, 0) + 1
-
         if event_types:
             print("\nEvent Types:")
             for event_type, count in sorted(event_types.items()):
                 print(f"  {event_type}: {count}")
-
-        # Recent events
         recent = self.get_recent_events(5)
         if recent:
             print("\nRecent Events:")
@@ -242,7 +195,6 @@ class HashChainAudit:
                 print(
                     f"  [{timestamp}] {block['event_type']}: {block.get('event_data', {}).get('event_name', 'N/A')}"
                 )
-
         print("=" * 60)
 
 
@@ -255,7 +207,6 @@ class ReconciliationV2:
 
     def reconcile_trades(self, exchange_trades: List[Dict], internal_trades: List[Dict]) -> Dict:
         """Reconcile trades at ID level"""
-
         result = {
             "timestamp": datetime.now().isoformat(),
             "exchange_count": len(exchange_trades),
@@ -266,47 +217,30 @@ class ReconciliationV2:
             "discrepancies": [],
             "status": "PENDING",
         }
-
-        # Create lookup maps
         exchange_map = {t["trade_id"]: t for t in exchange_trades}
         internal_map = {t["trade_id"]: t for t in internal_trades}
-
-        # Match trades
         for trade_id, internal_trade in internal_map.items():
             if trade_id in exchange_map:
                 exchange_trade = exchange_map[trade_id]
-
-                # Check for discrepancies
                 discrepancies = []
-
                 if abs(internal_trade["price"] - exchange_trade["price"]) > 0.01:
                     discrepancies.append(
                         f"Price mismatch: {internal_trade['price']} vs {exchange_trade['price']}"
                     )
-
                 if abs(internal_trade["quantity"] - exchange_trade["quantity"]) > 0.0001:
                     discrepancies.append(
                         f"Quantity mismatch: {internal_trade['quantity']} vs {exchange_trade['quantity']}"
                     )
-
                 if discrepancies:
                     result["discrepancies"].append({"trade_id": trade_id, "issues": discrepancies})
                 else:
                     result["matched"].append(trade_id)
-
-                # Remove from exchange map
                 del exchange_map[trade_id]
             else:
                 result["unmatched_internal"].append(trade_id)
-
-        # Remaining exchange trades are unmatched
         result["unmatched_exchange"] = list(exchange_map.keys())
-
-        # Determine status
         if result["discrepancies"] or result["unmatched_exchange"] or result["unmatched_internal"]:
             result["status"] = "FAILED"
-
-            # Log reconciliation failure
             self.audit.log_risk_event(
                 event_name="RECONCILIATION_FAILED",
                 severity="CRITICAL",
@@ -318,51 +252,35 @@ class ReconciliationV2:
             )
         else:
             result["status"] = "PASSED"
-
-            # Log successful reconciliation
             self.audit.log_event(
                 event_type="RECONCILIATION",
                 event_data={"status": "PASSED", "matched_count": len(result["matched"])},
             )
-
-        # Save result
         self.save_reconciliation(result)
-
         return result
 
     def save_reconciliation(self, result: Dict):
         """Save reconciliation result"""
         self.reconciliation_file.parent.mkdir(exist_ok=True)
-
         with open(self.reconciliation_file, "w") as f:
             json.dump(result, f, indent=2)
 
     def should_pause_trading(self) -> bool:
         """Check if trading should be paused due to reconciliation failures"""
-
         if not self.reconciliation_file.exists():
             return False
-
         with open(self.reconciliation_file) as f:
             last_result = json.load(f)
-
         return last_result.get("status") == "FAILED"
 
 
 def test_hashchain():
     """Test hash chain audit system"""
-
     print("=" * 60)
     print(" HASH CHAIN AUDIT TEST")
     print("=" * 60)
-
-    # Create audit logger
     audit = HashChainAudit("logs/test_audit_chain.jsonl")
-
-    # Log some events
     print("\nLogging events...")
-
-    # Trade event
     trade_hash = audit.log_trade(
         trade_id="test_001",
         symbol="BTCUSDT",
@@ -374,22 +292,16 @@ def test_hashchain():
         pnl=10.5,
     )
     print(f"Trade logged: {trade_hash[:16]}...")
-
-    # Risk event
     risk_hash = audit.log_risk_event(
         event_name="POSITION_LIMIT_WARNING",
         severity="WARNING",
         details={"current": 8000, "limit": 10000},
     )
     print(f"Risk event logged: {risk_hash[:16]}...")
-
-    # Config change
     config_hash = audit.log_config_change(
         parameter="min_edge_bps", old_value=10, new_value=15, changed_by="auto_calibrator"
     )
     print(f"Config change logged: {config_hash[:16]}...")
-
-    # Verify chain
     print("\nVerifying chain integrity...")
     valid, errors = audit.verify_chain()
     if valid:
@@ -398,45 +310,32 @@ def test_hashchain():
         print("[FAIL] Chain corrupted:")
         for error in errors:
             print(f"  - {error}")
-
-    # Print summary
     audit.print_summary()
-
-    # Test reconciliation
     print("\n" + "=" * 60)
     print(" RECONCILIATION TEST")
     print("=" * 60)
-
     reconciler = ReconciliationV2(audit)
-
-    # Mock trade data
     exchange_trades = [
         {"trade_id": "001", "price": 50000, "quantity": 0.01},
         {"trade_id": "002", "price": 50100, "quantity": 0.02},
         {"trade_id": "003", "price": 50200, "quantity": 0.015},
     ]
-
     internal_trades = [
         {"trade_id": "001", "price": 50000, "quantity": 0.01},
-        {"trade_id": "002", "price": 50101, "quantity": 0.02},  # Price discrepancy
-        {"trade_id": "004", "price": 50300, "quantity": 0.01},  # Unmatched
+        {"trade_id": "002", "price": 50101, "quantity": 0.02},
+        {"trade_id": "004", "price": 50300, "quantity": 0.01},
     ]
-
     result = reconciler.reconcile_trades(exchange_trades, internal_trades)
-
     print(f"Status: {result['status']}")
     print(f"Matched: {len(result['matched'])}")
     print(f"Discrepancies: {len(result['discrepancies'])}")
     print(f"Unmatched Exchange: {len(result['unmatched_exchange'])}")
     print(f"Unmatched Internal: {len(result['unmatched_internal'])}")
-
     if result["discrepancies"]:
         print("\nDiscrepancies:")
         for disc in result["discrepancies"]:
             print(f"  {disc['trade_id']}: {disc['issues']}")
-
     print(f"\nShould pause trading: {reconciler.should_pause_trading()}")
-
     print("=" * 60)
 
 

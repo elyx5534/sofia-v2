@@ -86,7 +86,7 @@ class Ticker:
     @property
     def spread_percentage(self) -> Decimal:
         if self.mid_price > 0:
-            return (self.spread / self.mid_price) * 100
+            return self.spread / self.mid_price * 100
         return Decimal(0)
 
 
@@ -96,8 +96,8 @@ class OrderBook:
 
     symbol: str
     timestamp: int
-    bids: List[List[Decimal]]  # [[price, amount], ...]
-    asks: List[List[Decimal]]  # [[price, amount], ...]
+    bids: List[List[Decimal]]
+    asks: List[List[Decimal]]
 
     @property
     def best_bid(self) -> Optional[Decimal]:
@@ -158,7 +158,7 @@ class Order:
     @property
     def fill_percentage(self) -> Decimal:
         if self.amount > 0:
-            return (self.filled / self.amount) * 100
+            return self.filled / self.amount * 100
         return Decimal(0)
 
 
@@ -198,12 +198,10 @@ class RateLimiter:
             elapsed = now - self.last_update
             self.tokens = min(self.burst, self.tokens + elapsed * self.requests_per_second)
             self.last_update = now
-
             if self.tokens < weight:
                 sleep_time = (weight - self.tokens) / self.requests_per_second
                 await asyncio.sleep(sleep_time)
                 self.tokens = weight
-
             self.tokens -= weight
 
 
@@ -227,20 +225,14 @@ class BaseExchange(ABC):
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = config.get("max_reconnect", 5)
         self.reconnect_delay = config.get("reconnect_delay", 5)
-
-        # Fee structure
         self.maker_fee = Decimal(str(config.get("maker_fee", "0.001")))
         self.taker_fee = Decimal(str(config.get("taker_fee", "0.001")))
-
-        # WebSocket connection
         self.ws_connection = None
         self.ws_connected = False
-
-        # Cache
         self.ticker_cache: Dict[str, Ticker] = {}
         self.orderbook_cache: Dict[str, OrderBook] = {}
         self.balance_cache: Dict[str, Balance] = {}
-        self.cache_ttl = config.get("cache_ttl", 1000)  # milliseconds
+        self.cache_ttl = config.get("cache_ttl", 1000)
 
     @abstractmethod
     async def connect(self) -> bool:
@@ -326,7 +318,6 @@ class BaseExchange(ABC):
         """Measure exchange latency"""
         start = time.time()
         try:
-            # Implementation specific ping
             await self._ping_exchange()
             self.latency_ms = int((time.time() - start) * 1000)
             self.last_ping = int(time.time())
@@ -337,7 +328,6 @@ class BaseExchange(ABC):
 
     async def _ping_exchange(self):
         """Exchange-specific ping implementation"""
-        # Default: get server time
         pass
 
     def calculate_fee(self, amount: Decimal, price: Decimal, is_maker: bool = False) -> Decimal:
@@ -347,7 +337,7 @@ class BaseExchange(ABC):
 
     def is_cache_valid(self, timestamp: int) -> bool:
         """Check if cached data is still valid"""
-        return (int(time.time() * 1000) - timestamp) < self.cache_ttl
+        return int(time.time() * 1000) - timestamp < self.cache_ttl
 
     async def reconnect_websocket(self):
         """Reconnect WebSocket with exponential backoff"""
@@ -355,15 +345,12 @@ class BaseExchange(ABC):
             logger.error(f"{self.name}: Max reconnection attempts reached")
             self.status = ExchangeStatus.ERROR
             return False
-
         self.reconnect_attempts += 1
-        delay = self.reconnect_delay * (2 ** (self.reconnect_attempts - 1))
-
+        delay = self.reconnect_delay * 2 ** (self.reconnect_attempts - 1)
         logger.info(
             f"{self.name}: Reconnecting in {delay} seconds (attempt {self.reconnect_attempts})"
         )
         await asyncio.sleep(delay)
-
         try:
             await self.disconnect()
             success = await self.connect()
@@ -374,13 +361,11 @@ class BaseExchange(ABC):
                 return True
         except Exception as e:
             logger.error(f"{self.name}: Reconnection failed: {e}")
-
         return False
 
     async def health_check(self) -> Dict[str, Any]:
         """Perform health check"""
         latency = await self.ping()
-
         return {
             "exchange": self.name,
             "status": self.status.value,
@@ -389,26 +374,21 @@ class BaseExchange(ABC):
             "error_count": self.error_count,
             "ws_connected": self.ws_connected,
             "cached_symbols": len(self.ticker_cache),
-            "open_orders": 0,  # Override in implementation
+            "open_orders": 0,
             "testnet": self.testnet,
         }
 
     def format_symbol(self, base: str, quote: str) -> str:
         """Format trading pair symbol for this exchange"""
-        # Default format: BTCUSDT
-        # Override in specific exchanges if different
         return f"{base}{quote}"
 
     def parse_symbol(self, symbol: str) -> tuple[str, str]:
         """Parse symbol into base and quote currencies"""
-        # Simple parser for common formats
-        # Override for specific exchanges
         if "/" in symbol:
             return tuple(symbol.split("/"))
-        # Assume last 3-4 chars are quote currency
         for i in [4, 3]:
             if len(symbol) > i:
                 quote = symbol[-i:]
                 if quote in ["USDT", "USD", "BTC", "ETH", "BNB", "TRY"]:
-                    return symbol[:-i], quote
-        return symbol, "USDT"  # Default
+                    return (symbol[:-i], quote)
+        return (symbol, "USDT")

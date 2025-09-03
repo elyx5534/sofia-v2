@@ -81,7 +81,7 @@ class Order:
 @dataclass
 class Portfolio:
     user_id: str
-    balance: float = 10000.0  # Start with $10k virtual money
+    balance: float = 10000.0
     positions: Dict[str, Position] = None
     orders: List[Order] = None
     total_value: float = 10000.0
@@ -100,18 +100,15 @@ class Portfolio:
         """Update total portfolio value based on current market prices"""
         position_value = 0.0
         total_unrealized_pnl = 0.0
-
         for symbol, position in self.positions.items():
             current_price = market_prices.get(symbol, position.avg_price)
             position.update_unrealized_pnl(current_price)
             position_value += position.quantity * current_price
             total_unrealized_pnl += position.unrealized_pnl
-
         self.total_value = self.balance + position_value
         self.total_pnl = (
             sum(pos.realized_pnl for pos in self.positions.values()) + total_unrealized_pnl
         )
-
         return self.total_value
 
 
@@ -124,23 +121,17 @@ class PaperTradingEngine:
         self.order_book: Dict[str, List[Order]] = {}
         self.trade_history: List[Dict] = []
         self.is_running = False
-
-        # Trading fees (like real exchanges)
-        self.maker_fee = 0.001  # 0.1%
-        self.taker_fee = 0.0015  # 0.15%
+        self.maker_fee = 0.001
+        self.taker_fee = 0.0015
 
     async def start(self):
         """Start the paper trading engine"""
         if self.is_running:
             return
-
         self.is_running = True
         await fetcher.start()
-
-        # Start price monitoring
         asyncio.create_task(self._monitor_prices())
         asyncio.create_task(self._process_orders())
-
         logger.info("Paper Trading Engine started")
 
     async def stop(self):
@@ -170,14 +161,9 @@ class PaperTradingEngine:
         price: Optional[float] = None,
     ) -> Order:
         """Place a paper trading order"""
-
-        # Get or create portfolio
         if user_id not in self.portfolios:
             self.create_portfolio(user_id)
-
         portfolio = self.portfolios[user_id]
-
-        # Create order
         order = Order(
             id=str(uuid.uuid4()),
             symbol=symbol,
@@ -188,23 +174,15 @@ class PaperTradingEngine:
             status=OrderStatus.PENDING,
             created_at=datetime.now(timezone.utc),
         )
-
-        # Validate order
         if not await self._validate_order(portfolio, order):
             order.status = OrderStatus.REJECTED
             return order
-
-        # Add to order book
         if symbol not in self.order_book:
             self.order_book[symbol] = []
         self.order_book[symbol].append(order)
-
         portfolio.orders.append(order)
-
-        # For market orders, try to fill immediately
         if order_type == OrderType.MARKET:
             await self._try_fill_order(order, portfolio)
-
         logger.info(
             f"Order placed: {order.symbol} {order.side.value} {order.quantity} @ {order.price or 'market'}"
         )
@@ -215,33 +193,25 @@ class PaperTradingEngine:
         portfolio = self.get_portfolio(user_id)
         if not portfolio:
             return False
-
         for order in portfolio.orders:
             if order.id == order_id and order.status == OrderStatus.PENDING:
                 order.status = OrderStatus.CANCELLED
-
-                # Remove from order book
                 for symbol_orders in self.order_book.values():
                     if order in symbol_orders:
                         symbol_orders.remove(order)
                         break
-
                 logger.info(f"Order cancelled: {order_id}")
                 return True
-
         return False
 
     async def get_market_price(self, symbol: str) -> Optional[float]:
         """Get current market price for a symbol"""
         if symbol in self.market_prices:
             return self.market_prices[symbol]
-
-        # Fetch from API if not in cache
         price = await fetcher.get_price(symbol.lower())
         if price:
             self.market_prices[symbol] = price
             return price
-
         return None
 
     async def _monitor_prices(self):
@@ -256,23 +226,15 @@ class PaperTradingEngine:
             "chainlink",
             "litecoin",
         ]
-
         while self.is_running:
             try:
-                # Get market data
                 market_data = await fetcher.get_market_data(symbols)
-
                 if market_data:
-                    # Update price cache
                     for symbol, data in market_data.items():
                         self.market_prices[symbol] = data["price"]
-
-                    # Update all portfolios
                     for portfolio in self.portfolios.values():
                         portfolio.update_portfolio_value(self.market_prices)
-
-                await asyncio.sleep(5)  # Update every 5 seconds
-
+                await asyncio.sleep(5)
             except Exception as e:
                 logger.error(f"Error monitoring prices: {e}")
                 await asyncio.sleep(10)
@@ -285,39 +247,27 @@ class PaperTradingEngine:
                     current_price = await self.get_market_price(symbol)
                     if not current_price:
                         continue
-
                     for order in orders.copy():
                         if order.status != OrderStatus.PENDING:
                             continue
-
-                        portfolio = self.get_portfolio(
-                            order.id.split("-")[0]
-                        )  # Assuming user_id is part of order id
+                        portfolio = self.get_portfolio(order.id.split("-")[0])
                         if not portfolio:
                             continue
-
-                        # Check if order should be filled
                         should_fill = False
-
                         if order.order_type == OrderType.LIMIT:
                             if order.side == OrderSide.BUY and current_price <= order.price:
                                 should_fill = True
                             elif order.side == OrderSide.SELL and current_price >= order.price:
                                 should_fill = True
-
                         elif order.order_type == OrderType.STOP_LOSS:
                             if order.side == OrderSide.SELL and current_price <= order.price:
                                 should_fill = True
-
                         elif order.order_type == OrderType.TAKE_PROFIT:
                             if order.side == OrderSide.SELL and current_price >= order.price:
                                 should_fill = True
-
                         if should_fill:
                             await self._try_fill_order(order, portfolio, current_price)
-
-                await asyncio.sleep(1)  # Check every second
-
+                await asyncio.sleep(1)
             except Exception as e:
                 logger.error(f"Error processing orders: {e}")
                 await asyncio.sleep(5)
@@ -328,21 +278,16 @@ class PaperTradingEngine:
         if not current_price:
             logger.error(f"Could not get price for {order.symbol}")
             return False
-
         if order.side == OrderSide.BUY:
-            # Check if user has enough balance
             cost = order.quantity * (order.price or current_price)
             fee = cost * self.taker_fee
             total_cost = cost + fee
-
             if portfolio.balance < total_cost:
                 logger.error(
                     f"Insufficient balance. Need ${total_cost:.2f}, have ${portfolio.balance:.2f}"
                 )
                 return False
-
         elif order.side == OrderSide.SELL:
-            # Check if user has enough of the asset
             position = portfolio.positions.get(order.symbol)
             if not position or position.quantity < order.quantity:
                 available = position.quantity if position else 0
@@ -350,7 +295,6 @@ class PaperTradingEngine:
                     f"Insufficient {order.symbol}. Need {order.quantity}, have {available}"
                 )
                 return False
-
         return True
 
     async def _try_fill_order(
@@ -359,25 +303,18 @@ class PaperTradingEngine:
         """Try to fill an order"""
         if fill_price is None:
             fill_price = await self.get_market_price(order.symbol)
-
         if not fill_price:
             return
-
-        # Calculate fee
         trade_value = order.quantity * fill_price
         fee = trade_value * self.taker_fee
-
         if order.side == OrderSide.BUY:
-            # Deduct balance
             total_cost = trade_value + fee
             portfolio.balance -= total_cost
-
-            # Add or update position
             if order.symbol in portfolio.positions:
                 pos = portfolio.positions[order.symbol]
                 total_quantity = pos.quantity + order.quantity
                 pos.avg_price = (
-                    (pos.avg_price * pos.quantity) + (fill_price * order.quantity)
+                    pos.avg_price * pos.quantity + fill_price * order.quantity
                 ) / total_quantity
                 pos.quantity = total_quantity
             else:
@@ -387,45 +324,29 @@ class PaperTradingEngine:
                     avg_price=fill_price,
                     entry_time=datetime.now(timezone.utc),
                 )
-
         elif order.side == OrderSide.SELL:
-            # Add balance (minus fee)
             portfolio.balance += trade_value - fee
-
-            # Update position
             if order.symbol in portfolio.positions:
                 pos = portfolio.positions[order.symbol]
                 pos.quantity -= order.quantity
-
-                # Calculate realized P&L
                 realized_pnl = (fill_price - pos.avg_price) * order.quantity - fee
                 pos.realized_pnl += realized_pnl
-
-                # Remove position if fully sold
                 if pos.quantity <= 0:
                     del portfolio.positions[order.symbol]
-
-        # Update order
         order.status = OrderStatus.FILLED
         order.filled_at = datetime.now(timezone.utc)
         order.filled_price = fill_price
         order.filled_quantity = order.quantity
         order.fee = fee
-
-        # Update trade statistics
         portfolio.total_trades += 1
         if order.side == OrderSide.SELL:
-            # Check if it was a winning trade
             if order.symbol in portfolio.positions:
                 pos = portfolio.positions[order.symbol]
                 if fill_price > pos.avg_price:
                     portfolio.winning_trades += 1
-
         portfolio.win_rate = (
             portfolio.winning_trades / portfolio.total_trades if portfolio.total_trades > 0 else 0
         )
-
-        # Add to trade history
         trade = {
             "id": str(uuid.uuid4()),
             "user_id": portfolio.user_id,
@@ -438,12 +359,9 @@ class PaperTradingEngine:
             "pnl": realized_pnl if order.side == OrderSide.SELL else 0.0,
         }
         self.trade_history.append(trade)
-
-        # Remove from order book
         if order.symbol in self.order_book:
             if order in self.order_book[order.symbol]:
                 self.order_book[order.symbol].remove(order)
-
         logger.info(
             f"Order filled: {order.symbol} {order.side.value} {order.quantity} @ ${fill_price:.2f}"
         )
@@ -458,16 +376,13 @@ class PaperTradingEngine:
         portfolio = self.get_portfolio(user_id)
         if not portfolio:
             return None
-
-        # Update portfolio value with current prices
         portfolio.update_portfolio_value(self.market_prices)
-
         return {
             "user_id": user_id,
             "balance": portfolio.balance,
             "total_value": portfolio.total_value,
             "total_pnl": portfolio.total_pnl,
-            "total_pnl_percent": (portfolio.total_pnl / 10000.0) * 100,  # Assuming $10k start
+            "total_pnl_percent": portfolio.total_pnl / 10000.0 * 100,
             "positions": [
                 {
                     "symbol": pos.symbol,
@@ -490,5 +405,4 @@ class PaperTradingEngine:
         }
 
 
-# Global paper trading engine instance
 paper_engine = PaperTradingEngine()

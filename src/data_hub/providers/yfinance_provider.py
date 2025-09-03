@@ -21,7 +21,6 @@ class YFinanceProvider:
         "1w": "1wk",
         "1M": "1mo",
     }
-
     PERIOD_MAP = {
         "1m": "7d",
         "5m": "60d",
@@ -59,23 +58,12 @@ class YFinanceProvider:
             Exception: For provider errors
         """
         try:
-            # Convert timeframe
             yf_interval = self.TIMEFRAME_MAP.get(timeframe, "1d")
-
-            # Run yfinance in thread pool (it's not async)
             loop = asyncio.get_event_loop()
             data = await loop.run_in_executor(
-                None,
-                self._fetch_sync,
-                symbol,
-                yf_interval,
-                start_date,
-                end_date,
-                limit,
+                None, self._fetch_sync, symbol, yf_interval, start_date, end_date, limit
             )
-
             return data
-
         except Exception as e:
             if "No data found" in str(e):
                 raise ValueError(f"Symbol {symbol} not found") from e
@@ -91,28 +79,18 @@ class YFinanceProvider:
     ) -> list[OHLCVData]:
         """Synchronous fetch function for yfinance."""
         ticker = yf.Ticker(symbol)
-
-        # Determine period or use dates
         if start_date and end_date:
-            df = ticker.history(
-                start=start_date,
-                end=end_date,
-                interval=interval,
-            )
+            df = ticker.history(start=start_date, end=end_date, interval=interval)
         else:
-            # Use default period based on interval
             period = self.PERIOD_MAP.get(interval, "1mo")
             df = ticker.history(period=period, interval=interval)
-
         if df.empty:
             raise ValueError(f"No data found for symbol {symbol}")
-
-        # Convert to OHLCVData
         ohlcv_data = []
         for timestamp, row in df.iterrows():
             ohlcv_data.append(
                 OHLCVData(
-                    timestamp=timestamp.to_pydatetime(),  # type: ignore
+                    timestamp=timestamp.to_pydatetime(),
                     open=float(row["Open"]),
                     high=float(row["High"]),
                     low=float(row["Low"]),
@@ -120,11 +98,8 @@ class YFinanceProvider:
                     volume=float(row["Volume"]),
                 )
             )
-
-        # Apply limit
         if len(ohlcv_data) > limit:
             ohlcv_data = ohlcv_data[-limit:]
-
         return ohlcv_data
 
     async def search_symbols(self, query: str, limit: int = 10) -> list[SymbolInfo]:
@@ -147,23 +122,17 @@ class YFinanceProvider:
 
     def _search_sync(self, query: str, limit: int) -> list[SymbolInfo]:
         """Synchronous search function."""
-        # YFinance doesn't have a direct search API, so we'll use ticker info
-        # For demo purposes, we'll check if the ticker exists
         symbols = []
-
-        # Common suffixes for the query
         potential_tickers = [
             query.upper(),
-            f"{query.upper()}.L",  # London
-            f"{query.upper()}.TO",  # Toronto
-            f"{query.upper()}.AX",  # Australia
+            f"{query.upper()}.L",
+            f"{query.upper()}.TO",
+            f"{query.upper()}.AX",
         ]
-
         for ticker_symbol in potential_tickers[:limit]:
             try:
                 ticker = yf.Ticker(ticker_symbol)
                 info = ticker.info
-
                 if info and "symbol" in info:
                     symbols.append(
                         SymbolInfo(
@@ -175,9 +144,7 @@ class YFinanceProvider:
                         )
                     )
             except Exception:
-                # Skip invalid tickers
                 continue
-
         return symbols
 
     async def get_symbol_info(self, symbol: str) -> SymbolInfo | None:
@@ -202,10 +169,8 @@ class YFinanceProvider:
         try:
             ticker = yf.Ticker(symbol)
             info = ticker.info
-
             if not info or "symbol" not in info:
                 return None
-
             return SymbolInfo(
                 symbol=info.get("symbol", symbol),
                 name=info.get("longName") or info.get("shortName"),

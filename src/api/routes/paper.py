@@ -6,16 +6,17 @@ Simulated trading session endpoints
 import logging
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from src.services.paper_engine import paper_engine
+
+import src.services.paper_engine as paper_api
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/paper", tags=["paper"])
 
 
 class StartSessionRequest(BaseModel):
-    session: str  # "grid", "mean_revert", "simple"
+    session: str
     symbol: str
     params: Optional[Dict] = {}
 
@@ -24,16 +25,13 @@ class StartSessionRequest(BaseModel):
 async def start_session(request: StartSessionRequest) -> Dict:
     """Start a paper trading session"""
     try:
-        result = paper_engine.start_session(
+        result = paper_api.start(
             session_type=request.session, symbol=request.symbol, params=request.params
         )
-
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
-
         logger.info(f"Started paper session: {request.session} for {request.symbol}")
         return result
-
     except Exception as e:
         logger.error(f"Start session error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -43,14 +41,11 @@ async def start_session(request: StartSessionRequest) -> Dict:
 async def stop_session() -> Dict:
     """Stop the current paper trading session"""
     try:
-        result = paper_engine.stop_session()
-
+        result = paper_api.stop()
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
-
         logger.info("Stopped paper session")
         return result
-
     except Exception as e:
         logger.error(f"Stop session error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -60,7 +55,7 @@ async def stop_session() -> Dict:
 async def get_status() -> Dict:
     """Get current paper trading status"""
     try:
-        return paper_engine.get_status()
+        return paper_api.status()
     except Exception as e:
         logger.error(f"Get status error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

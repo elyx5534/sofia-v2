@@ -37,8 +37,6 @@ class PricePlacement:
         """Get tick size for symbol"""
         if symbol in self.tick_sizes:
             return self.tick_sizes[symbol]
-
-        # Common defaults
         defaults = {
             "BTC/USDT": Decimal("0.01"),
             "ETH/USDT": Decimal("0.01"),
@@ -57,13 +55,10 @@ class PricePlacement:
     def join_best(self, side: str, best_bid: Decimal, best_ask: Decimal, symbol: str) -> Decimal:
         """Join the best price on our side (one tick better)"""
         tick = self.get_tick_size(symbol)
-
         if side == "buy":
-            # Place buy order one tick above best bid
             price = best_bid + tick
             return self.round_to_tick(price, symbol, round_up=False)
-        else:  # sell
-            # Place sell order one tick below best ask
+        else:
             price = best_ask - tick
             return self.round_to_tick(price, symbol, round_up=True)
 
@@ -83,60 +78,39 @@ class PricePlacement:
         tick = self.get_tick_size(symbol)
         spread = best_ask - best_bid
         mid = (best_bid + best_ask) / 2
-
-        # Calculate minimum edge required
         min_edge = mid * Decimal(str(min_edge_bps / 10000))
-
-        # If spread is tight, use join strategy
         if spread <= tick * 3:
             price = self.join_best(side, best_bid, best_ask, symbol)
-            return price, "join"
-
-        # Step in by k ticks
+            return (price, "join")
         if side == "buy":
-            # Step in from bid side
-            step_in_price = best_bid + (tick * k)
-
-            # Check if we maintain minimum edge
+            step_in_price = best_bid + tick * k
             edge = best_ask - step_in_price
             if edge < min_edge:
-                # Fall back to join
                 price = self.join_best(side, best_bid, best_ask, symbol)
-                return price, "join"
-
-            # Ensure we don't cross the spread
+                return (price, "join")
             if step_in_price >= best_ask:
                 price = best_ask - tick
-                return self.round_to_tick(price, symbol), "join"
-
-            return self.round_to_tick(step_in_price, symbol), f"step-in-{k}"
-
-        else:  # sell
-            # Step in from ask side
-            step_in_price = best_ask - (tick * k)
-
-            # Check if we maintain minimum edge
+                return (self.round_to_tick(price, symbol), "join")
+            return (self.round_to_tick(step_in_price, symbol), f"step-in-{k}")
+        else:
+            step_in_price = best_ask - tick * k
             edge = step_in_price - best_bid
             if edge < min_edge:
-                # Fall back to join
                 price = self.join_best(side, best_bid, best_ask, symbol)
-                return price, "join"
-
-            # Ensure we don't cross the spread
+                return (price, "join")
             if step_in_price <= best_bid:
                 price = best_bid + tick
-                return self.round_to_tick(price, symbol, round_up=True), "join"
-
-            return self.round_to_tick(step_in_price, symbol, round_up=True), f"step-in-{k}"
+                return (self.round_to_tick(price, symbol, round_up=True), "join")
+            return (self.round_to_tick(step_in_price, symbol, round_up=True), f"step-in-{k}")
 
     def calculate_k_from_volatility(self, atr_pct: float) -> int:
         """Calculate step-in depth based on volatility"""
         if atr_pct < 1.0:
-            return 1  # Low volatility - step in less
+            return 1
         elif atr_pct < 2.0:
-            return 2  # Normal volatility
+            return 2
         else:
-            return 3  # High volatility - be more aggressive
+            return 3
 
     def get_smart_price(
         self, side: str, orderbook: Dict, symbol: str, atr_pct: float = 1.0, min_edge_bps: float = 5
@@ -147,27 +121,16 @@ class PricePlacement:
         """
         if not orderbook or "bids" not in orderbook or "asks" not in orderbook:
             raise ValueError("Invalid orderbook")
-
         if not orderbook["bids"] or not orderbook["asks"]:
             raise ValueError("Empty orderbook")
-
         best_bid = Decimal(str(orderbook["bids"][0][0]))
         best_ask = Decimal(str(orderbook["asks"][0][0]))
-
-        # Calculate step-in depth based on volatility
         k = self.calculate_k_from_volatility(atr_pct)
-
-        # Get smart price
         price, strategy = self.step_in_limit(side, best_bid, best_ask, symbol, k, min_edge_bps)
-
         logger.info(
-            f"Price placement for {symbol} {side}: "
-            f"${price} using {strategy} "
-            f"(bid={best_bid}, ask={best_ask}, k={k})"
+            f"Price placement for {symbol} {side}: ${price} using {strategy} (bid={best_bid}, ask={best_ask}, k={k})"
         )
+        return (price, strategy)
 
-        return price, strategy
 
-
-# Global instance
 price_placement = PricePlacement()

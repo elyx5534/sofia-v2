@@ -39,8 +39,6 @@ class MultiSourceDataProvider:
         self.use_sandbox = use_sandbox
         self.exchanges = {}
         self._init_exchanges()
-
-        # Source priority for different asset types
         self.crypto_sources = [
             DataSource.BINANCE,
             DataSource.COINBASE,
@@ -48,49 +46,21 @@ class MultiSourceDataProvider:
             DataSource.BITFINEX,
             DataSource.YFINANCE,
         ]
-
         self.stock_sources = [DataSource.YFINANCE]
 
     def _init_exchanges(self):
         """Initialize CCXT exchange connections."""
         try:
-            # Binance
             self.exchanges[DataSource.BINANCE] = ccxt.binance(
-                {
-                    "enableRateLimit": True,
-                    "options": {
-                        "defaultType": "spot",
-                    },
-                }
+                {"enableRateLimit": True, "options": {"defaultType": "spot"}}
             )
-
-            # Coinbase
-            self.exchanges[DataSource.COINBASE] = ccxt.coinbase(
-                {
-                    "enableRateLimit": True,
-                }
-            )
-
-            # Kraken
-            self.exchanges[DataSource.KRAKEN] = ccxt.kraken(
-                {
-                    "enableRateLimit": True,
-                }
-            )
-
-            # Bitfinex
-            self.exchanges[DataSource.BITFINEX] = ccxt.bitfinex(
-                {
-                    "enableRateLimit": True,
-                }
-            )
-
-            # Set sandbox mode if requested
+            self.exchanges[DataSource.COINBASE] = ccxt.coinbase({"enableRateLimit": True})
+            self.exchanges[DataSource.KRAKEN] = ccxt.kraken({"enableRateLimit": True})
+            self.exchanges[DataSource.BITFINEX] = ccxt.bitfinex({"enableRateLimit": True})
             if self.use_sandbox:
                 for exchange in self.exchanges.values():
                     if hasattr(exchange, "set_sandbox_mode"):
                         exchange.set_sandbox_mode(True)
-
         except Exception as e:
             logger.error(f"Error initializing exchanges: {e}")
 
@@ -106,7 +76,6 @@ class MultiSourceDataProvider:
             Source-specific timeframe string
         """
         if source == DataSource.YFINANCE:
-            # yfinance format
             mapping = {
                 "1m": "1m",
                 "5m": "5m",
@@ -120,7 +89,6 @@ class MultiSourceDataProvider:
             }
             return mapping.get(timeframe, "1d")
         else:
-            # CCXT format (already standard)
             return timeframe
 
     def _convert_symbol(self, symbol: str, source: DataSource) -> str:
@@ -135,18 +103,14 @@ class MultiSourceDataProvider:
             Source-specific symbol string
         """
         if source == DataSource.YFINANCE:
-            # Convert crypto symbols for yfinance
             if "/" in symbol:
-                # BTC/USDT -> BTC-USD
                 base, quote = symbol.split("/")
                 if quote == "USDT":
                     quote = "USD"
                 return f"{base}-{quote}"
             return symbol
         else:
-            # CCXT format (already standard for crypto)
             if "/" not in symbol:
-                # Assume it's a crypto symbol without pair
                 return f"{symbol}/USDT"
             return symbol
 
@@ -171,31 +135,24 @@ class MultiSourceDataProvider:
         Returns:
             DataFrame with OHLCV data or None if all sources fail
         """
-        # Determine sources to try
         if sources is None:
             if "/" in symbol or symbol in ["BTC", "ETH", "BNB"]:
                 sources = self.crypto_sources
             else:
                 sources = self.stock_sources
-
-        # Try each source
         for source in sources:
             try:
                 logger.info(f"Trying {source} for {symbol}")
-
                 if source == DataSource.YFINANCE:
                     df = await self._fetch_yfinance_async(symbol, timeframe, since, limit)
                 else:
                     df = await self._fetch_ccxt_async(source, symbol, timeframe, since, limit)
-
-                if df is not None and not df.empty:
+                if df is not None and (not df.empty):
                     logger.info(f"Successfully fetched {len(df)} candles from {source}")
                     return df
-
             except Exception as e:
                 logger.warning(f"Failed to fetch from {source}: {e}")
                 continue
-
         logger.error(f"All sources failed for {symbol}")
         return None
 
@@ -204,16 +161,12 @@ class MultiSourceDataProvider:
     ) -> Optional[pd.DataFrame]:
         """Fetch data from yfinance."""
         try:
-            # Convert symbol
             yf_symbol = self._convert_symbol(symbol, DataSource.YFINANCE)
-
-            # Calculate period
             if since:
                 period = None
                 start = since
                 end = datetime.now(timezone.utc)
             else:
-                # Use period for simplicity
                 period_map = {
                     "1m": "7d",
                     "5m": "1mo",
@@ -228,10 +181,7 @@ class MultiSourceDataProvider:
                 period = period_map.get(timeframe, "1mo")
                 start = None
                 end = None
-
-            # Fetch data
             ticker = yf.Ticker(yf_symbol)
-
             if period:
                 df = ticker.history(
                     period=period, interval=self._convert_timeframe(timeframe, DataSource.YFINANCE)
@@ -242,11 +192,8 @@ class MultiSourceDataProvider:
                     end=end,
                     interval=self._convert_timeframe(timeframe, DataSource.YFINANCE),
                 )
-
             if df.empty:
                 return None
-
-            # Standardize column names
             df = df.rename(
                 columns={
                     "Open": "open",
@@ -256,16 +203,10 @@ class MultiSourceDataProvider:
                     "Volume": "volume",
                 }
             )
-
-            # Select only OHLCV columns
             df = df[["open", "high", "low", "close", "volume"]]
-
-            # Limit rows
             if len(df) > limit:
                 df = df.tail(limit)
-
             return df
-
         except Exception as e:
             logger.error(f"yfinance error: {e}")
             return None
@@ -278,40 +219,25 @@ class MultiSourceDataProvider:
             exchange = self.exchanges.get(source)
             if not exchange:
                 return None
-
-            # Convert symbol
             ccxt_symbol = self._convert_symbol(symbol, source)
-
-            # Check if symbol is available
             await exchange.load_markets()
             if ccxt_symbol not in exchange.symbols:
                 logger.warning(f"{ccxt_symbol} not available on {source}")
                 return None
-
-            # Convert since to timestamp
             since_ts = None
             if since:
                 since_ts = int(since.timestamp() * 1000)
-
-            # Fetch OHLCV
             ohlcv = await exchange.fetch_ohlcv(
                 ccxt_symbol, timeframe=timeframe, since=since_ts, limit=limit
             )
-
             if not ohlcv:
                 return None
-
-            # Convert to DataFrame
             df = pd.DataFrame(
                 ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
             )
-
-            # Convert timestamp to datetime index
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
             df.set_index("timestamp", inplace=True)
-
             return df
-
         except Exception as e:
             logger.error(f"CCXT {source} error: {e}")
             return None
@@ -348,18 +274,14 @@ class MultiSourceDataProvider:
         """
         try:
             if source == DataSource.YFINANCE:
-                # yfinance doesn't provide a symbol list easily
-                # Return common symbols
                 return ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "BTC-USD", "ETH-USD", "BNB-USD"]
             else:
                 exchange = self.exchanges.get(source)
                 if exchange:
                     exchange.load_markets()
                     return list(exchange.symbols)
-
         except Exception as e:
             logger.error(f"Error getting symbols from {source}: {e}")
-
         return []
 
     def test_connection(self, source: DataSource) -> bool:
@@ -374,7 +296,6 @@ class MultiSourceDataProvider:
         """
         try:
             if source == DataSource.YFINANCE:
-                # Test with a known symbol
                 ticker = yf.Ticker("AAPL")
                 info = ticker.info
                 return "symbol" in info
@@ -383,10 +304,8 @@ class MultiSourceDataProvider:
                 if exchange:
                     exchange.fetch_ticker("BTC/USDT")
                     return True
-
         except Exception as e:
             logger.error(f"Connection test failed for {source}: {e}")
-
         return False
 
     def get_source_status(self) -> Dict[str, bool]:
@@ -397,8 +316,6 @@ class MultiSourceDataProvider:
             Dictionary of source -> connection status
         """
         status = {}
-
         for source in DataSource:
             status[source.value] = self.test_connection(source)
-
         return status

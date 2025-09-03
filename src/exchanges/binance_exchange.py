@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
 
 import ccxt.pro as ccxt
+
 from src.exchanges.base import (
     Balance,
     BaseExchange,
@@ -29,27 +30,20 @@ class BinanceExchange(BaseExchange):
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
-        self.exchange_type = config.get("type", "spot")  # spot or future
-
-        # Initialize CCXT exchange
+        self.exchange_type = config.get("type", "spot")
         exchange_config = {
             "apiKey": self.api_key,
             "secret": self.api_secret,
             "enableRateLimit": True,
-            "options": {
-                "defaultType": self.exchange_type,
-                "adjustForTimeDifference": True,
-            },
+            "options": {"defaultType": self.exchange_type, "adjustForTimeDifference": True},
         }
-
         if self.testnet:
             exchange_config["urls"] = {
                 "api": {
                     "public": "https://testnet.binance.vision/api",
                     "private": "https://testnet.binance.vision/api",
-                },
+                }
             }
-
         self.exchange = ccxt.binance(exchange_config)
         self.ws_subscriptions = set()
 
@@ -57,20 +51,14 @@ class BinanceExchange(BaseExchange):
         """Connect to Binance API"""
         try:
             self.status = ExchangeStatus.CONNECTING
-
-            # Test connection
             await self.exchange.load_markets()
-
-            # Get account info to verify credentials
             if self.api_key and self.api_secret:
                 balance = await self.exchange.fetch_balance()
                 logger.info(
                     f"Binance connected. Account has {len(balance['info']['balances'])} assets"
                 )
-
             self.status = ExchangeStatus.CONNECTED
             return True
-
         except Exception as e:
             logger.error(f"Binance connection failed: {e}")
             self.status = ExchangeStatus.ERROR
@@ -90,25 +78,20 @@ class BinanceExchange(BaseExchange):
         """Get account balance"""
         try:
             await self.rate_limiter.acquire()
-
             raw_balance = await self.exchange.fetch_balance()
             balances = {}
-
             for curr, info in raw_balance["total"].items():
-                if info > 0:  # Only return non-zero balances
+                if info > 0:
                     if currency and curr != currency:
                         continue
-
                     balances[curr] = Balance(
                         currency=curr,
                         free=Decimal(str(raw_balance["free"].get(curr, 0))),
                         used=Decimal(str(raw_balance["used"].get(curr, 0))),
                         total=Decimal(str(info)),
                     )
-
             self.balance_cache = balances
             return balances
-
         except Exception as e:
             logger.error(f"Failed to get Binance balance: {e}")
             self.error_count += 1
@@ -118,9 +101,7 @@ class BinanceExchange(BaseExchange):
         """Get ticker for symbol"""
         try:
             await self.rate_limiter.acquire()
-
             ticker = await self.exchange.fetch_ticker(symbol)
-
             result = Ticker(
                 symbol=symbol,
                 timestamp=ticker["timestamp"],
@@ -133,10 +114,8 @@ class BinanceExchange(BaseExchange):
                 low_24h=Decimal(str(ticker["low"])) if ticker["low"] else Decimal(0),
                 vwap=Decimal(str(ticker["vwap"])) if ticker.get("vwap") else None,
             )
-
             self.ticker_cache[symbol] = result
             return result
-
         except Exception as e:
             logger.error(f"Failed to get Binance ticker {symbol}: {e}")
             self.error_count += 1
@@ -146,9 +125,7 @@ class BinanceExchange(BaseExchange):
         """Get order book for symbol"""
         try:
             await self.rate_limiter.acquire()
-
             orderbook = await self.exchange.fetch_order_book(symbol, limit)
-
             result = OrderBook(
                 symbol=symbol,
                 timestamp=orderbook["timestamp"],
@@ -161,10 +138,8 @@ class BinanceExchange(BaseExchange):
                     for price, amount in orderbook["asks"]
                 ],
             )
-
             self.orderbook_cache[symbol] = result
             return result
-
         except Exception as e:
             logger.error(f"Failed to get Binance orderbook {symbol}: {e}")
             self.error_count += 1
@@ -182,17 +157,12 @@ class BinanceExchange(BaseExchange):
         """Place an order on Binance"""
         try:
             await self.rate_limiter.acquire(weight=2)
-
-            # Convert to CCXT format
             ccxt_side = side.value
             ccxt_type = order_type.value
-
             params = {}
             if order_type == OrderType.STOP_LOSS:
                 ccxt_type = "stop_loss_limit" if price else "stop_loss"
                 params["stopPrice"] = kwargs.get("stop_price", price)
-
-            # Place order
             if order_type == OrderType.MARKET:
                 result = await self.exchange.create_order(
                     symbol, ccxt_type, ccxt_side, float(amount), params=params
@@ -201,8 +171,6 @@ class BinanceExchange(BaseExchange):
                 result = await self.exchange.create_order(
                     symbol, ccxt_type, ccxt_side, float(amount), float(price), params=params
                 )
-
-            # Parse response
             order = Order(
                 id=result["id"],
                 exchange=self.name,
@@ -218,10 +186,8 @@ class BinanceExchange(BaseExchange):
                 fee_currency=result["fee"]["currency"] if result.get("fee") else None,
                 client_order_id=result.get("clientOrderId"),
             )
-
             logger.info(f"Binance order placed: {order.id} {side.value} {amount} {symbol}")
             return order
-
         except Exception as e:
             logger.error(f"Failed to place Binance order: {e}")
             self.error_count += 1
@@ -231,11 +197,9 @@ class BinanceExchange(BaseExchange):
         """Cancel an order"""
         try:
             await self.rate_limiter.acquire()
-
             result = await self.exchange.cancel_order(order_id, symbol)
             logger.info(f"Binance order cancelled: {order_id}")
             return True
-
         except Exception as e:
             logger.error(f"Failed to cancel Binance order {order_id}: {e}")
             self.error_count += 1
@@ -245,9 +209,7 @@ class BinanceExchange(BaseExchange):
         """Get order status"""
         try:
             await self.rate_limiter.acquire()
-
             result = await self.exchange.fetch_order(order_id, symbol)
-
             return Order(
                 id=result["id"],
                 exchange=self.name,
@@ -262,7 +224,6 @@ class BinanceExchange(BaseExchange):
                 fee=Decimal(str(result["fee"]["cost"])) if result.get("fee") else None,
                 fee_currency=result["fee"]["currency"] if result.get("fee") else None,
             )
-
         except Exception as e:
             logger.error(f"Failed to get Binance order {order_id}: {e}")
             self.error_count += 1
@@ -272,9 +233,7 @@ class BinanceExchange(BaseExchange):
         """Get all open orders"""
         try:
             await self.rate_limiter.acquire()
-
             orders = await self.exchange.fetch_open_orders(symbol)
-
             return [
                 Order(
                     id=o["id"],
@@ -290,7 +249,6 @@ class BinanceExchange(BaseExchange):
                 )
                 for o in orders
             ]
-
         except Exception as e:
             logger.error(f"Failed to get Binance open orders: {e}")
             self.error_count += 1
@@ -302,9 +260,7 @@ class BinanceExchange(BaseExchange):
         """Get order history"""
         try:
             await self.rate_limiter.acquire()
-
             orders = await self.exchange.fetch_closed_orders(symbol, limit=limit)
-
             return [
                 Order(
                     id=o["id"],
@@ -322,7 +278,6 @@ class BinanceExchange(BaseExchange):
                 )
                 for o in orders
             ]
-
         except Exception as e:
             logger.error(f"Failed to get Binance order history: {e}")
             self.error_count += 1
@@ -332,9 +287,7 @@ class BinanceExchange(BaseExchange):
         """Get trade history"""
         try:
             await self.rate_limiter.acquire()
-
             trades = await self.exchange.fetch_my_trades(symbol, limit=limit)
-
             return [
                 Trade(
                     id=t["id"],
@@ -349,7 +302,6 @@ class BinanceExchange(BaseExchange):
                 )
                 for t in trades
             ]
-
         except Exception as e:
             logger.error(f"Failed to get Binance trades: {e}")
             self.error_count += 1
@@ -359,11 +311,8 @@ class BinanceExchange(BaseExchange):
         """Subscribe to ticker updates via WebSocket"""
         try:
             self.ws_subscriptions.add(("ticker", symbol))
-
             while symbol in [s for t, s in self.ws_subscriptions if t == "ticker"]:
                 ticker = await self.exchange.watch_ticker(symbol)
-
-                # Convert to our format
                 formatted_ticker = Ticker(
                     symbol=symbol,
                     timestamp=ticker["timestamp"],
@@ -375,9 +324,7 @@ class BinanceExchange(BaseExchange):
                     high_24h=Decimal(str(ticker["high"])) if ticker["high"] else Decimal(0),
                     low_24h=Decimal(str(ticker["low"])) if ticker["low"] else Decimal(0),
                 )
-
                 await callback(formatted_ticker)
-
         except Exception as e:
             logger.error(f"Binance ticker subscription error: {e}")
             self.ws_subscriptions.discard(("ticker", symbol))
@@ -386,11 +333,8 @@ class BinanceExchange(BaseExchange):
         """Subscribe to order book updates via WebSocket"""
         try:
             self.ws_subscriptions.add(("orderbook", symbol))
-
             while symbol in [s for t, s in self.ws_subscriptions if t == "orderbook"]:
                 orderbook = await self.exchange.watch_order_book(symbol)
-
-                # Convert to our format
                 formatted_orderbook = OrderBook(
                     symbol=symbol,
                     timestamp=orderbook["timestamp"],
@@ -403,9 +347,7 @@ class BinanceExchange(BaseExchange):
                         for price, amount in orderbook["asks"][:20]
                     ],
                 )
-
                 await callback(formatted_orderbook)
-
         except Exception as e:
             logger.error(f"Binance orderbook subscription error: {e}")
             self.ws_subscriptions.discard(("orderbook", symbol))
@@ -414,10 +356,8 @@ class BinanceExchange(BaseExchange):
         """Subscribe to trade updates via WebSocket"""
         try:
             self.ws_subscriptions.add(("trades", symbol))
-
             while symbol in [s for t, s in self.ws_subscriptions if t == "trades"]:
                 trades = await self.exchange.watch_trades(symbol)
-
                 for trade in trades:
                     formatted_trade = Trade(
                         id=trade["id"],
@@ -426,13 +366,11 @@ class BinanceExchange(BaseExchange):
                         side=OrderSide(trade["side"]),
                         price=Decimal(str(trade["price"])),
                         amount=Decimal(str(trade["amount"])),
-                        fee=Decimal(0),  # Public trades don't have fee info
+                        fee=Decimal(0),
                         fee_currency="",
                         timestamp=trade["timestamp"],
                     )
-
                     await callback(formatted_trade)
-
         except Exception as e:
             logger.error(f"Binance trades subscription error: {e}")
             self.ws_subscriptions.discard(("trades", symbol))

@@ -30,20 +30,12 @@ class MACDStrategy(BaseStrategy):
         Returns:
             Tuple of (MACD line, Signal line, Histogram)
         """
-        # Calculate EMAs
         ema_fast = prices.ewm(span=self.fast_period, adjust=False).mean()
         ema_slow = prices.ewm(span=self.slow_period, adjust=False).mean()
-
-        # MACD line
         macd = ema_fast - ema_slow
-
-        # Signal line
         signal = macd.ewm(span=self.signal_period, adjust=False).mean()
-
-        # Histogram
         histogram = macd - signal
-
-        return macd, signal, histogram
+        return (macd, signal, histogram)
 
     def generate_signals(self, data: pd.DataFrame) -> pd.Series:
         """
@@ -52,16 +44,8 @@ class MACDStrategy(BaseStrategy):
         Returns:
             Series with values: 1 (buy), -1 (sell), 0 (hold)
         """
-        # Calculate MACD
         macd, signal, histogram = self.calculate_macd(data["Close"])
-
-        # Generate signals
         signals = pd.Series(0, index=data.index)
-
-        # Buy when MACD crosses above signal line
         signals[(macd > signal) & (macd.shift(1) <= signal.shift(1))] = 1
-
-        # Sell when MACD crosses below signal line
         signals[(macd < signal) & (macd.shift(1) >= signal.shift(1))] = -1
-
         return signals

@@ -36,40 +36,29 @@ class CryptoPanicClient:
         """Fetch news posts from CryptoPanic"""
         try:
             session = await self.get_session()
-
             params = {
                 "auth_token": self.api_token,
                 "kind": "news",
                 "filter": "rising",
                 "limit": limit,
             }
-
-            # Add specific currencies if provided
             if symbols:
-                # Convert symbols to CryptoPanic currency format
                 currencies = []
                 for symbol in symbols:
                     if "/" in symbol:
                         base = symbol.split("/")[0].lower()
                         currencies.append(base)
-
                 if currencies:
-                    params["currencies"] = ",".join(currencies[:10])  # API limit
-
+                    params["currencies"] = ",".join(currencies[:10])
             response = await session.get(f"{self.base_url}/posts/", params=params)
             response.raise_for_status()
-
             data = response.json()
             posts = data.get("results", [])
-
-            # Filter by time
             cutoff_time = datetime.now() - timedelta(hours=hours_back)
             recent_posts = []
-
             for post in posts:
                 try:
                     post_time = datetime.fromisoformat(post["created_at"].replace("Z", "+00:00"))
-
                     if post_time >= cutoff_time:
                         recent_posts.append(
                             {
@@ -89,14 +78,11 @@ class CryptoPanicClient:
                                 "source": "cryptopanic",
                             }
                         )
-
                 except Exception as e:
                     logger.warning(f"Error parsing post: {e}")
                     continue
-
             logger.info(f"Fetched {len(recent_posts)} recent posts from CryptoPanic")
             return recent_posts
-
         except Exception as e:
             logger.error(f"Error fetching CryptoPanic posts: {e}")
             return []
@@ -110,30 +96,22 @@ class CryptoPanicClient:
                 base_currency = symbol.split("/")[0].lower()
             else:
                 base_currency = symbol.lower()
-
             session = await self.get_session()
-
             params = {
                 "auth_token": self.api_token,
                 "currencies": base_currency,
                 "kind": "news",
                 "limit": limit,
             }
-
             response = await session.get(f"{self.base_url}/posts/", params=params)
             response.raise_for_status()
-
             data = response.json()
             posts = data.get("results", [])
-
-            # Filter by time and format
             cutoff_time = datetime.now() - timedelta(hours=hours_back)
             symbol_news = []
-
             for post in posts:
                 try:
                     post_time = datetime.fromisoformat(post["created_at"].replace("Z", "+00:00"))
-
                     if post_time >= cutoff_time:
                         symbol_news.append(
                             {
@@ -148,13 +126,10 @@ class CryptoPanicClient:
                                 "source": "cryptopanic",
                             }
                         )
-
                 except Exception as e:
                     logger.warning(f"Error parsing symbol news: {e}")
                     continue
-
             return symbol_news
-
         except Exception as e:
             logger.error(f"Error fetching {symbol} news: {e}")
             return []
@@ -163,10 +138,8 @@ class CryptoPanicClient:
         """Calculate sentiment score from votes"""
         positive = votes.get("positive", 0) + votes.get("liked", 0)
         negative = votes.get("negative", 0) + votes.get("disliked", 0)
-
         if positive + negative == 0:
-            return 0.5  # Neutral
-
+            return 0.5
         return positive / (positive + negative)
 
     async def fetch_global_news(

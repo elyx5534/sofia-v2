@@ -12,7 +12,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -98,21 +97,15 @@ class CrashRecoveryManager:
             checkpoint_file = (
                 self.state_dir / f"checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             )
-
             with open(checkpoint_file, "w") as f:
                 json.dump(state.to_dict(), f, indent=2)
-
-            # Also save as latest checkpoint
             latest_file = self.state_dir / "latest_checkpoint.json"
             with open(latest_file, "w") as f:
                 json.dump(state.to_dict(), f, indent=2)
-
             self.current_state = state
             self.last_checkpoint = datetime.now(timezone.utc)
-
             logger.info(f"Checkpoint saved: {checkpoint_file}")
             return True
-
         except Exception as e:
             logger.error(f"Failed to save checkpoint: {e}")
             return False
@@ -126,20 +119,15 @@ class CrashRecoveryManager:
         """
         try:
             latest_file = self.state_dir / "latest_checkpoint.json"
-
             if not latest_file.exists():
                 logger.warning("No checkpoint found")
                 return None
-
             with open(latest_file) as f:
                 data = json.load(f)
-
             state = SystemState.from_dict(data)
             self.current_state = state
-
             logger.info(f"Checkpoint loaded from {state.timestamp}")
             return state
-
         except Exception as e:
             logger.error(f"Failed to load checkpoint: {e}")
             return None
@@ -158,51 +146,37 @@ class CrashRecoveryManager:
             "recovered_orders": [],
             "errors": [],
         }
-
         try:
-            # Load latest checkpoint
             state = self.load_latest_checkpoint()
             if not state:
                 report["status"] = "no_checkpoint"
                 self.recovery_status = RecoveryStatus.FAILED
                 return report
-
-            # Recover active positions
             for symbol, position in state.active_positions.items():
                 try:
-                    # Here you would reconnect to exchange and verify position
                     report["recovered_positions"].append(symbol)
                     logger.info(f"Recovered position: {symbol}")
                 except Exception as e:
                     report["errors"].append(f"Position {symbol}: {e!s}")
-
-            # Recover pending orders
             for order in state.pending_orders:
                 try:
-                    # Here you would check order status with exchange
                     report["recovered_orders"].append(order["id"])
                     logger.info(f"Recovered order: {order['id']}")
                 except Exception as e:
                     report["errors"].append(f"Order {order['id']}: {e!s}")
-
-            # Restart strategies
             for strategy in state.running_strategies:
                 try:
-                    # Here you would restart the strategy
                     logger.info(f"Restarted strategy: {strategy}")
                 except Exception as e:
                     report["errors"].append(f"Strategy {strategy}: {e!s}")
-
             report["end_time"] = datetime.now(timezone.utc)
             report["status"] = "success" if not report["errors"] else "partial"
             self.recovery_status = RecoveryStatus.COMPLETED
-
         except Exception as e:
             logger.error(f"Recovery failed: {e}")
             report["status"] = "failed"
             report["error"] = str(e)
             self.recovery_status = RecoveryStatus.FAILED
-
         return report
 
     async def monitor_system_health(
@@ -218,16 +192,11 @@ class CrashRecoveryManager:
         """
         consecutive_failures = 0
         max_failures = 3
-
         while True:
             try:
-                # Check system health
                 is_healthy = await health_check_func()
-
                 if is_healthy:
                     consecutive_failures = 0
-
-                    # Save checkpoint if interval passed
                     now = datetime.now(timezone.utc)
                     if (now - self.last_checkpoint).seconds >= self.checkpoint_interval:
                         state = await get_state_func()
@@ -235,18 +204,13 @@ class CrashRecoveryManager:
                 else:
                     consecutive_failures += 1
                     logger.warning(f"Health check failed ({consecutive_failures}/{max_failures})")
-
                     if consecutive_failures >= max_failures:
                         logger.error("System unhealthy, triggering recovery")
                         recovery_report = await self.recover_system()
-
                         if recovery_callback:
                             await recovery_callback(recovery_report)
-
                         consecutive_failures = 0
-
-                await asyncio.sleep(10)  # Check every 10 seconds
-
+                await asyncio.sleep(10)
             except Exception as e:
                 logger.error(f"Health monitor error: {e}")
                 await asyncio.sleep(10)
@@ -260,16 +224,12 @@ class CrashRecoveryManager:
         """
         try:
             cutoff = datetime.now() - timedelta(days=keep_days)
-
             for checkpoint_file in self.state_dir.glob("checkpoint_*.json"):
-                # Parse timestamp from filename
                 timestamp_str = checkpoint_file.stem.replace("checkpoint_", "")
                 file_time = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
-
                 if file_time < cutoff:
                     checkpoint_file.unlink()
                     logger.info(f"Deleted old checkpoint: {checkpoint_file}")
-
         except Exception as e:
             logger.error(f"Cleanup failed: {e}")
 
@@ -293,7 +253,7 @@ class CircuitBreaker:
         self.expected_exception = expected_exception
         self.failure_count = 0
         self.last_failure_time = None
-        self.state = "closed"  # closed, open, half_open
+        self.state = "closed"
 
     async def call(self, func, *args, **kwargs):
         """
@@ -310,37 +270,28 @@ class CircuitBreaker:
         if self.state == "open":
             if self.last_failure_time:
                 time_since_failure = (datetime.now() - self.last_failure_time).seconds
-
                 if time_since_failure >= self.recovery_timeout:
                     self.state = "half_open"
                 else:
                     raise Exception("Circuit breaker is open")
-
         try:
             result = await func(*args, **kwargs)
-
             if self.state == "half_open":
                 self.state = "closed"
                 self.failure_count = 0
-
             return result
-
         except self.expected_exception as e:
             self.failure_count += 1
             self.last_failure_time = datetime.now()
-
             if self.failure_count >= self.failure_threshold:
                 self.state = "open"
                 logger.error(f"Circuit breaker opened after {self.failure_count} failures")
-
             raise e
 
 
-# Singleton instance
 crash_recovery_manager = CrashRecoveryManager()
 
 
-# Helper functions
 async def create_system_snapshot(trading_engine, portfolio_manager, strategy_engine) -> SystemState:
     """
     Create current system state snapshot
@@ -357,19 +308,15 @@ async def create_system_snapshot(trading_engine, portfolio_manager, strategy_eng
         positions = {}
         if hasattr(trading_engine, "get_positions"):
             positions = await trading_engine.get_positions()
-
         orders = []
         if hasattr(trading_engine, "get_pending_orders"):
             orders = await trading_engine.get_pending_orders()
-
         portfolio_value = 0
         if hasattr(portfolio_manager, "get_total_value"):
             portfolio_value = await portfolio_manager.get_total_value()
-
         strategies = []
         if hasattr(strategy_engine, "get_active_strategies"):
             strategies = strategy_engine.get_active_strategies()
-
         return SystemState(
             timestamp=datetime.now(timezone.utc),
             active_positions=positions,
@@ -379,7 +326,6 @@ async def create_system_snapshot(trading_engine, portfolio_manager, strategy_eng
             last_processed_data={},
             error_logs=[],
         )
-
     except Exception as e:
         logger.error(f"Failed to create snapshot: {e}")
         raise
@@ -401,9 +347,7 @@ async def system_health_check(services: Dict[str, Any]) -> bool:
                 if not await service.is_healthy():
                     logger.warning(f"Service unhealthy: {name}")
                     return False
-
         return True
-
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return False

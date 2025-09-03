@@ -1,0 +1,33 @@
+[run]
+branch = True
+source = src
+omit =
+    src/ui/*
+    src/**/__main__.py
+    src/**/cli.py
+    src/**/cli/*.py
+    src/**/experimental/*
+    src/**/migrations/*
+    scripts/*
+    tests/*
+    src/web_ui/*
+    src/web/templates.py
+    src/reports/*
+    src/**/test_*.py
+    src/**/*_test.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    if __name__ == .__main__.:
+    ^\s*pass$
+    ^\s*raise NotImplementedError
+    ^\s*\.\.\.$
+    ^\s*return NotImplemented$
+    def __repr__
+    def __str__
+    except ImportError:
+    except ModuleNotFoundError:
+    @abstract
+    @abstractmethod

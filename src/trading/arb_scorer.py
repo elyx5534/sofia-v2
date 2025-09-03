@@ -18,28 +18,22 @@ class ArbitrageScorer:
     def __init__(self, max_position_tl: float = 10000, min_lot_tl: float = 100):
         self.max_position_tl = max_position_tl
         self.min_lot_tl = min_lot_tl
-
-        # Feature weights (tuned for Turkish arbitrage)
         self.weights = {
-            "spread": 2.0,  # Net spread is most important
-            "depth": 0.8,  # Depth balance matters
-            "volatility": -0.5,  # High volatility is risky
-            "latency": -1.0,  # Latency hurts execution
-            "fail_rate": -1.5,  # Recent failures are bad
+            "spread": 2.0,
+            "depth": 0.8,
+            "volatility": -0.5,
+            "latency": -1.0,
+            "fail_rate": -1.5,
         }
-
-        # Normalization parameters
         self.norm_params = {
-            "spread_bps": {"min": 0, "max": 100},  # 0-100 bps
-            "depth_ratio": {"min": 0.5, "max": 2.0},  # 0.5x to 2x
-            "volatility_pct": {"min": 0, "max": 5},  # 0-5% 5min vol
-            "latency_ms": {"min": 10, "max": 500},  # 10-500ms
-            "fail_rate": {"min": 0, "max": 0.5},  # 0-50% fail rate
+            "spread_bps": {"min": 0, "max": 100},
+            "depth_ratio": {"min": 0.5, "max": 2.0},
+            "volatility_pct": {"min": 0, "max": 5},
+            "latency_ms": {"min": 10, "max": 500},
+            "fail_rate": {"min": 0, "max": 0.5},
         }
-
-        # Track recent failures for fail rate calculation
         self.recent_trades = []
-        self.trade_window = 20  # Last 20 trades
+        self.trade_window = 20
 
     def normalize_feature(self, value: float, feature: str) -> float:
         """Normalize feature to 0-1 range"""
@@ -55,23 +49,19 @@ class ArbitrageScorer:
         """Calculate recent failure rate"""
         if not self.recent_trades:
             return 0
-
-        # Get trades from last hour
         one_hour_ago = datetime.now() - timedelta(hours=1)
         recent = [t for t in self.recent_trades if t["timestamp"] > one_hour_ago]
-
         if not recent:
             return 0
-
         failures = sum(1 for t in recent if not t["success"])
         return failures / len(recent)
 
     def score_opportunity(
         self,
         net_spread_bps: float,
-        depth_balance: float,  # Ask depth / Bid depth
-        volatility_5m: float,  # 5-minute price volatility %
-        latency_ms: float,  # Round-trip latency
+        depth_balance: float,
+        volatility_5m: float,
+        latency_ms: float,
         **kwargs,
     ) -> Tuple[float, Dict]:
         """
@@ -80,25 +70,17 @@ class ArbitrageScorer:
         Returns:
             (score, details) where score is 0-1
         """
-        # Normalize features
         features = {
             "spread": self.normalize_feature(net_spread_bps, "spread_bps"),
-            "depth": 1
-            - abs(1 - self.normalize_feature(depth_balance, "depth_ratio")),  # Best at 1.0
+            "depth": 1 - abs(1 - self.normalize_feature(depth_balance, "depth_ratio")),
             "volatility": self.normalize_feature(volatility_5m, "volatility_pct"),
             "latency": self.normalize_feature(latency_ms, "latency_ms"),
             "fail_rate": self.calculate_fail_rate(),
         }
-
-        # Calculate weighted sum
         weighted_sum = 0
         for feature, value in features.items():
             weighted_sum += self.weights[feature] * value
-
-        # Apply sigmoid for final score
         score = self.sigmoid(weighted_sum)
-
-        # Prepare details
         details = {
             "raw_features": {
                 "net_spread_bps": net_spread_bps,
@@ -111,8 +93,7 @@ class ArbitrageScorer:
             "weighted_sum": weighted_sum,
             "final_score": score,
         }
-
-        return score, details
+        return (score, details)
 
     def calculate_position_size(
         self, score: float, available_capital_tl: float = None
@@ -125,40 +106,26 @@ class ArbitrageScorer:
         """
         if available_capital_tl is None:
             available_capital_tl = self.max_position_tl
-
-        # Score thresholds
         if score < 0.3:
-            return 0, "Score too low (<0.3)"
-
-        # Linear scaling with score
+            return (0, "Score too low (<0.3)")
         if score < 0.5:
-            # Low confidence: use minimum size
             size_tl = self.min_lot_tl
             reason = f"Low confidence (score={score:.2f})"
         elif score < 0.7:
-            # Medium confidence: scale linearly
-            size_pct = 0.2 + (score - 0.5) * 2  # 20% to 60%
+            size_pct = 0.2 + (score - 0.5) * 2
             size_tl = min(available_capital_tl * size_pct, self.max_position_tl * 0.5)
             reason = f"Medium confidence (score={score:.2f})"
         else:
-            # High confidence: use larger size
-            size_pct = 0.6 + (score - 0.7) * 1.33  # 60% to 100%
+            size_pct = 0.6 + (score - 0.7) * 1.33
             size_tl = min(available_capital_tl * size_pct, self.max_position_tl)
             reason = f"High confidence (score={score:.2f})"
-
-        # Apply minimum and maximum constraints
         size_tl = max(self.min_lot_tl, min(size_tl, self.max_position_tl))
-
-        # Round to nearest 10 TL
         size_tl = round(size_tl / 10) * 10
-
-        return size_tl, reason
+        return (size_tl, reason)
 
     def record_trade_result(self, success: bool):
         """Record trade result for fail rate calculation"""
         self.recent_trades.append({"timestamp": datetime.now(), "success": success})
-
-        # Keep only recent trades
         if len(self.recent_trades) > self.trade_window:
             self.recent_trades = self.recent_trades[-self.trade_window :]
 
@@ -177,7 +144,6 @@ class ArbitrageScorer:
         Returns:
             (size_tl, score, details)
         """
-        # Score the opportunity
         score, score_details = self.score_opportunity(
             net_spread_bps=net_spread_bps,
             depth_balance=depth_balance,
@@ -185,29 +151,17 @@ class ArbitrageScorer:
             latency_ms=latency_ms,
             **kwargs,
         )
-
-        # Calculate position size
         size_tl, size_reason = self.calculate_position_size(score, available_capital_tl)
-
-        # Combine details
         details = {**score_details, "position_size_tl": size_tl, "size_reason": size_reason}
-
-        # Log decision
         logger.info(
-            f"Opportunity scored: {score:.3f} | "
-            f"Size: {size_tl} TL | "
-            f"Spread: {net_spread_bps:.1f}bps | "
-            f"Reason: {size_reason}"
+            f"Opportunity scored: {score:.3f} | Size: {size_tl} TL | Spread: {net_spread_bps:.1f}bps | Reason: {size_reason}"
         )
-
-        return size_tl, score, details
+        return (size_tl, score, details)
 
 
 def test_scorer():
     """Test the scorer with various scenarios"""
     scorer = ArbitrageScorer(max_position_tl=10000, min_lot_tl=100)
-
-    # Test scenarios
     scenarios = [
         {
             "name": "High opportunity",
@@ -238,20 +192,16 @@ def test_scorer():
             "latency_ms": 500,
         },
     ]
-
     print("=" * 60)
     print("ARBITRAGE SCORER TEST")
     print("=" * 60)
-
     for scenario in scenarios:
         name = scenario.pop("name")
         size_tl, score, details = scorer.get_size_for_opportunity(**scenario)
-
         print(f"\n{name}:")
         print(f"  Score: {score:.3f}")
         print(f"  Size: {size_tl} TL")
         print(f"  Reason: {details['size_reason']}")
-
     print("=" * 60)
 
 

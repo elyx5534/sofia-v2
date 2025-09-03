@@ -8,21 +8,25 @@ from pathlib import Path
 from typing import List
 
 import yfinance as yf
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+from src.adapters.web.fastapi_adapter import (
+    FastAPI,
+    FileResponse,
+    HTMLResponse,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from src.data_hub.news_provider import news_provider
 
 app = FastAPI(
-    title="Sofia Trading Platform",
-    description="Professional Trading Dashboard",
-    version="2.0",
+    title="Sofia Trading Platform", description="Professional Trading Dashboard", version="2.0"
 )
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,18 +34,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Mount static files
 static_path = Path(__file__).parent / "static"
 if static_path.exists():
     app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
-
-# Setup templates
 templates_path = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_path))
 
 
-# WebSocket connections
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -61,16 +60,12 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-# Real market data fetcher
 async def fetch_real_market_data():
     """Fetch real market data from Yahoo Finance."""
     equity_symbols = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "NVDA", "META"]
     crypto_symbols = ["BTC-USD", "ETH-USD"]
-
     market_data = []
-
     try:
-        # Fetch equity data
         for symbol in equity_symbols:
             try:
                 ticker = yf.Ticker(symbol)
@@ -78,8 +73,7 @@ async def fetch_real_market_data():
                 current_price = info.get("currentPrice", info.get("regularMarketPrice", 0))
                 prev_close = info.get("previousClose", current_price)
                 change = current_price - prev_close
-                change_percent = (change / prev_close * 100) if prev_close else 0
-
+                change_percent = change / prev_close * 100 if prev_close else 0
                 market_data.append(
                     {
                         "symbol": symbol,
@@ -95,10 +89,7 @@ async def fetch_real_market_data():
                 )
             except Exception as e:
                 print(f"Error fetching {symbol}: {e}")
-                # Use simulated data as fallback
                 market_data.append(generate_simulated_quote(symbol))
-
-        # Fetch crypto data
         for symbol in crypto_symbols:
             try:
                 ticker = yf.Ticker(symbol)
@@ -106,8 +97,7 @@ async def fetch_real_market_data():
                 current_price = info.get("currentPrice", info.get("regularMarketPrice", 0))
                 prev_close = info.get("previousClose", current_price)
                 change = current_price - prev_close
-                change_percent = (change / prev_close * 100) if prev_close else 0
-
+                change_percent = change / prev_close * 100 if prev_close else 0
                 display_symbol = symbol.replace("-USD", "/USDT")
                 market_data.append(
                     {
@@ -125,33 +115,28 @@ async def fetch_real_market_data():
             except Exception as e:
                 print(f"Error fetching {symbol}: {e}")
                 market_data.append(generate_simulated_quote(symbol.replace("-USD", "/USDT")))
-
     except Exception as e:
         print(f"Market data fetch error: {e}")
-        # Fallback to simulated data
         return generate_simulated_market_data()
-
     return market_data
 
 
 def generate_simulated_quote(symbol):
     """Generate simulated quote for a symbol."""
     base_prices = {
-        "AAPL": 175.50,
+        "AAPL": 175.5,
         "GOOGL": 140.25,
         "MSFT": 380.75,
-        "AMZN": 155.30,
-        "TSLA": 240.60,
-        "NVDA": 890.50,
-        "META": 485.20,
+        "AMZN": 155.3,
+        "TSLA": 240.6,
+        "NVDA": 890.5,
+        "META": 485.2,
         "BTC/USDT": 45000,
         "ETH/USDT": 2500,
     }
-
     base = base_prices.get(symbol, 100)
     change = random.uniform(-3, 3)
     price = base * (1 + change / 100)
-
     return {
         "symbol": symbol,
         "name": symbol,
@@ -184,19 +169,12 @@ async def read_root():
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates."""
     await manager.connect(websocket)
-
-    # Send initial market data
     initial_data = await fetch_real_market_data()
     await websocket.send_json({"type": "market_data", "symbols": initial_data})
-
-    # Start background task for this connection
     task = asyncio.create_task(send_market_updates(websocket))
-
     try:
         while True:
-            # Keep connection alive and handle incoming messages
             data = await websocket.receive_text()
-            # Handle any client requests here
     except WebSocketDisconnect:
         task.cancel()
         manager.disconnect(websocket)
@@ -206,13 +184,9 @@ async def send_market_updates(websocket: WebSocket):
     """Send periodic market updates to a specific websocket."""
     while True:
         try:
-            await asyncio.sleep(10)  # Update every 10 seconds
-
-            # Fetch real market data
+            await asyncio.sleep(10)
             market_data = await fetch_real_market_data()
             await websocket.send_json({"type": "market_data", "symbols": market_data})
-
-            # Simulate trading activity
             if random.random() > 0.5:
                 trade = generate_random_trade()
                 await websocket.send_json(
@@ -223,7 +197,6 @@ async def send_market_updates(websocket: WebSocket):
                         "side": trade["side"],
                     }
                 )
-
         except Exception as e:
             print(f"Error sending updates: {e}")
             break
@@ -236,14 +209,12 @@ def generate_random_trade():
     side = random.choice(["buy", "sell"])
     quantity = random.randint(10, 500) if "/" not in symbol else round(random.uniform(0.01, 2), 4)
     price = random.uniform(100, 500) if "/" not in symbol else random.uniform(20000, 50000)
-
     return {"symbol": symbol, "side": side, "message": f"{side.upper()} {quantity} @ ${price:.2f}"}
 
 
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on startup."""
-    # Market data will be sent per connection now
     pass
 
 
@@ -253,13 +224,13 @@ async def get_portfolio():
     return {
         "total_value": 125342.67 + random.uniform(-1000, 1000),
         "cash_balance": 80112.67,
-        "positions_value": 45230.00,
-        "daily_pnl": 2341.50 + random.uniform(-200, 200),
+        "positions_value": 45230.0,
+        "daily_pnl": 2341.5 + random.uniform(-200, 200),
         "daily_pnl_percent": 1.87,
         "total_return": 25.34,
         "positions": [
-            {"symbol": "AAPL", "quantity": 100, "value": 17823.00, "pnl": 273.00},
-            {"symbol": "GOOGL", "quantity": 50, "value": 7128.00, "pnl": -122.00},
+            {"symbol": "AAPL", "quantity": 100, "value": 17823.0, "pnl": 273.0},
+            {"symbol": "GOOGL", "quantity": 50, "value": 7128.0, "pnl": -122.0},
             {"symbol": "BTC/USDT", "quantity": 0.5, "value": 21783.95, "pnl": 783.95},
         ],
     }
@@ -274,8 +245,8 @@ async def get_metrics():
         "winning_trades": 147,
         "sharpe_ratio": 2.34,
         "max_drawdown": -8.5,
-        "avg_win": 125.50,
-        "avg_loss": -45.30,
+        "avg_win": 125.5,
+        "avg_loss": -45.3,
         "profit_factor": 2.77,
     }
 
@@ -284,51 +255,41 @@ async def get_metrics():
 async def analysis_page(request: Request, symbol: str):
     """Render detailed analysis page for a symbol."""
     try:
-        # Simple import without reload
         sys.path.insert(0, str(Path(__file__).parent.parent))
         from core.indicators import calculate_rsi, calculate_sma
 
-        # Fetch current data
         ticker = yf.Ticker(symbol)
         info = ticker.info
         hist = ticker.history(period="1mo")
-
-        # Calculate indicators
         indicators_list = []
         if not hist.empty:
             current_price = hist["Close"].iloc[-1]
-            # Convert to pandas Series before passing to indicators
             close_prices = hist["Close"]
             rsi = calculate_rsi(close_prices)
             sma_20 = calculate_sma(close_prices, 20)
-
-            # Determine signals
             rsi_signal = "bullish" if rsi < 30 else "bearish" if rsi > 70 else "neutral"
             sma_signal = "bullish" if current_price > sma_20 else "bearish"
-
             indicators_list = [
                 {"name": "RSI(14)", "value": f"{float(rsi):.2f}", "signal": rsi_signal},
                 {"name": "SMA(20)", "value": f"${float(sma_20):.2f}", "signal": sma_signal},
                 {"name": "Volume", "value": f"{hist['Volume'].iloc[-1]:,.0f}", "signal": "neutral"},
             ]
-
-        # Fetch news
         news_items = await news_provider.fetch_news(symbol, 5)
-
-        # Prepare template data
         context = {
             "request": request,
             "symbol": symbol,
             "company_name": info.get("longName", symbol),
             "current_price": f"{info.get('currentPrice', 0):.2f}",
             "price_change": round(info.get("currentPrice", 0) - info.get("previousClose", 0), 2),
-            "price_change_pct": f"{((info.get('currentPrice', 0) / info.get('previousClose', 1) - 1) * 100):.2f}",
+            "price_change_pct": f"{(info.get('currentPrice', 0) / info.get('previousClose', 1) - 1) * 100:.2f}",
             "indicators": indicators_list,
             "metrics": [
                 {
                     "name": "Market Cap",
                     "value": (
-                        f"${info.get('marketCap', 0)/1e9:.2f}B" if info.get("marketCap") else "N/A"
+                        f"${info.get('marketCap', 0) / 1000000000.0:.2f}B"
+                        if info.get("marketCap")
+                        else "N/A"
                     ),
                 },
                 {
@@ -342,7 +303,7 @@ async def analysis_page(request: Request, symbol: str):
                 {
                     "name": "Avg Volume",
                     "value": (
-                        f"{info.get('averageVolume', 0)/1e6:.2f}M"
+                        f"{info.get('averageVolume', 0) / 1000000.0:.2f}M"
                         if info.get("averageVolume")
                         else "N/A"
                     ),
@@ -357,9 +318,7 @@ async def analysis_page(request: Request, symbol: str):
                 "total_trades": "42",
             },
         }
-
         return templates.TemplateResponse("analysis.html", context)
-
     except Exception as e:
         print(f"Analysis page error: {e}")
         return HTMLResponse(
@@ -371,9 +330,8 @@ async def analysis_page(request: Request, symbol: str):
 async def get_news(symbol: str, limit: int = 5):
     """Get latest news for a symbol."""
     try:
-        # Handle general market news request
         if symbol == "MARKET":
-            symbol = "SPY"  # Use SPY as proxy for market news
+            symbol = "SPY"
         news_items = await news_provider.fetch_news(symbol, limit)
         return {
             "symbol": symbol,
@@ -387,7 +345,6 @@ async def get_news(symbol: str, limit: int = 5):
 @app.get("/api/backtest/latest")
 async def get_latest_backtest():
     """Get latest backtest results."""
-    # Mock data for now - will be replaced with actual backtest service
     return {
         "strategy": "SMA Crossover",
         "symbol": "BTC/USDT",

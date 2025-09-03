@@ -40,10 +40,10 @@ class OrderStatus(str, Enum):
 class TimeInForce(str, Enum):
     """Time in force."""
 
-    GTC = "gtc"  # Good Till Cancelled
-    IOC = "ioc"  # Immediate or Cancel
-    FOK = "fok"  # Fill or Kill
-    DAY = "day"  # Day Order
+    GTC = "gtc"
+    IOC = "ioc"
+    FOK = "fok"
+    DAY = "day"
 
 
 class Order(BaseModel):
@@ -108,10 +108,8 @@ class OrderManager:
             stop_price=stop_price,
             time_in_force=time_in_force,
         )
-
         self.orders[order.id] = order
         self.active_orders.append(order)
-
         return order
 
     def cancel_order(self, order_id: str) -> bool:
@@ -136,20 +134,14 @@ class OrderManager:
         if order_id in self.orders:
             order = self.orders[order_id]
             order.status = status
-
             if filled_quantity is not None:
                 order.filled_quantity = filled_quantity
-
             if average_fill_price is not None:
                 order.average_fill_price = average_fill_price
-
             order.updated_at = datetime.utcnow()
-
-            # Move to history if completed
             if not order.is_active() and order in self.active_orders:
                 self.active_orders.remove(order)
                 self.order_history.append(order)
-
             return True
         return False
 

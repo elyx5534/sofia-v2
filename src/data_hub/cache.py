@@ -1,13 +1,13 @@
 from datetime import timezone
 
-"""Cache management for the data-hub module."""
-
+"Cache management for the data-hub module."
 import hashlib
 from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import SQLModel, select
+
+from src.adapters.db.sqlalchemy_adapter import sessionmaker
+from src.adapters.db.sqlmodel_adapter import SQLModel, select
 
 from .models import CandleCache, OHLCVData, SymbolCache, SymbolInfo
 from .settings import settings
@@ -18,11 +18,7 @@ class CacheManager:
 
     def __init__(self) -> None:
         """Initialize the cache manager."""
-        self.engine = create_async_engine(
-            settings.database_url,
-            echo=False,
-            future=True,
-        )
+        self.engine = create_async_engine(settings.database_url, echo=False, future=True)
         self.async_session = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
         self.ttl_seconds = settings.cache_ttl
 
@@ -64,25 +60,17 @@ class CacheManager:
             start_date=start_date.isoformat() if start_date else None,
             end_date=end_date.isoformat() if end_date else None,
         )
-
         async with self.async_session() as session:
-            # Query cached candles
             statement = select(CandleCache).where(CandleCache.cache_key == cache_key)
             results = await session.execute(statement)
             candles = results.scalars().all()
-
             if not candles:
                 return None
-
-            # Check if any candle has expired
             if any(self._is_expired(candle.created_at) for candle in candles):
-                # Delete expired cache entries
                 for candle in candles:
                     await session.delete(candle)
                 await session.commit()
                 return None
-
-            # Convert to OHLCVData models
             return [
                 OHLCVData(
                     timestamp=candle.timestamp,
@@ -114,16 +102,12 @@ class CacheManager:
             start_date=start_date.isoformat() if start_date else None,
             end_date=end_date.isoformat() if end_date else None,
         )
-
         async with self.async_session() as session:
-            # Delete existing cache entries with same key
             statement = select(CandleCache).where(CandleCache.cache_key == cache_key)
             results = await session.execute(statement)
             existing = results.scalars().all()
             for candle in existing:
                 await session.delete(candle)
-
-            # Insert new cache entries
             for ohlcv in data:
                 candle = CandleCache(
                     symbol=symbol,
@@ -139,7 +123,6 @@ class CacheManager:
                     cache_key=cache_key,
                 )
                 session.add(candle)
-
             await session.commit()
 
     async def get_symbol_cache(self, symbol: str, asset_type: str) -> SymbolInfo | None:
@@ -152,19 +135,16 @@ class CacheManager:
             )
             result = await session.execute(statement)
             cached_symbol = result.scalar_one_or_none()
-
             if not cached_symbol:
                 return None
-
             if self._is_expired(cached_symbol.updated_at):
                 await session.delete(cached_symbol)
                 await session.commit()
                 return None
-
             return SymbolInfo(
                 symbol=cached_symbol.symbol,
                 name=cached_symbol.name,
-                asset_type=asset_type,  # type: ignore
+                asset_type=asset_type,
                 exchange=cached_symbol.exchange,
                 currency=cached_symbol.currency,
                 active=cached_symbol.active,
@@ -173,7 +153,6 @@ class CacheManager:
     async def set_symbol_cache(self, symbol_info: SymbolInfo) -> None:
         """Store symbol information in cache."""
         async with self.async_session() as session:
-            # Check if symbol exists
             statement = (
                 select(SymbolCache)
                 .where(SymbolCache.symbol == symbol_info.symbol)
@@ -181,16 +160,13 @@ class CacheManager:
             )
             result = await session.execute(statement)
             existing = result.scalar_one_or_none()
-
             if existing:
-                # Update existing
                 existing.name = symbol_info.name
                 existing.exchange = symbol_info.exchange
                 existing.currency = symbol_info.currency
                 existing.active = symbol_info.active
                 existing.updated_at = datetime.now(timezone.utc)
             else:
-                # Create new
                 new_symbol = SymbolCache(
                     symbol=symbol_info.symbol,
                     name=symbol_info.name,
@@ -200,35 +176,27 @@ class CacheManager:
                     active=symbol_info.active,
                 )
                 session.add(new_symbol)
-
             await session.commit()
 
     async def clear_expired_cache(self) -> int:
         """Clear all expired cache entries. Returns number of deleted entries."""
         cutoff_time = datetime.now(timezone.utc) - timedelta(seconds=self.ttl_seconds)
         deleted_count = 0
-
         async with self.async_session() as session:
-            # Clear expired candles
             statement = select(CandleCache).where(CandleCache.created_at < cutoff_time)
             results = await session.execute(statement)
             expired_candles = results.scalars().all()
             for candle in expired_candles:
                 await session.delete(candle)
                 deleted_count += 1
-
-            # Clear expired symbols
             statement = select(SymbolCache).where(SymbolCache.updated_at < cutoff_time)
             results = await session.execute(statement)
             expired_symbols = results.scalars().all()
             for symbol in expired_symbols:
                 await session.delete(symbol)
                 deleted_count += 1
-
             await session.commit()
-
         return deleted_count
 
 
-# Global cache manager instance
 cache_manager = CacheManager()

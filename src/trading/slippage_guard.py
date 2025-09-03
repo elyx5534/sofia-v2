@@ -31,30 +31,22 @@ class SlippageController:
         """
         if expected_price == 0:
             return False
-
         slippage = abs(actual_price - expected_price) / expected_price
-
-        # For buy orders, actual > expected is negative slippage
-        # For sell orders, actual < expected is negative slippage
         if side == "buy" and actual_price > expected_price:
             slippage = -slippage
         elif side == "sell" and actual_price < expected_price:
             slippage = -slippage
-
         self.slippage_events.append(
             {"expected": expected_price, "actual": actual_price, "slippage": slippage, "side": side}
         )
-
         return abs(slippage) <= self.max_slippage
 
     def get_stats(self) -> dict:
         """Get slippage statistics"""
         if not self.slippage_events:
             return {"total_events": 0, "avg_slippage": 0, "max_slippage": 0, "violations": 0}
-
         slippages = [e["slippage"] for e in self.slippage_events]
         violations = sum(1 for s in slippages if abs(s) > self.max_slippage)
-
         return {
             "total_events": len(self.slippage_events),
             "avg_slippage": sum(slippages) / len(slippages),

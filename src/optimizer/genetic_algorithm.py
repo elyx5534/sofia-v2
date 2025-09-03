@@ -61,7 +61,6 @@ class GeneticAlgorithm:
         self.mutation_rate = mutation_rate
         self.elite_size = min(elite_size, population_size // 2)
         self.parallel = parallel
-
         self.population: List[Individual] = []
         self.best_individual: Optional[Individual] = None
         self.history: List[Dict] = []
@@ -74,7 +73,6 @@ class GeneticAlgorithm:
                 genes[param] = random.randint(min_val, max_val)
             else:
                 genes[param] = random.uniform(min_val, max_val)
-
         return Individual(genes=genes)
 
     def initialize_population(self):
@@ -95,7 +93,6 @@ class GeneticAlgorithm:
         if self.parallel:
             with ThreadPoolExecutor(max_workers=4) as executor:
                 fitnesses = list(executor.map(self.evaluate_fitness, self.population))
-
             for ind, fitness in zip(self.population, fitnesses):
                 ind.fitness = fitness
         else:
@@ -115,7 +112,7 @@ class GeneticAlgorithm:
             candidates = random.sample(self.population, tournament_size)
             return max(candidates, key=lambda x: x.fitness)
 
-        return tournament(), tournament()
+        return (tournament(), tournament())
 
     def crossover(self, parent1: Individual, parent2: Individual) -> Tuple[Individual, Individual]:
         """
@@ -129,12 +126,9 @@ class GeneticAlgorithm:
             Tuple of two offspring
         """
         if random.random() > self.crossover_rate:
-            return Individual(genes=parent1.genes.copy()), Individual(genes=parent2.genes.copy())
-
-        # Uniform crossover
+            return (Individual(genes=parent1.genes.copy()), Individual(genes=parent2.genes.copy()))
         child1_genes = {}
         child2_genes = {}
-
         for param in self.param_space.keys():
             if random.random() < 0.5:
                 child1_genes[param] = parent1.genes[param]
@@ -142,8 +136,7 @@ class GeneticAlgorithm:
             else:
                 child1_genes[param] = parent2.genes[param]
                 child2_genes[param] = parent1.genes[param]
-
-        return Individual(genes=child1_genes), Individual(genes=child2_genes)
+        return (Individual(genes=child1_genes), Individual(genes=child2_genes))
 
     def mutate(self, individual: Individual) -> Individual:
         """
@@ -156,43 +149,31 @@ class GeneticAlgorithm:
             Mutated individual
         """
         mutated_genes = individual.genes.copy()
-
         for param, (min_val, max_val) in self.param_space.items():
             if random.random() < self.mutation_rate:
                 if isinstance(min_val, int) and isinstance(max_val, int):
-                    # Integer parameter - small perturbation
                     current = mutated_genes[param]
                     delta = random.randint(
                         -max(1, (max_val - min_val) // 10), max(1, (max_val - min_val) // 10)
                     )
                     mutated_genes[param] = max(min_val, min(max_val, current + delta))
                 else:
-                    # Float parameter - gaussian mutation
                     current = mutated_genes[param]
                     sigma = (max_val - min_val) * 0.1
                     mutated_value = current + random.gauss(0, sigma)
                     mutated_genes[param] = max(min_val, min(max_val, mutated_value))
-
         return Individual(genes=mutated_genes)
 
     def evolve_generation(self):
         """Evolve one generation."""
-        # Sort population by fitness
         self.population.sort(key=lambda x: x.fitness, reverse=True)
-
-        # Keep elite individuals
         new_population = self.population[: self.elite_size]
-
-        # Generate offspring
         while len(new_population) < self.population_size:
             parent1, parent2 = self.selection()
             child1, child2 = self.crossover(parent1, parent2)
             child1 = self.mutate(child1)
             child2 = self.mutate(child2)
-
             new_population.extend([child1, child2])
-
-        # Trim to population size
         self.population = new_population[: self.population_size]
 
     def run(self) -> Dict[str, Any]:
@@ -204,19 +185,12 @@ class GeneticAlgorithm:
         """
         print("Starting Genetic Algorithm optimization...")
         print(f"Population size: {self.population_size}, Generations: {self.generations}")
-
-        # Initialize
         self.initialize_population()
         self.evaluate_population()
-
-        # Evolution loop
         for generation in range(self.generations):
-            # Track best individual
             current_best = max(self.population, key=lambda x: x.fitness)
             if self.best_individual is None or current_best.fitness > self.best_individual.fitness:
                 self.best_individual = current_best
-
-            # Record history
             fitness_values = [ind.fitness for ind in self.population]
             self.history.append(
                 {
@@ -226,20 +200,14 @@ class GeneticAlgorithm:
                     "std_fitness": np.std(fitness_values),
                 }
             )
-
-            # Progress update
             if generation % 10 == 0:
                 print(f"Generation {generation}: Best fitness = {self.best_individual.fitness:.4f}")
-
-            # Evolve
-            if generation < self.generations - 1:  # Don't evolve after last generation
+            if generation < self.generations - 1:
                 self.evolve_generation()
                 self.evaluate_population()
-
         print("\nOptimization complete!")
         print(f"Best parameters: {self.best_individual.genes}")
         print(f"Best fitness: {self.best_individual.fitness:.4f}")
-
         return {
             "best_params": self.best_individual.genes,
             "best_fitness": self.best_individual.fitness,
@@ -259,15 +227,11 @@ class GeneticAlgorithm:
         """
         initial_mutation_rate = self.mutation_rate
         initial_crossover_rate = self.crossover_rate
-
         results = self.run()
-
-        # Adaptive schedule: decrease mutation, increase crossover over time
         for gen in range(self.generations):
             progress = gen / self.generations
             self.mutation_rate = initial_mutation_rate * (1 - 0.5 * progress)
             self.crossover_rate = initial_crossover_rate * (1 + 0.2 * progress)
-
         return results
 
 
@@ -299,7 +263,6 @@ def optimize_strategy_ga(
         try:
             strategy = strategy_class(**params)
             results = engine.run(data, strategy)
-
             if metric == "sharpe":
                 return results.get("sharpe", 0)
             elif metric == "return":
@@ -315,5 +278,4 @@ def optimize_strategy_ga(
             return -float("inf")
 
     ga = GeneticAlgorithm(param_space=param_space, fitness_function=fitness_function, **ga_kwargs)
-
     return ga.run()

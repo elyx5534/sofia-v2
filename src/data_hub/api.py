@@ -3,10 +3,9 @@
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
+from src.adapters.web.fastapi_adapter import FastAPI, HTTPException, JSONResponse, Query
 from src.backtest.api import router as backtester_router
 
 from .cache import cache_manager
@@ -19,25 +18,19 @@ from .settings import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    # Startup
     await cache_manager.init_db()
     yield
-    # Shutdown
     await cache_manager.close()
-    # Close any open providers
     if hasattr(app.state, "ccxt_provider"):
         await app.state.ccxt_provider.close()
 
 
-# Create FastAPI app
 app = FastAPI(
     title=settings.api_title,
     version=settings.api_version,
     description=settings.api_description,
     lifespan=lifespan,
 )
-
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -45,12 +38,8 @@ app.add_middleware(
     allow_methods=settings.cors_methods,
     allow_headers=settings.cors_headers,
 )
-
-# Initialize providers
 yfinance_provider = YFinanceProvider()
 ccxt_provider = CCXTProvider()
-
-# Mount backtester router
 app.include_router(backtester_router, prefix="/backtester", tags=["Backtester"])
 
 
@@ -58,11 +47,7 @@ app.include_router(backtester_router, prefix="/backtester", tags=["Backtester"])
 async def value_error_handler(request, exc):
     """Handle ValueError exceptions."""
     return JSONResponse(
-        status_code=404,
-        content=ErrorResponse(
-            error="Not Found",
-            detail=str(exc),
-        ).model_dump(),
+        status_code=404, content=ErrorResponse(error="Not Found", detail=str(exc)).model_dump()
     )
 
 
@@ -71,10 +56,7 @@ async def general_error_handler(request, exc):
     """Handle general exceptions."""
     return JSONResponse(
         status_code=503,
-        content=ErrorResponse(
-            error="Service Unavailable",
-            detail=str(exc),
-        ).model_dump(),
+        content=ErrorResponse(error="Service Unavailable", detail=str(exc)).model_dump(),
     )
 
 
@@ -82,9 +64,7 @@ async def general_error_handler(request, exc):
 async def health_check():
     """Health check endpoint."""
     return HealthResponse(
-        status="healthy",
-        timestamp=datetime.now(timezone.utc),
-        version=settings.api_version,
+        status="healthy", timestamp=datetime.now(timezone.utc), version=settings.api_version
     )
 
 
@@ -104,16 +84,11 @@ async def search_symbols(
     try:
         if asset_type == AssetType.EQUITY:
             results = await yfinance_provider.search_symbols(query, limit)
-        else:  # CRYPTO
+        else:
             results = await ccxt_provider.search_symbols(query, limit)
-
         return SymbolSearchResponse(
-            query=query,
-            asset_type=asset_type,
-            results=results,
-            count=len(results),
+            query=query, asset_type=asset_type, results=results, count=len(results)
         )
-
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e)) from e
 
@@ -144,8 +119,6 @@ async def get_ohlcv(
     try:
         cached = False
         ohlcv_data = None
-
-        # Check cache first (unless nocache is set)
         if not nocache:
             ohlcv_data = await cache_manager.get_ohlcv_cache(
                 symbol=symbol,
@@ -157,8 +130,6 @@ async def get_ohlcv(
             )
             if ohlcv_data:
                 cached = True
-
-        # Fetch from provider if not cached
         if not ohlcv_data:
             if asset_type == AssetType.EQUITY:
                 ohlcv_data = await yfinance_provider.fetch_ohlcv(
@@ -168,8 +139,7 @@ async def get_ohlcv(
                     end_date=end_date,
                     limit=limit,
                 )
-            else:  # CRYPTO
-                # Use specified exchange or default
+            else:
                 provider = ccxt_provider
                 if exchange and exchange != settings.default_exchange:
                     provider = CCXTProvider(exchange)
@@ -191,8 +161,6 @@ async def get_ohlcv(
                         end_date=end_date,
                         limit=limit,
                     )
-
-            # Store in cache
             if ohlcv_data:
                 await cache_manager.set_ohlcv_cache(
                     symbol=symbol,
@@ -203,7 +171,6 @@ async def get_ohlcv(
                     start_date=start_date,
                     end_date=end_date,
                 )
-
         return OHLCVResponse(
             symbol=symbol,
             asset_type=asset_type,
@@ -212,12 +179,9 @@ async def get_ohlcv(
             cached=cached,
             timestamp=datetime.now(timezone.utc),
         )
-
     except ValueError as e:
-        # Symbol not found
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        # Provider error
         raise HTTPException(status_code=503, detail=str(e)) from e
 
 
@@ -259,54 +223,31 @@ async def analyze_market_data(
     - Sufficient OHLCV data available
     """
     try:
-        # Check if Claude service is available
         if not claude_service:
             raise HTTPException(
                 status_code=503,
                 detail="Claude AI service not configured. Please set CLAUDE_API_KEY environment variable.",
             )
-
-        # First, get OHLCV data
         ohlcv_data = None
-
-        # Check cache first
         ohlcv_data = await cache_manager.get_ohlcv_cache(
-            symbol=symbol,
-            asset_type=asset_type,
-            timeframe=timeframe,
+            symbol=symbol, asset_type=asset_type, timeframe=timeframe
         )
-
-        # Fetch from provider if not cached
         if not ohlcv_data:
             if asset_type == AssetType.EQUITY:
                 ohlcv_data = await yfinance_provider.fetch_ohlcv(
-                    symbol=symbol,
-                    timeframe=timeframe,
-                    limit=limit,
+                    symbol=symbol, timeframe=timeframe, limit=limit
                 )
-            else:  # CRYPTO
+            else:
                 ohlcv_data = await ccxt_provider.fetch_ohlcv(
-                    symbol=symbol,
-                    timeframe=timeframe,
-                    limit=limit,
+                    symbol=symbol, timeframe=timeframe, limit=limit
                 )
-
-            # Cache the data
             if ohlcv_data:
                 await cache_manager.set_ohlcv_cache(
-                    symbol=symbol,
-                    asset_type=asset_type,
-                    timeframe=timeframe,
-                    data=ohlcv_data,
+                    symbol=symbol, asset_type=asset_type, timeframe=timeframe, data=ohlcv_data
                 )
-
         if not ohlcv_data:
             raise HTTPException(status_code=404, detail=f"No data available for {symbol}")
-
-        # Limit data for analysis (use most recent candles)
         analysis_data = ohlcv_data[-limit:] if len(ohlcv_data) > limit else ohlcv_data
-
-        # Create analysis request
         analysis_request = MarketAnalysisRequest(
             symbol=symbol,
             asset_type=asset_type,
@@ -314,12 +255,8 @@ async def analyze_market_data(
             timeframe=timeframe,
             analysis_type=analysis_type,
         )
-
-        # Get AI analysis
         analysis = await claude_service.analyze_market_data(analysis_request)
-
         return analysis
-
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
@@ -345,7 +282,6 @@ async def root():
     }
 
 
-# Add shutdown handler for providers
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up providers on shutdown."""

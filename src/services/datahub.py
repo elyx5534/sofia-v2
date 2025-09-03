@@ -57,16 +57,11 @@ class DataHub:
             >>> for candle in candles[:2]:
             ...     print(f"Time: {candle[0]}, Close: {candle[4]}")
         """
-        # Check cache first
         cached_data = self._load_cache(symbol, timeframe, start, end)
         if cached_data is not None:
             logger.info(f"Using cached data for {symbol}")
             return cached_data
-
-        # Try each source in order
         data = None
-
-        # 1. Try yfinance
         try:
             logger.info(f"Trying yfinance for {symbol}")
             data = self._fetch_yfinance(symbol, timeframe, start, end)
@@ -74,8 +69,6 @@ class DataHub:
                 logger.info(f"Got data from yfinance: {len(data)} bars")
         except Exception as e:
             logger.warning(f"yfinance failed: {e}")
-
-        # 2. Try Binance
         if not data and "USDT" in symbol.upper():
             try:
                 logger.info(f"Trying Binance for {symbol}")
@@ -84,8 +77,6 @@ class DataHub:
                     logger.info(f"Got data from Binance: {len(data)} bars")
             except Exception as e:
                 logger.warning(f"Binance failed: {e}")
-
-        # 3. Try Coinbase
         if not data and "/" in symbol:
             try:
                 logger.info(f"Trying Coinbase for {symbol}")
@@ -94,9 +85,7 @@ class DataHub:
                     logger.info(f"Got data from Coinbase: {len(data)} bars")
             except Exception as e:
                 logger.warning(f"Coinbase failed: {e}")
-
-        # 4. Try Stooq (for stocks)
-        if not data and not any(x in symbol.upper() for x in ["USDT", "USD", "BTC", "ETH"]):
+        if not data and (not any(x in symbol.upper() for x in ["USDT", "USD", "BTC", "ETH"])):
             try:
                 logger.info(f"Trying Stooq for {symbol}")
                 data = self._fetch_stooq(symbol, timeframe, start, end)
@@ -104,23 +93,17 @@ class DataHub:
                     logger.info(f"Got data from Stooq: {len(data)} bars")
             except Exception as e:
                 logger.warning(f"Stooq failed: {e}")
-
-        # Cache if we got data
         if data:
             self._save_cache(symbol, timeframe, start, end, data)
-
         return data or []
 
     def _fetch_yfinance(self, symbol: str, timeframe: str, start: str, end: str) -> List[List]:
         """Fetch from yfinance"""
-        # Convert symbol format
         yf_symbol = symbol.replace("/", "-").replace("USDT", "-USD")
-        if "BTC" in yf_symbol and not yf_symbol.startswith("BTC"):
+        if "BTC" in yf_symbol and (not yf_symbol.startswith("BTC")):
             yf_symbol = "BTC-USD"
-        elif "ETH" in yf_symbol and not yf_symbol.startswith("ETH"):
+        elif "ETH" in yf_symbol and (not yf_symbol.startswith("ETH")):
             yf_symbol = "ETH-USD"
-
-        # Convert timeframe
         tf_map = {
             "1m": "1m",
             "5m": "5m",
@@ -132,15 +115,10 @@ class DataHub:
             "1w": "1wk",
         }
         yf_interval = tf_map.get(timeframe, "1d")
-
-        # Fetch data
         ticker = yf.Ticker(yf_symbol)
         df = ticker.history(start=start, end=end, interval=yf_interval)
-
         if df.empty:
             return []
-
-        # Convert to standard format
         result = []
         for idx, row in df.iterrows():
             timestamp = int(idx.timestamp() * 1000)
@@ -154,15 +132,11 @@ class DataHub:
                     float(row["Volume"]),
                 ]
             )
-
         return result
 
     def _fetch_binance(self, symbol: str, timeframe: str, start: str, end: str) -> List[List]:
         """Fetch from Binance public API"""
-        # Convert symbol
         binance_symbol = symbol.replace("/", "").replace("-", "")
-
-        # Convert timeframe
         tf_map = {
             "1m": "1m",
             "5m": "5m",
@@ -174,12 +148,8 @@ class DataHub:
             "1w": "1w",
         }
         interval = tf_map.get(timeframe, "1d")
-
-        # Convert dates to timestamps
         start_ts = int(datetime.fromisoformat(start).timestamp() * 1000)
         end_ts = int(datetime.fromisoformat(end).timestamp() * 1000)
-
-        # Binance klines endpoint
         url = "https://api.binance.com/api/v3/klines"
         params = {
             "symbol": binance_symbol,
@@ -188,48 +158,37 @@ class DataHub:
             "endTime": end_ts,
             "limit": 1000,
         }
-
         all_data = []
         while start_ts < end_ts:
             response = requests.get(url, params=params, timeout=self.timeout)
             if response.status_code != 200:
                 break
-
             data = response.json()
             if not data:
                 break
-
             all_data.extend(data)
-
-            # Update start time for next batch
             if data:
                 start_ts = data[-1][0] + 1
                 params["startTime"] = start_ts
             else:
                 break
-
-        # Convert to standard format
         result = []
         for candle in all_data:
             result.append(
                 [
-                    int(candle[0]),  # timestamp
-                    float(candle[1]),  # open
-                    float(candle[2]),  # high
-                    float(candle[3]),  # low
-                    float(candle[4]),  # close
-                    float(candle[5]),  # volume
+                    int(candle[0]),
+                    float(candle[1]),
+                    float(candle[2]),
+                    float(candle[3]),
+                    float(candle[4]),
+                    float(candle[5]),
                 ]
             )
-
         return result
 
     def _fetch_coinbase(self, symbol: str, timeframe: str, start: str, end: str) -> List[List]:
         """Fetch from Coinbase public API"""
-        # Convert symbol
         cb_symbol = symbol.replace("/", "-").replace("USDT", "USD")
-
-        # Convert timeframe to granularity in seconds
         tf_map = {
             "1m": 60,
             "5m": 300,
@@ -240,74 +199,56 @@ class DataHub:
             "1d": 86400,
         }
         granularity = tf_map.get(timeframe, 86400)
-
-        # Coinbase candles endpoint
         url = f"https://api.exchange.coinbase.com/products/{cb_symbol}/candles"
         params = {"start": start, "end": end, "granularity": granularity}
-
         response = requests.get(url, params=params, timeout=self.timeout)
         if response.status_code != 200:
             return []
-
         data = response.json()
-
-        # Convert to standard format (Coinbase returns newest first)
         result = []
         for candle in reversed(data):
             result.append(
                 [
-                    int(candle[0]) * 1000,  # timestamp (convert to ms)
-                    float(candle[3]),  # open
-                    float(candle[2]),  # high
-                    float(candle[1]),  # low
-                    float(candle[4]),  # close
-                    float(candle[5]),  # volume
+                    int(candle[0]) * 1000,
+                    float(candle[3]),
+                    float(candle[2]),
+                    float(candle[1]),
+                    float(candle[4]),
+                    float(candle[5]),
                 ]
             )
-
         return result
 
     def _fetch_stooq(self, symbol: str, timeframe: str, start: str, end: str) -> List[List]:
         """Fetch from Stooq (mainly for stocks)"""
-        # Stooq uses different symbol format
         stooq_symbol = symbol.lower()
-
-        # Only daily data from Stooq
         if timeframe not in ["1d", "1w"]:
             return []
-
         url = f"https://stooq.com/q/d/l/?s={stooq_symbol}&i=d"
         response = requests.get(url, timeout=self.timeout)
-
         if response.status_code != 200:
             return []
-
-        # Parse CSV data
         lines = response.text.strip().split("\n")
         if len(lines) < 2:
             return []
-
         result = []
-        for line in lines[1:]:  # Skip header
+        for line in lines[1:]:
             parts = line.split(",")
             if len(parts) >= 6:
                 date_str = parts[0]
                 dt = datetime.strptime(date_str, "%Y-%m-%d")
-
-                # Filter by date range
                 if start <= date_str <= end:
                     timestamp = int(dt.timestamp() * 1000)
                     result.append(
                         [
                             timestamp,
-                            float(parts[1]),  # open
-                            float(parts[2]),  # high
-                            float(parts[3]),  # low
-                            float(parts[4]),  # close
-                            float(parts[5]),  # volume
+                            float(parts[1]),
+                            float(parts[2]),
+                            float(parts[3]),
+                            float(parts[4]),
+                            float(parts[5]),
                         ]
                     )
-
         return result
 
     def _load_cache(
@@ -317,22 +258,15 @@ class DataHub:
         cache_file = self.cache_dir / f"{symbol}_{timeframe}_{start}_{end}.parquet".replace(
             "/", "_"
         )
-
         if not cache_file.exists():
             return None
-
-        # Check if cache is expired
         file_age = datetime.now() - datetime.fromtimestamp(cache_file.stat().st_mtime)
         if file_age > self.cache_ttl:
-            cache_file.unlink()  # Delete expired cache
+            cache_file.unlink()
             return None
-
         try:
-            # Read parquet file
             table = pq.read_table(cache_file)
             df = table.to_pandas()
-
-            # Convert to list format
             result = []
             for _, row in df.iterrows():
                 result.append(
@@ -354,41 +288,31 @@ class DataHub:
         """Save data to cache"""
         if not data:
             return
-
         cache_file = self.cache_dir / f"{symbol}_{timeframe}_{start}_{end}.parquet".replace(
             "/", "_"
         )
-
         try:
-            # Convert to DataFrame
             df = pd.DataFrame(data, columns=["timestamp", "open", "high", "low", "close", "volume"])
-
-            # Save as parquet
             table = pa.Table.from_pandas(df)
             pq.write_table(table, cache_file)
-
             logger.info(f"Cached {len(data)} bars to {cache_file}")
         except Exception as e:
             logger.error(f"Cache write error: {e}")
 
     def get_latest_price(self, symbol: str) -> Dict:
         """Get latest price for a symbol"""
-        # Try to get last 1 day of 1m data
         end = datetime.now().isoformat()
         start = (datetime.now() - timedelta(days=1)).isoformat()
-
         data = self.get_ohlcv(symbol, "1m", start, end)
-
         if data:
             latest = data[-1]
             return {
                 "symbol": symbol,
-                "price": latest[4],  # close price
+                "price": latest[4],
                 "timestamp": latest[0],
                 "volume": latest[5],
             }
         else:
-            # Fallback to a simple ticker request
             return self._fetch_ticker(symbol)
 
     def _fetch_ticker(self, symbol: str) -> Dict:
@@ -407,9 +331,48 @@ class DataHub:
                 }
         except:
             pass
-
         return {"symbol": symbol, "price": 0, "timestamp": int(time.time() * 1000), "volume": 0}
 
 
-# Global instance
 datahub = DataHub()
+
+
+def get_ohlcv(asset: str, tf: str, start: str, end: str) -> list:
+    """Get OHLCV data for an asset.
+
+    Public API Contract v1 - Stable interface for market data.
+
+    Args:
+        asset: Trading symbol (e.g., "BTC/USDT")
+        tf: Timeframe (e.g., "1h", "1d")
+        start: Start date (YYYY-MM-DD)
+        end: End date (YYYY-MM-DD)
+
+    Returns:
+        list: OHLCV candles [[timestamp, open, high, low, close, volume], ...]
+
+    Example:
+        >>> data = get_ohlcv("BTC/USDT", "1h", "2024-01-01", "2024-01-07")
+    """
+    return datahub.get_ohlcv(asset, tf, start, end)
+
+
+def get_ticker(asset: str) -> dict:
+    """Get latest ticker/price for an asset.
+
+    Public API Contract v1 - Stable interface for current price.
+
+    Args:
+        asset: Trading symbol (e.g., "BTC/USDT")
+
+    Returns:
+        dict: {"symbol": str, "price": float, "timestamp": int, "volume": float}
+
+    Example:
+        >>> ticker = get_ticker("BTC/USDT")
+        >>> print(f"BTC price: ${ticker['price']}")
+    """
+    return datahub.get_latest_price(asset)
+
+
+__all__ = ["datahub", "DataHub", "get_ohlcv", "get_ticker"]

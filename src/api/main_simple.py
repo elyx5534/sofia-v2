@@ -3,24 +3,19 @@
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+
+from src.adapters.web.fastapi_adapter import FastAPI, HTMLResponse
 from src.api.dashboard import router as dashboard_router
 from src.api.dev_actions import router as dev_actions_router
 from src.api.dev_status import router as dev_status_router
-
-# Import only the working routers
 from src.api.live_proof import router as live_router
 from src.api.pnl import router as pnl_router
 from src.api.strategies import router as strategies_router
 
-# Create FastAPI app
 app = FastAPI(
     title="Sofia V2 Dashboard API", description="P&L Dashboard and Live Proof API", version="2.0.0"
 )
-
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,8 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Include routers
 app.include_router(live_router)
 app.include_router(pnl_router)
 app.include_router(dashboard_router)
@@ -74,7 +67,6 @@ async def dev_console():
         return HTMLResponse(content="<h1>Dev Console not found</h1>")
 
 
-# Missing endpoints for dashboard
 @app.get("/api/pnl/summary")
 async def get_pnl_summary():
     """Get P&L summary for dashboard."""
@@ -146,22 +138,17 @@ async def dev_actions(action_data: dict):
     import subprocess
 
     action = action_data.get("action")
-
     if action == "demo":
         minutes = action_data.get("minutes", 5)
-        # Run demo in background
         subprocess.Popen(["python", "tools/run_simple_demo.py", str(minutes)])
         return {"job_id": f"demo_{datetime.now().strftime('%Y%m%d_%H%M%S')}", "status": "started"}
-
     elif action == "qa":
         return {"job_id": f"qa_{datetime.now().strftime('%Y%m%d_%H%M%S')}", "status": "started"}
-
     elif action == "readiness":
         return {
             "job_id": f"readiness_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
             "status": "started",
         }
-
     else:
         return {"error": f"Unknown action: {action}"}
 

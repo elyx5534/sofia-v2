@@ -40,83 +40,62 @@ def calculate_metrics(
             "total_trades": 0,
             "profit_factor": 0.0,
         }
-
-    # Convert equity curve to numpy array
     equity_values = np.array([e["equity"] for e in equity_curve])
-
-    # Calculate returns
     returns = np.diff(equity_values) / equity_values[:-1]
-
-    # Sharpe Ratio
     if len(returns) > 0 and np.std(returns) > 0:
-        excess_returns = returns - (risk_free_rate / periods_per_year)
+        excess_returns = returns - risk_free_rate / periods_per_year
         sharpe_ratio = np.sqrt(periods_per_year) * (np.mean(excess_returns) / np.std(returns))
     else:
         sharpe_ratio = 0.0
-
-    # Maximum Drawdown
-    cumulative_returns = (equity_values / initial_capital) - 1
+    cumulative_returns = equity_values / initial_capital - 1
     running_max = np.maximum.accumulate(equity_values)
     drawdown = (equity_values - running_max) / running_max
     max_drawdown = abs(np.min(drawdown)) * 100 if len(drawdown) > 0 else 0.0
-
-    # Win Rate and Profit Factor
     if trades:
-        # Group trades by pairs (open/close)
         trade_pairs = []
         open_trade = None
-
         for trade in trades:
             if trade["type"] in ["buy", "short"]:
                 open_trade = trade
             elif trade["type"] in ["sell", "cover"] and open_trade:
-                # Calculate P&L for this trade pair
                 if open_trade["type"] == "buy":
                     pnl = (trade["price"] - open_trade["price"]) * trade["quantity"]
-                else:  # short
+                else:
                     pnl = (open_trade["price"] - trade["price"]) * trade["quantity"]
-
                 pnl -= open_trade["commission"] + trade["commission"]
                 trade_pairs.append(pnl)
                 open_trade = None
-
         if trade_pairs:
             wins = [p for p in trade_pairs if p > 0]
             losses = [p for p in trade_pairs if p < 0]
-
-            win_rate = (len(wins) / len(trade_pairs)) * 100 if trade_pairs else 0.0
-
-            # Profit Factor
+            win_rate = len(wins) / len(trade_pairs) * 100 if trade_pairs else 0.0
             gross_profit = sum(wins) if wins else 0
             gross_loss = abs(sum(losses)) if losses else 0
             profit_factor = (
                 gross_profit / gross_loss
                 if gross_loss > 0
-                else (float("inf") if gross_profit > 0 else 0.0)
+                else float("inf")
+                if gross_profit > 0
+                else 0.0
             )
         else:
             win_rate = 0.0
             profit_factor = 0.0
-
         total_trades = len([t for t in trades if t["type"] in ["buy", "short"]])
     else:
         win_rate = 0.0
         profit_factor = 0.0
         total_trades = 0
-
-    # CAGR (Compound Annual Growth Rate)
     if len(equity_values) > 1:
         final_value = equity_values[-1]
         num_periods = len(equity_values) - 1
         years = num_periods / periods_per_year
-
-        if years > 0 and final_value > 0 and initial_capital > 0:
-            cagr = (((final_value / initial_capital) ** (1 / years)) - 1) * 100
+        if years > 0 and final_value > 0 and (initial_capital > 0):
+            cagr = ((final_value / initial_capital) ** (1 / years) - 1) * 100
         else:
             cagr = 0.0
     else:
         cagr = 0.0
-
     return {
         "sharpe_ratio": round(sharpe_ratio, 2),
         "max_drawdown": round(max_drawdown, 2),

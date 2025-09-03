@@ -32,22 +32,16 @@ class MockExchange(BaseExchange):
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
-
-        # Simulation parameters
-        self.min_latency = config.get("min_latency", 50)  # ms
-        self.max_latency = config.get("max_latency", 500)  # ms
-        self.fail_rate = config.get("fail_rate", 0.01)  # 1% failure rate
-        self.slippage_rate = config.get("slippage_rate", 0.001)  # 0.1% slippage
-
-        # Initial balances
+        self.min_latency = config.get("min_latency", 50)
+        self.max_latency = config.get("max_latency", 500)
+        self.fail_rate = config.get("fail_rate", 0.01)
+        self.slippage_rate = config.get("slippage_rate", 0.001)
         self.mock_balances = {
             "USDT": Balance("USDT", Decimal("10000"), Decimal("0"), Decimal("10000")),
             "BTC": Balance("BTC", Decimal("0.5"), Decimal("0"), Decimal("0.5")),
             "ETH": Balance("ETH", Decimal("10"), Decimal("0"), Decimal("10")),
             "BNB": Balance("BNB", Decimal("50"), Decimal("0"), Decimal("50")),
         }
-
-        # Mock market data
         self.base_prices = {
             "BTC/USDT": Decimal("45000"),
             "ETH/USDT": Decimal("3000"),
@@ -55,33 +49,25 @@ class MockExchange(BaseExchange):
             "SOL/USDT": Decimal("100"),
             "ADA/USDT": Decimal("0.5"),
         }
-
-        # Order tracking
         self.orders: Dict[str, Order] = {}
         self.order_counter = 0
-
-        # WebSocket simulation
         self.ws_tasks = []
 
     async def connect(self) -> bool:
         """Simulate connection with random latency"""
         await self._simulate_latency()
-
         if random.random() < self.fail_rate:
             self.status = ExchangeStatus.ERROR
             logger.error(f"Mock exchange {self.name} connection failed (simulated)")
             return False
-
         self.status = ExchangeStatus.CONNECTED
         logger.info(f"Mock exchange {self.name} connected")
         return True
 
     async def disconnect(self):
         """Disconnect mock exchange"""
-        # Cancel WebSocket tasks
         for task in self.ws_tasks:
             task.cancel()
-
         self.status = ExchangeStatus.DISCONNECTED
         logger.info(f"Mock exchange {self.name} disconnected")
 
@@ -89,27 +75,20 @@ class MockExchange(BaseExchange):
         """Get mock balance"""
         await self._simulate_latency()
         await self._simulate_error()
-
         if currency:
             if currency in self.mock_balances:
                 return {currency: self.mock_balances[currency]}
             return {}
-
         return self.mock_balances.copy()
 
     async def get_ticker(self, symbol: str) -> Ticker:
         """Generate mock ticker"""
         await self._simulate_latency()
         await self._simulate_error()
-
         base_price = self.base_prices.get(symbol, Decimal("100"))
-
-        # Add some randomness
         variation = Decimal(str(random.uniform(0.98, 1.02)))
         price = base_price * variation
-
-        spread = price * Decimal("0.001")  # 0.1% spread
-
+        spread = price * Decimal("0.001")
         return Ticker(
             symbol=symbol,
             timestamp=int(time.time() * 1000),
@@ -127,24 +106,16 @@ class MockExchange(BaseExchange):
         """Generate mock orderbook"""
         await self._simulate_latency()
         await self._simulate_error()
-
         base_price = self.base_prices.get(symbol, Decimal("100"))
-
-        # Generate bids and asks
         bids = []
         asks = []
-
         for i in range(limit):
-            # Bids (decreasing price)
             bid_price = base_price * (Decimal("1") - Decimal(str(0.0001 * (i + 1))))
             bid_amount = Decimal(str(random.uniform(0.1, 10)))
             bids.append([bid_price, bid_amount])
-
-            # Asks (increasing price)
             ask_price = base_price * (Decimal("1") + Decimal(str(0.0001 * (i + 1))))
             ask_amount = Decimal(str(random.uniform(0.1, 10)))
             asks.append([ask_price, ask_amount])
-
         return OrderBook(symbol=symbol, timestamp=int(time.time() * 1000), bids=bids, asks=asks)
 
     async def place_order(
@@ -159,42 +130,30 @@ class MockExchange(BaseExchange):
         """Simulate order placement"""
         await self._simulate_latency()
         await self._simulate_error()
-
-        # Generate order ID
         self.order_counter += 1
         order_id = f"MOCK-{self.order_counter}-{uuid.uuid4().hex[:8]}"
-
-        # Get current price if market order
         if order_type == OrderType.MARKET:
             ticker = await self.get_ticker(symbol)
             if side == OrderSide.BUY:
                 price = ticker.ask * (1 + Decimal(str(self.slippage_rate)))
             else:
                 price = ticker.bid * (1 - Decimal(str(self.slippage_rate)))
-
-        # Check balance
         base, quote = self.parse_symbol(symbol)
-
         if side == OrderSide.BUY:
             required = amount * price
             currency = quote
         else:
             required = amount
             currency = base
-
         if currency in self.mock_balances:
             if self.mock_balances[currency].free < required:
                 raise Exception(f"Insufficient balance: need {required} {currency}")
-
-            # Update balance
             self.mock_balances[currency] = Balance(
                 currency=currency,
                 free=self.mock_balances[currency].free - required,
                 used=self.mock_balances[currency].used + required,
                 total=self.mock_balances[currency].total,
             )
-
-        # Create order
         order = Order(
             id=order_id,
             exchange=self.name,
@@ -210,52 +169,39 @@ class MockExchange(BaseExchange):
             fee_currency=quote if side == OrderSide.BUY else base,
             client_order_id=kwargs.get("client_order_id"),
         )
-
         self.orders[order_id] = order
-
-        # Update balance for filled market orders
         if order_type == OrderType.MARKET:
             if side == OrderSide.BUY:
-                # Add base currency
                 if base not in self.mock_balances:
                     self.mock_balances[base] = Balance(base, Decimal(0), Decimal(0), Decimal(0))
-
                 self.mock_balances[base] = Balance(
                     currency=base,
                     free=self.mock_balances[base].free + amount,
                     used=self.mock_balances[base].used,
                     total=self.mock_balances[base].total + amount,
                 )
-
-                # Update quote currency
                 self.mock_balances[quote] = Balance(
                     currency=quote,
                     free=self.mock_balances[quote].free,
-                    used=self.mock_balances[quote].used - (amount * price),
+                    used=self.mock_balances[quote].used - amount * price,
                     total=self.mock_balances[quote].total,
                 )
             else:
-                # Add quote currency
                 received = amount * price * (1 - self.taker_fee)
-
                 if quote not in self.mock_balances:
                     self.mock_balances[quote] = Balance(quote, Decimal(0), Decimal(0), Decimal(0))
-
                 self.mock_balances[quote] = Balance(
                     currency=quote,
                     free=self.mock_balances[quote].free + received,
                     used=self.mock_balances[quote].used,
                     total=self.mock_balances[quote].total + received,
                 )
-
-                # Update base currency
                 self.mock_balances[base] = Balance(
                     currency=base,
                     free=self.mock_balances[base].free,
                     used=self.mock_balances[base].used - amount,
                     total=self.mock_balances[base].total,
                 )
-
         logger.info(f"Mock order placed: {order_id} {side.value} {amount} {symbol} @ {price}")
         return order
 
@@ -263,23 +209,17 @@ class MockExchange(BaseExchange):
         """Cancel mock order"""
         await self._simulate_latency()
         await self._simulate_error()
-
         if order_id in self.orders:
             order = self.orders[order_id]
-
             if order.status in [OrderStatus.OPEN, OrderStatus.PARTIALLY_FILLED]:
                 order.status = OrderStatus.CANCELLED
-
-                # Return reserved balance
                 base, quote = self.parse_symbol(order.symbol)
-
                 if order.side == OrderSide.BUY:
                     currency = quote
                     amount = order.remaining * order.price
                 else:
                     currency = base
                     amount = order.remaining
-
                 if currency in self.mock_balances:
                     self.mock_balances[currency] = Balance(
                         currency=currency,
@@ -287,36 +227,29 @@ class MockExchange(BaseExchange):
                         used=self.mock_balances[currency].used - amount,
                         total=self.mock_balances[currency].total,
                     )
-
                 logger.info(f"Mock order cancelled: {order_id}")
                 return True
-
         return False
 
     async def get_order(self, order_id: str, symbol: Optional[str] = None) -> Order:
         """Get mock order"""
         await self._simulate_latency()
         await self._simulate_error()
-
         if order_id in self.orders:
             return self.orders[order_id]
-
         raise Exception(f"Order {order_id} not found")
 
     async def get_open_orders(self, symbol: Optional[str] = None) -> List[Order]:
         """Get open mock orders"""
         await self._simulate_latency()
         await self._simulate_error()
-
         open_orders = [
             order
             for order in self.orders.values()
             if order.status in [OrderStatus.OPEN, OrderStatus.PARTIALLY_FILLED]
         ]
-
         if symbol:
             open_orders = [o for o in open_orders if o.symbol == symbol]
-
         return open_orders
 
     async def get_order_history(
@@ -325,29 +258,21 @@ class MockExchange(BaseExchange):
         """Get mock order history"""
         await self._simulate_latency()
         await self._simulate_error()
-
         orders = list(self.orders.values())
-
         if symbol:
             orders = [o for o in orders if o.symbol == symbol]
-
-        # Sort by timestamp descending
         orders.sort(key=lambda x: x.timestamp, reverse=True)
-
         return orders[:limit]
 
     async def get_trades(self, symbol: Optional[str] = None, limit: int = 100) -> List[Trade]:
         """Get mock trades"""
         await self._simulate_latency()
         await self._simulate_error()
-
         trades = []
-
         for order in self.orders.values():
             if order.filled > 0:
                 if symbol and order.symbol != symbol:
                     continue
-
                 trades.append(
                     Trade(
                         id=f"TRADE-{order.id}",
@@ -361,7 +286,6 @@ class MockExchange(BaseExchange):
                         timestamp=order.timestamp,
                     )
                 )
-
         trades.sort(key=lambda x: x.timestamp, reverse=True)
         return trades[:limit]
 
@@ -407,11 +331,8 @@ class MockExchange(BaseExchange):
             while True:
                 try:
                     await asyncio.sleep(random.uniform(0.5, 3))
-
                     ticker = await self.get_ticker(symbol)
                     trade_id += 1
-
-                    # Generate random trade
                     trade = Trade(
                         id=f"MOCK-TRADE-{trade_id}",
                         order_id="",
@@ -423,9 +344,7 @@ class MockExchange(BaseExchange):
                         fee_currency="",
                         timestamp=int(time.time() * 1000),
                     )
-
                     await callback(trade)
-
                 except asyncio.CancelledError:
                     break
                 except Exception as e:

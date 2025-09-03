@@ -34,9 +34,7 @@ class BinanceDataProvider:
     async def get_price(self, symbol: str) -> Optional[float]:
         """Get current price for a symbol"""
         try:
-            # Convert format if needed (BTC/USDT -> BTCUSDT)
             binance_symbol = symbol.replace("/", "").replace("-", "")
-
             async with self.session.get(
                 f"{self.BASE_URL}/ticker/price?symbol={binance_symbol}"
             ) as response:
@@ -57,7 +55,6 @@ class BinanceDataProvider:
                     data = await response.json()
                     prices = {}
                     for item in data:
-                        # Convert BTCUSDT to BTC/USDT format
                         if item["symbol"].endswith("USDT"):
                             base = item["symbol"][:-4]
                             symbol = f"{base}/USDT"
@@ -72,7 +69,6 @@ class BinanceDataProvider:
         """Get 24hr statistics for a symbol"""
         try:
             binance_symbol = symbol.replace("/", "").replace("-", "")
-
             async with self.session.get(
                 f"{self.BASE_URL}/ticker/24hr?symbol={binance_symbol}"
             ) as response:
@@ -99,7 +95,6 @@ class BinanceDataProvider:
         """
         try:
             binance_symbol = symbol.replace("/", "").replace("-", "")
-
             async with self.session.get(
                 f"{self.BASE_URL}/klines",
                 params={"symbol": binance_symbol, "interval": interval, "limit": limit},
@@ -133,7 +128,6 @@ class BinanceDataProvider:
         """Get order book depth"""
         try:
             binance_symbol = symbol.replace("/", "").replace("-", "")
-
             async with self.session.get(
                 f"{self.BASE_URL}/depth", params={"symbol": binance_symbol, "limit": limit}
             ) as response:
@@ -152,7 +146,6 @@ class BinanceDataProvider:
         """Get recent trades"""
         try:
             binance_symbol = symbol.replace("/", "").replace("-", "")
-
             async with self.session.get(
                 f"{self.BASE_URL}/trades", params={"symbol": binance_symbol, "limit": limit}
             ) as response:
@@ -180,58 +173,45 @@ class BinanceDataProvider:
         """Stream real-time prices using WebSocket"""
         import websockets
 
-        # Convert symbols to Binance format
         streams = []
         for symbol in symbols:
             binance_symbol = symbol.replace("/", "").replace("-", "").lower()
             streams.append(f"{binance_symbol}@ticker")
-
         stream_url = f"wss://stream.binance.com:9443/stream?streams={'/'.join(streams)}"
-
         try:
             async with websockets.connect(stream_url) as websocket:
                 while True:
                     message = await websocket.recv()
                     data = json.loads(message)
-
                     if "data" in data:
                         stream_data = data["data"]
-                        if "s" in stream_data:  # Symbol
-                            # Convert BTCUSDT to BTC/USDT
+                        if "s" in stream_data:
                             symbol = stream_data["s"]
                             if symbol.endswith("USDT"):
                                 base = symbol[:-4]
                                 formatted_symbol = f"{base}/USDT"
-
                                 price_data = {
                                     "symbol": formatted_symbol,
-                                    "price": float(stream_data["c"]),  # Current price
-                                    "bid": float(stream_data["b"]),  # Best bid
-                                    "ask": float(stream_data["a"]),  # Best ask
-                                    "volume": float(stream_data["v"]),  # Volume
-                                    "high": float(stream_data["h"]),  # High
-                                    "low": float(stream_data["l"]),  # Low
-                                    "change_pct": float(stream_data["P"]),  # Change percent
+                                    "price": float(stream_data["c"]),
+                                    "bid": float(stream_data["b"]),
+                                    "ask": float(stream_data["a"]),
+                                    "volume": float(stream_data["v"]),
+                                    "high": float(stream_data["h"]),
+                                    "low": float(stream_data["l"]),
+                                    "change_pct": float(stream_data["P"]),
                                 }
-
                                 await callback(price_data)
         except Exception as e:
             logger.error(f"WebSocket error: {e}")
 
 
-# Example usage
 async def main():
     async with BinanceDataProvider() as provider:
-        # Get single price
         price = await provider.get_price("BTC/USDT")
         print(f"BTC Price: ${price}")
-
-        # Get 24hr stats
         stats = await provider.get_24hr_stats("ETH/USDT")
         if stats:
             print(f"ETH 24hr Stats: {stats}")
-
-        # Get historical data
         klines = await provider.get_klines("SOL/USDT", "5m", 10)
         if klines:
             print(f"SOL Latest Close: ${klines[-1]['close']}")

@@ -19,9 +19,9 @@ class FXProvider:
 
     def __init__(self):
         self.cache = {}
-        self.cache_ttl = 30  # 30 seconds cache
+        self.cache_ttl = 30
         self.cache_file = Path("logs/fx_cache.json")
-        self.fallback_rate = 34.5  # Default USDTRY rate
+        self.fallback_rate = 34.5
         self._load_cache()
 
     def _load_cache(self):
@@ -46,27 +46,19 @@ class FXProvider:
     def get_usdtry(self, use_cache: bool = True) -> float:
         """Get USDTRY exchange rate"""
         pair = "USDTTRY"
-
-        # Check cache first
         if use_cache and pair in self.cache:
             cached = self.cache[pair]
             if time.time() - cached.get("ts", 0) < self.cache_ttl:
                 logger.debug(f"Using cached USDTRY: {cached['rate']}")
                 return cached["rate"]
-
-        # Try to get live rate
         rate = self._fetch_live_rate()
-
         if rate:
-            # Update cache
             self.cache[pair] = {"ts": time.time(), "rate": rate, "source": "live"}
             self._save_cache()
             logger.info(f"Live USDTRY: {rate}")
             return rate
         else:
-            # Use fallback
             rate = self._get_fallback_rate()
-            # Update cache with fallback
             self.cache[pair] = {"ts": time.time(), "rate": rate, "source": "fallback"}
             self._save_cache()
             logger.warning(f"Using fallback USDTRY: {rate}")
@@ -75,27 +67,22 @@ class FXProvider:
     def _fetch_live_rate(self) -> Optional[float]:
         """Fetch live rate from exchange"""
         try:
-            # Try BTCTurk first (native TRY pairs)
             exchange = ccxt.btcturk()
             ticker = exchange.fetch_ticker("USDT/TRY")
             return ticker["last"]
         except Exception as e1:
             logger.debug(f"BTCTurk USDTRY failed: {e1}")
-
-            # Try Binance as backup
             try:
                 exchange = ccxt.binance()
                 ticker = exchange.fetch_ticker("USDT/TRY")
                 return ticker["last"]
             except Exception as e2:
                 logger.debug(f"Binance USDTRY failed: {e2}")
-
         return None
 
     def _get_fallback_rate(self) -> float:
         """Get fallback rate from config or default"""
         try:
-            # Try to load from config
             config_file = Path("config/strategies/turkish_arbitrage.yaml")
             if config_file.exists():
                 import yaml
@@ -105,13 +92,11 @@ class FXProvider:
                     return config.get("usdtry_rate", self.fallback_rate)
         except:
             pass
-
         return self.fallback_rate
 
     def get_rate_info(self) -> Dict:
         """Get detailed rate information"""
         pair = "USDTTRY"
-
         if pair in self.cache:
             cached = self.cache[pair]
             age = time.time() - cached.get("ts", 0)
@@ -130,5 +115,4 @@ class FXProvider:
             }
 
 
-# Global instance
 fx_provider = FXProvider()

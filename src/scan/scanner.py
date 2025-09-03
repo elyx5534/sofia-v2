@@ -27,15 +27,10 @@ class SignalScanner:
     def scan_symbol(self, symbol: str, timeframe: str = "1h") -> Dict[str, Any]:
         """Scan a single symbol and return signal information"""
         try:
-            # Load data
             df = data_pipeline.get_symbol_data(symbol, timeframe)
-
-            if df.empty or len(df) < 50:  # Need minimum data for indicators
+            if df.empty or len(df) < 50:
                 return {"symbol": symbol, "score": 0, "signals": [], "error": "Insufficient data"}
-
-            # Get latest indicators
             indicators = get_latest_indicators(df)
-
             if not indicators:
                 return {
                     "symbol": symbol,
@@ -43,15 +38,11 @@ class SignalScanner:
                     "signals": [],
                     "error": "Failed to calculate indicators",
                 }
-
-            # Apply all rules
             signals = []
             total_score = 0
-
             for rule in self.rules:
                 try:
                     result = rule.evaluate(df, indicators)
-
                     if result["signal"] > 0:
                         signals.append(
                             {
@@ -66,10 +57,8 @@ class SignalScanner:
                             }
                         )
                         total_score += result["signal"]
-
                 except Exception as e:
                     logger.warning(f"Rule {rule.name} failed for {symbol}: {e}")
-
             return {
                 "symbol": symbol,
                 "score": round(total_score, 2),
@@ -78,7 +67,6 @@ class SignalScanner:
                 "timestamp": datetime.now().isoformat(),
                 "timeframe": timeframe,
             }
-
         except Exception as e:
             logger.error(f"Error scanning {symbol}: {e}")
             return {"symbol": symbol, "score": 0, "signals": [], "error": str(e)}
@@ -86,37 +74,25 @@ class SignalScanner:
     def scan_all_symbols(self, timeframe: str = "1h", max_workers: int = 4) -> List[Dict[str, Any]]:
         """Scan all available symbols"""
         available_symbols = data_pipeline.get_available_symbols()
-
         if not available_symbols:
             logger.warning("No symbols available for scanning")
             return []
-
         logger.info(f"Scanning {len(available_symbols)} symbols with {len(self.rules)} rules")
-
         results = []
-
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all symbol scan tasks
             future_to_symbol = {
                 executor.submit(self.scan_symbol, symbol, timeframe): symbol
                 for symbol in available_symbols
             }
-
-            # Collect results
             for future in as_completed(future_to_symbol):
                 symbol = future_to_symbol[future]
-
                 try:
                     result = future.result(timeout=30)
                     results.append(result)
-
                 except Exception as e:
                     logger.error(f"Failed to scan {symbol}: {e}")
                     results.append({"symbol": symbol, "score": 0, "signals": [], "error": str(e)})
-
-        # Sort by score (highest first)
         results.sort(key=lambda x: x.get("score", 0), reverse=True)
-
         logger.info(f"Scan completed: {len(results)} symbols processed")
         return results
 
@@ -125,14 +101,11 @@ class SignalScanner:
     ) -> List[Dict[str, Any]]:
         """Get top signals with scores above threshold"""
         top_signals = []
-
         for result in results:
-            if result.get("score", 0) > 0.5:  # Minimum score threshold
+            if result.get("score", 0) > 0.5:
                 top_signals.append(result)
-
             if len(top_signals) >= limit:
                 break
-
         return top_signals
 
     def save_results(self, results: List[Dict[str, Any]], filename: str = None):
@@ -140,16 +113,11 @@ class SignalScanner:
         if filename is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"scan_results_{timestamp}"
-
-        # Save JSON
         json_path = self.outputs_dir / f"{filename}.json"
         with open(json_path, "w") as f:
             json.dump(results, f, indent=2, default=str)
-
-        # Save CSV (flattened)
         csv_path = self.outputs_dir / f"{filename}.csv"
         csv_data = []
-
         for result in results:
             row = {
                 "symbol": result["symbol"],
@@ -165,21 +133,16 @@ class SignalScanner:
                 "volume": result.get("indicators", {}).get("volume", 0),
             }
             csv_data.append(row)
-
         df = pd.DataFrame(csv_data)
         df.to_csv(csv_path, index=False)
-
         logger.info(f"Results saved to {json_path} and {csv_path}")
 
     def save_signals_json(self, results: List[Dict[str, Any]]):
         """Save top signals to signals.json for web interface"""
         top_signals = self.get_top_signals(results, limit=50)
-
         signals_path = self.outputs_dir / "signals.json"
         with open(signals_path, "w") as f:
             json.dump(top_signals, f, indent=2, default=str)
-
-        # Also save CSV version
         csv_path = self.outputs_dir / "signals.csv"
         if top_signals:
             csv_data = []
@@ -196,35 +159,24 @@ class SignalScanner:
                     "timestamp": result.get("timestamp", ""),
                 }
                 csv_data.append(row)
-
             df = pd.DataFrame(csv_data)
             df.to_csv(csv_path, index=False)
-
         logger.info(f"Signals saved to {signals_path} and {csv_path}")
 
     def run_scan(self, timeframe: str = "1h", save_results: bool = True) -> List[Dict[str, Any]]:
         """Run complete scan and optionally save results"""
         logger.info(f"Starting crypto scanner with {len(self.rules)} rules")
-
-        # Run scan
         results = self.scan_all_symbols(timeframe)
-
-        # Log summary
         total_symbols = len(results)
         symbols_with_signals = len([r for r in results if r.get("score", 0) > 0])
         top_score = max([r.get("score", 0) for r in results]) if results else 0
-
         logger.info(
-            f"Scan summary: {total_symbols} symbols, {symbols_with_signals} with signals, "
-            f"top score: {top_score:.2f}"
+            f"Scan summary: {total_symbols} symbols, {symbols_with_signals} with signals, top score: {top_score:.2f}"
         )
-
         if save_results:
             self.save_results(results)
             self.save_signals_json(results)
-
         return results
 
 
-# Global scanner instance
 scanner = SignalScanner()

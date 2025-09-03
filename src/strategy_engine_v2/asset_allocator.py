@@ -51,25 +51,18 @@ class AssetAllocator:
         """
         if not price_data:
             return {}
-
         symbols = list(price_data.keys())
-
         if method == AllocationMethod.EQUAL_WEIGHT:
             return self._equal_weight_allocation(symbols)
-
         elif method == AllocationMethod.RISK_PARITY:
             return self._risk_parity_allocation(price_data)
-
         elif method == AllocationMethod.MOMENTUM_WEIGHT:
             return self._momentum_allocation(price_data, **kwargs)
-
         elif method == AllocationMethod.VOLATILITY_WEIGHT:
             return self._volatility_allocation(price_data, **kwargs)
-
         elif method == AllocationMethod.MARKET_CAP_WEIGHT:
             market_caps = kwargs.get("market_caps", {})
             return self._market_cap_allocation(symbols, market_caps)
-
         else:
             logger.warning(f"Unknown allocation method: {method}, using equal weight")
             return self._equal_weight_allocation(symbols)
@@ -78,7 +71,6 @@ class AssetAllocator:
         """Equal weight allocation"""
         if not symbols:
             return {}
-
         weight = 1.0 / len(symbols)
         return {symbol: weight for symbol in symbols}
 
@@ -87,20 +79,13 @@ class AssetAllocator:
         Risk parity allocation - allocate based on inverse volatility
         Each asset contributes equally to portfolio risk
         """
-        # Calculate volatilities
         volatilities = self._calculate_volatilities(price_data)
-
         if not volatilities or all(vol == 0 for vol in volatilities.values()):
             return self._equal_weight_allocation(list(price_data.keys()))
-
-        # Inverse volatility weights
         inv_vol = {symbol: 1 / vol if vol > 0 else 0 for symbol, vol in volatilities.items()}
         total_inv_vol = sum(inv_vol.values())
-
         if total_inv_vol == 0:
             return self._equal_weight_allocation(list(price_data.keys()))
-
-        # Normalize to sum to 1
         return {symbol: weight / total_inv_vol for symbol, weight in inv_vol.items()}
 
     def _momentum_allocation(
@@ -110,27 +95,20 @@ class AssetAllocator:
         Momentum-based allocation - overweight assets with positive momentum
         """
         momentum_scores = {}
-
         for symbol, prices in price_data.items():
             if len(prices) >= momentum_period:
-                # Calculate momentum as % change over period
                 momentum = (prices[-1] - prices[-momentum_period]) / prices[-momentum_period]
-                momentum_scores[symbol] = max(0, momentum)  # Only positive momentum
+                momentum_scores[symbol] = max(0, momentum)
             else:
                 momentum_scores[symbol] = 0
-
         total_momentum = sum(momentum_scores.values())
-
         if total_momentum == 0:
             return self._equal_weight_allocation(list(price_data.keys()))
-
-        # Add base allocation to avoid zero weights
         base_weight = 0.1 / len(momentum_scores)
         adjusted_scores = {
             symbol: base_weight + 0.9 * (score / total_momentum)
             for symbol, score in momentum_scores.items()
         }
-
         return adjusted_scores
 
     def _volatility_allocation(
@@ -143,21 +121,15 @@ class AssetAllocator:
             inverse: If True, allocate inversely to volatility (less to volatile assets)
         """
         volatilities = self._calculate_volatilities(price_data)
-
         if not volatilities or all(vol == 0 for vol in volatilities.values()):
             return self._equal_weight_allocation(list(price_data.keys()))
-
         if inverse:
-            # Inverse volatility weighting
             weights = {symbol: 1 / vol if vol > 0 else 0 for symbol, vol in volatilities.items()}
         else:
-            # Direct volatility weighting (higher vol = higher weight)
             weights = volatilities.copy()
-
         total_weight = sum(weights.values())
         if total_weight == 0:
             return self._equal_weight_allocation(list(price_data.keys()))
-
         return {symbol: weight / total_weight for symbol, weight in weights.items()}
 
     def _market_cap_allocation(
@@ -172,45 +144,31 @@ class AssetAllocator:
         """
         if not market_caps:
             return self._equal_weight_allocation(symbols)
-
-        # Filter to symbols we have data for
         valid_caps = {symbol: market_caps[symbol] for symbol in symbols if symbol in market_caps}
-
         if not valid_caps:
             return self._equal_weight_allocation(symbols)
-
         total_cap = sum(valid_caps.values())
-
-        # Allocate proportionally to market cap
         allocation = {}
         for symbol in symbols:
             if symbol in valid_caps:
                 allocation[symbol] = valid_caps[symbol] / total_cap
             else:
                 allocation[symbol] = 0
-
         return allocation
 
     def _calculate_volatilities(self, price_data: Dict[str, List[float]]) -> Dict[str, float]:
         """Calculate annualized volatility for each asset"""
         volatilities = {}
-
         for symbol, prices in price_data.items():
             if len(prices) < 2:
                 volatilities[symbol] = 0
                 continue
-
-            # Calculate returns
             returns = [prices[i] / prices[i - 1] - 1 for i in range(1, len(prices))]
-
             if not returns:
                 volatilities[symbol] = 0
                 continue
-
-            # Annualized volatility (assuming daily data)
             vol = np.std(returns) * np.sqrt(252)
             volatilities[symbol] = vol
-
         return volatilities
 
     def optimize_allocation(
@@ -236,37 +194,25 @@ class AssetAllocator:
         """
         symbols = list(price_data.keys())
         n_assets = len(symbols)
-
         if n_assets == 0:
             return {}
-
         if n_assets == 1:
             return {symbols[0]: 1.0}
-
-        # Calculate returns and covariance matrix
         returns_data = self._prepare_returns_data(price_data)
-
         if returns_data is None or returns_data.empty:
             return self._equal_weight_allocation(symbols)
+        expected_returns = returns_data.mean() * 252
+        cov_matrix = returns_data.cov() * 252
 
-        expected_returns = returns_data.mean() * 252  # Annualized
-        cov_matrix = returns_data.cov() * 252  # Annualized
-
-        # Optimization objective: minimize portfolio variance
         def objective(weights):
             portfolio_var = np.dot(weights, np.dot(cov_matrix.values, weights))
             return portfolio_var
 
-        # Constraints
-        constraints = [{"type": "eq", "fun": lambda x: np.sum(x) - 1}]  # Weights sum to 1
-
-        # Target return constraint
+        constraints = [{"type": "eq", "fun": lambda x: np.sum(x) - 1}]
         if target_return is not None:
             constraints.append(
                 {"type": "eq", "fun": lambda x: np.dot(x, expected_returns.values) - target_return}
             )
-
-        # Maximum volatility constraint
         if max_volatility is not None:
             constraints.append(
                 {
@@ -274,26 +220,18 @@ class AssetAllocator:
                     "fun": lambda x: max_volatility**2 - np.dot(x, np.dot(cov_matrix.values, x)),
                 }
             )
-
-        # Bounds for weights
         bounds = [(min_weight, max_weight) for _ in range(n_assets)]
-
-        # Initial guess (equal weights)
         initial_weights = np.array([1.0 / n_assets] * n_assets)
-
         try:
-            # Optimize
             result = minimize(
                 objective, initial_weights, method="SLSQP", bounds=bounds, constraints=constraints
             )
-
             if result.success:
                 optimal_weights = result.x
                 return {symbol: weight for symbol, weight in zip(symbols, optimal_weights)}
             else:
                 logger.warning("Optimization failed, using equal weights")
                 return self._equal_weight_allocation(symbols)
-
         except Exception as e:
             logger.error(f"Optimization error: {e}")
             return self._equal_weight_allocation(symbols)
@@ -302,21 +240,15 @@ class AssetAllocator:
         """Prepare returns data for optimization"""
         returns_data = {}
         min_length = float("inf")
-
-        # Calculate returns for each asset
         for symbol, prices in price_data.items():
             if len(prices) > 1:
                 returns = [prices[i] / prices[i - 1] - 1 for i in range(1, len(prices))]
                 returns_data[symbol] = returns
                 min_length = min(min_length, len(returns))
-
         if min_length == float("inf") or min_length < 2:
             return None
-
-        # Truncate all to same length
         for symbol in returns_data:
             returns_data[symbol] = returns_data[symbol][-min_length:]
-
         return pd.DataFrame(returns_data)
 
     def calculate_efficient_frontier(
@@ -333,28 +265,18 @@ class AssetAllocator:
             List of portfolio allocations along efficient frontier
         """
         returns_data = self._prepare_returns_data(price_data)
-
         if returns_data is None or returns_data.empty:
             return [self._equal_weight_allocation(list(price_data.keys()))]
-
         expected_returns = returns_data.mean() * 252
         min_return = expected_returns.min()
         max_return = expected_returns.max()
-
-        # Generate target returns
         target_returns = np.linspace(min_return, max_return, num_points)
-
         efficient_portfolios = []
-
         for target_return in target_returns:
             allocation = self.optimize_allocation(
-                price_data,
-                target_return=target_return,
-                max_weight=1.0,  # Allow full allocation for frontier
-                min_weight=0.0,
+                price_data, target_return=target_return, max_weight=1.0, min_weight=0.0
             )
             efficient_portfolios.append(allocation)
-
         return efficient_portfolios
 
     def calculate_sharpe_optimal(
@@ -371,45 +293,35 @@ class AssetAllocator:
             Optimal allocation weights
         """
         returns_data = self._prepare_returns_data(price_data)
-
         if returns_data is None or returns_data.empty:
             return self._equal_weight_allocation(list(price_data.keys()))
-
         expected_returns = returns_data.mean() * 252
         cov_matrix = returns_data.cov() * 252
 
-        # Objective: maximize Sharpe ratio = minimize -Sharpe ratio
         def objective(weights):
             portfolio_return = np.dot(weights, expected_returns.values)
             portfolio_var = np.dot(weights, np.dot(cov_matrix.values, weights))
             portfolio_vol = np.sqrt(portfolio_var)
-
             if portfolio_vol == 0:
                 return -np.inf
-
             sharpe_ratio = (portfolio_return - risk_free_rate) / portfolio_vol
-            return -sharpe_ratio  # Negative because we're minimizing
+            return -sharpe_ratio
 
         symbols = list(price_data.keys())
         n_assets = len(symbols)
-
-        # Constraints and bounds
         constraints = [{"type": "eq", "fun": lambda x: np.sum(x) - 1}]
         bounds = [(0, 1) for _ in range(n_assets)]
         initial_weights = np.array([1.0 / n_assets] * n_assets)
-
         try:
             result = minimize(
                 objective, initial_weights, method="SLSQP", bounds=bounds, constraints=constraints
             )
-
             if result.success:
                 optimal_weights = result.x
                 return {symbol: weight for symbol, weight in zip(symbols, optimal_weights)}
             else:
                 logger.warning("Sharpe optimization failed, using equal weights")
                 return self._equal_weight_allocation(symbols)
-
         except Exception as e:
             logger.error(f"Sharpe optimization error: {e}")
             return self._equal_weight_allocation(symbols)

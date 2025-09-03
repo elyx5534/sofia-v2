@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException, Query
 from src.services.datahub_v2 import datahub_v2
 from src.services.symbols import AssetType, symbol_registry
 
@@ -24,11 +24,9 @@ async def get_ohlcv(
 ) -> Dict:
     """Get OHLCV data for an asset"""
     try:
-        # Default date range
         if not end:
             end = datetime.now().isoformat()[:10]
         if not start:
-            # Default based on timeframe
             days_map = {
                 "1m": 1,
                 "5m": 3,
@@ -41,20 +39,14 @@ async def get_ohlcv(
             }
             days = days_map.get(tf, 30)
             start = (datetime.now() - timedelta(days=days)).isoformat()[:10]
-
-        # Parse asset
         asset_obj = symbol_registry.parse(asset)
         if not asset_obj:
             raise HTTPException(status_code=400, detail=f"Invalid asset: {asset}")
-
-        # Get data
         data = datahub_v2.get_ohlcv(asset, tf, start, end, adjust_corporate=adjust)
-
         if not data:
             raise HTTPException(
                 status_code=404, detail=f"No data found for {asset} from {start} to {end}"
             )
-
         return {
             "asset": str(asset_obj),
             "timeframe": tf,
@@ -64,7 +56,6 @@ async def get_ohlcv(
             "data": data,
             "adjusted": adjust if asset_obj.type == AssetType.STOCK else None,
         }
-
     except HTTPException:
         raise
     except Exception as e:
@@ -79,12 +70,9 @@ async def get_ticker(
     """Get latest ticker for an asset"""
     try:
         result = datahub_v2.get_ticker(asset)
-
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
-
         return result
-
     except HTTPException:
         raise
     except Exception as e:
@@ -100,17 +88,13 @@ async def get_symbols(
     """Get available symbols"""
     try:
         assets = []
-
         if type:
             asset_type = AssetType(type.lower())
             assets = symbol_registry.get_by_type(asset_type)
         elif venue:
             assets = symbol_registry.get_by_venue(venue.upper())
         else:
-            # Return all registered assets
             assets = list(symbol_registry.assets.values())
-
-        # Remove duplicates and format
         seen = set()
         result = []
         for asset in assets:
@@ -126,9 +110,7 @@ async def get_symbols(
                         "venue": asset.venue,
                     }
                 )
-
         return result
-
     except Exception as e:
         logger.error(f"Symbols error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -139,7 +121,6 @@ async def search_symbols(q: str = Query(..., description="Search query")) -> Lis
     """Search for symbols"""
     try:
         assets = symbol_registry.search(q)
-
         return [
             {
                 "symbol": str(asset),
@@ -150,7 +131,6 @@ async def search_symbols(q: str = Query(..., description="Search query")) -> Lis
             }
             for asset in assets
         ]
-
     except Exception as e:
         logger.error(f"Search error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -161,17 +141,11 @@ async def health_check() -> Dict:
     """Get data service health metrics"""
     try:
         health = datahub_v2.get_health()
-
-        # Add timestamp
         health["timestamp"] = datetime.now().isoformat()
         health["status"] = "healthy" if health["cache_hit_rate"] else "warming"
-
-        # Test connectivity
         test_result = datahub_v2.get_ticker("BTC/USDT@BINANCE")
         health["btc_price"] = test_result.get("price", 0)
-
         return health
-
     except Exception as e:
         return {"status": "unhealthy", "error": str(e), "timestamp": datetime.now().isoformat()}
 

@@ -40,14 +40,11 @@ class ExchangeClient:
         try:
             markets = self.client.load_markets()
             usdt_pairs = []
-
             for symbol, market in markets.items():
-                if market["quote"] == "USDT" and market["active"] and market["type"] == "spot":
+                if market["quote"] == "USDT" and market["active"] and (market["type"] == "spot"):
                     usdt_pairs.append(symbol)
-
             logger.info(f"{self.exchange_name}: Found {len(usdt_pairs)} USDT pairs")
             return sorted(usdt_pairs)
-
         except Exception as e:
             logger.error(f"Failed to get markets from {self.exchange_name}: {e}")
             return []
@@ -64,23 +61,18 @@ class ExchangeClient:
             since_ms = None
             if since:
                 since_ms = int(since.timestamp() * 1000)
-
             ohlcv = self.client.fetch_ohlcv(
                 symbol=symbol, timeframe=timeframe, since=since_ms, limit=limit
             )
-
             if not ohlcv:
                 return pd.DataFrame()
-
             df = pd.DataFrame(
                 ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
             )
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
             df.set_index("timestamp", inplace=True)
-
             logger.debug(f"Fetched {len(df)} candles for {symbol} from {self.exchange_name}")
             return df
-
         except Exception as e:
             logger.error(f"Failed to fetch {symbol} from {self.exchange_name}: {e}")
             return pd.DataFrame()
@@ -92,7 +84,6 @@ class MultiExchangeManager:
     def __init__(self, exchange_names: List[str] = None):
         if exchange_names is None:
             exchange_names = ["binance", "bybit", "kraken"]
-
         self.exchanges = {}
         for name in exchange_names:
             try:
@@ -104,20 +95,15 @@ class MultiExchangeManager:
     def get_unified_symbol_list(self) -> List[str]:
         """Get unified list of USDT symbols across all exchanges"""
         all_symbols = set()
-
         for exchange_name, client in self.exchanges.items():
             symbols = client.list_usdt_markets()
             all_symbols.update(symbols)
-
-        # Convert to standard format and filter
         unified_symbols = []
         for symbol in all_symbols:
             if "/" in symbol and symbol.endswith("/USDT"):
                 base = symbol.split("/")[0]
-                # Skip stablecoins and test tokens
                 if base not in ["USDT", "BUSD", "USDC", "DAI", "TEST"]:
                     unified_symbols.append(symbol)
-
         logger.info(f"Unified symbol list: {len(unified_symbols)} pairs")
         return sorted(unified_symbols)
 
@@ -130,7 +116,6 @@ class MultiExchangeManager:
     ) -> Dict[str, pd.DataFrame]:
         """Fetch OHLCV from all available exchanges"""
         results = {}
-
         for exchange_name, client in self.exchanges.items():
             try:
                 df = client.fetch_ohlcv(symbol, timeframe, since, limit)
@@ -138,7 +123,6 @@ class MultiExchangeManager:
                     results[exchange_name] = df
             except Exception as e:
                 logger.warning(f"Failed to fetch {symbol} from {exchange_name}: {e}")
-
         return results
 
     def get_best_data(
@@ -150,27 +134,20 @@ class MultiExchangeManager:
     ) -> pd.DataFrame:
         """Get best available data for a symbol (highest volume exchange)"""
         multi_data = self.fetch_ohlcv_multi(symbol, timeframe, since, limit)
-
         if not multi_data:
             return pd.DataFrame()
-
-        # Select exchange with highest average volume
         best_exchange = None
         highest_volume = 0
-
         for exchange_name, df in multi_data.items():
             if not df.empty:
                 avg_volume = df["volume"].mean()
                 if avg_volume > highest_volume:
                     highest_volume = avg_volume
                     best_exchange = exchange_name
-
         if best_exchange:
             logger.info(f"Selected {best_exchange} for {symbol} (avg volume: {highest_volume:.2f})")
             return multi_data[best_exchange]
-
         return pd.DataFrame()
 
 
-# Global instance
 exchange_manager = MultiExchangeManager()

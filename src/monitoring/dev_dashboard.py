@@ -9,19 +9,22 @@ import random
 from typing import Dict, List, Set
 
 import psutil
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-app = FastAPI(title="Sofia V2 Developer Dashboard")
+from src.adapters.web.fastapi_adapter import (
+    FastAPI,
+    HTMLResponse,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+)
 
-# Setup templates and static files
+app = FastAPI(title="Sofia V2 Developer Dashboard")
 templates = Jinja2Templates(directory="src/monitoring/templates")
 app.mount("/static", StaticFiles(directory="src/monitoring/static"), name="static")
 
 
-# WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Set[WebSocket] = set()
@@ -41,19 +44,15 @@ class ConnectionManager:
                 await connection.send_json(data)
             except:
                 disconnected.add(connection)
-
-        # Clean up disconnected clients
         self.active_connections -= disconnected
 
 
 manager = ConnectionManager()
-
-# Mock data for strategies
 STRATEGIES = {
     "grid_btc": {
         "name": "Grid Trading BTC",
         "status": "active",
-        "pnl": 125.50,
+        "pnl": 125.5,
         "positions": 3,
         "win_rate": 68.5,
         "last_trades": [random.uniform(-10, 20) for _ in range(10)],
@@ -61,7 +60,7 @@ STRATEGIES = {
     "trend_eth": {
         "name": "Trend Following ETH",
         "status": "active",
-        "pnl": -45.20,
+        "pnl": -45.2,
         "positions": 1,
         "win_rate": 55.2,
         "last_trades": [random.uniform(-15, 25) for _ in range(10)],
@@ -69,7 +68,7 @@ STRATEGIES = {
     "scalping_bnb": {
         "name": "Scalping BNB",
         "status": "paused",
-        "pnl": 89.30,
+        "pnl": 89.3,
         "positions": 0,
         "win_rate": 72.1,
         "last_trades": [random.uniform(-5, 10) for _ in range(10)],
@@ -77,22 +76,18 @@ STRATEGIES = {
     "arbitrage_multi": {
         "name": "Multi-Exchange Arbitrage",
         "status": "active",
-        "pnl": 312.80,
+        "pnl": 312.8,
         "positions": 5,
         "win_rate": 82.3,
         "last_trades": [random.uniform(0, 15) for _ in range(10)],
     },
 }
-
-# Exchange connections
 EXCHANGES = {
     "binance": {"status": "connected", "balance_usd": 10000, "api_limit": 1180},
     "btcturk": {"status": "connected", "balance_try": 50000, "api_limit": 980},
     "paribu": {"status": "connecting", "balance_try": 0, "api_limit": 1000},
     "bybit": {"status": "error", "balance_usd": 0, "api_limit": 0},
 }
-
-# Log storage
 LOGS: List[Dict] = []
 
 
@@ -106,7 +101,6 @@ def add_log(level: str, source: str, message: str):
         "message": message,
     }
     LOGS.append(log_entry)
-    # Keep only last 100 logs
     if len(LOGS) > 100:
         LOGS.pop(0)
     return log_entry
@@ -118,14 +112,13 @@ async def get_system_stats():
     memory = psutil.virtual_memory()
     network = psutil.net_io_counters()
     disk = psutil.disk_usage("/")
-
     return {
         "cpu_percent": cpu_percent,
         "memory_percent": memory.percent,
-        "memory_used_gb": round(memory.used / (1024**3), 2),
-        "memory_total_gb": round(memory.total / (1024**3), 2),
-        "network_sent_mb": round(network.bytes_sent / (1024**2), 2),
-        "network_recv_mb": round(network.bytes_recv / (1024**2), 2),
+        "memory_used_gb": round(memory.used / 1024**3, 2),
+        "memory_total_gb": round(memory.total / 1024**3, 2),
+        "network_sent_mb": round(network.bytes_sent / 1024**2, 2),
+        "network_recv_mb": round(network.bytes_recv / 1024**2, 2),
         "disk_percent": disk.percent,
         "active_strategies": sum(1 for s in STRATEGIES.values() if s["status"] == "active"),
         "websocket_connections": len(manager.active_connections),
@@ -134,7 +127,6 @@ async def get_system_stats():
 
 async def get_pnl_data():
     """Get P&L data for different timeframes"""
-    # Mock data - in production, fetch from database
     return {
         "paper": {
             "today": random.uniform(-100, 300),
@@ -168,32 +160,21 @@ async def dashboard(request: Request):
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
     await manager.connect(websocket)
-
     try:
         while True:
-            # Send updates every second
             system_stats = await get_system_stats()
             pnl_data = await get_pnl_data()
-
-            # Update strategy data with some randomness
             for strategy_id, strategy in STRATEGIES.items():
                 if strategy["status"] == "active":
-                    # Simulate P&L changes
                     strategy["pnl"] += random.uniform(-5, 10)
-                    # Add new trade to history
                     strategy["last_trades"].append(random.uniform(-10, 20))
-                    strategy["last_trades"] = strategy["last_trades"][-10:]  # Keep last 10
-                    # Update win rate
+                    strategy["last_trades"] = strategy["last_trades"][-10:]
                     strategy["win_rate"] = min(
                         100, max(0, strategy["win_rate"] + random.uniform(-2, 2))
                     )
-
-            # Update exchange API limits
             for exchange in EXCHANGES.values():
                 if exchange["status"] == "connected":
                     exchange["api_limit"] = max(0, exchange["api_limit"] - random.randint(0, 5))
-
-            # Generate some random logs
             if random.random() > 0.7:
                 levels = ["info", "warning", "error"]
                 sources = list(STRATEGIES.keys()) + list(EXCHANGES.keys())
@@ -205,23 +186,18 @@ async def websocket_endpoint(websocket: WebSocket):
                     "Strategy rebalancing",
                     "New signal detected",
                 ]
-
                 log = add_log(
                     random.choice(levels), random.choice(sources), random.choice(messages)
                 )
-
-            # Prepare update message
             update = {
                 "system": system_stats,
                 "pnl": pnl_data,
                 "strategies": STRATEGIES,
                 "exchanges": EXCHANGES,
-                "logs": LOGS[-20:],  # Send last 20 logs
+                "logs": LOGS[-20:],
             }
-
             await manager.broadcast(update)
             await asyncio.sleep(1)
-
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
@@ -232,14 +208,11 @@ async def toggle_strategy(strategy_id: str):
     if strategy_id in STRATEGIES:
         current_status = STRATEGIES[strategy_id]["status"]
         STRATEGIES[strategy_id]["status"] = "paused" if current_status == "active" else "active"
-
-        # Log the action
         add_log(
             "info",
             "system",
-            f"Strategy {strategy_id} {'activated' if STRATEGIES[strategy_id]['status'] == 'active' else 'paused'}",
+            f"Strategy {strategy_id} {('activated' if STRATEGIES[strategy_id]['status'] == 'active' else 'paused')}",
         )
-
         return {"success": True, "new_status": STRATEGIES[strategy_id]["status"]}
     return {"success": False, "error": "Strategy not found"}
 
@@ -248,7 +221,6 @@ async def toggle_strategy(strategy_id: str):
 async def update_strategy_config(strategy_id: str, config: dict):
     """Update strategy configuration"""
     if strategy_id in STRATEGIES:
-        # In production, update actual strategy config
         add_log("info", "system", f"Strategy {strategy_id} configuration updated")
         return {"success": True}
     return {"success": False, "error": "Strategy not found"}
@@ -258,13 +230,11 @@ async def update_strategy_config(strategy_id: str, config: dict):
 async def get_logs(source: str = None, level: str = None):
     """Get filtered logs"""
     filtered_logs = LOGS
-
     if source:
         filtered_logs = [log for log in filtered_logs if log["source"] == source]
     if level:
         filtered_logs = [log for log in filtered_logs if log["level"] == level]
-
-    return {"logs": filtered_logs[-50:]}  # Return last 50 filtered logs
+    return {"logs": filtered_logs[-50:]}
 
 
 if __name__ == "__main__":
@@ -272,5 +242,4 @@ if __name__ == "__main__":
 
     print("[INFO] Starting Sofia V2 Developer Dashboard...")
     print("[INFO] Open http://localhost:8000 in your browser")
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -17,7 +17,7 @@ class ArbitragePricer:
 
     def __init__(self, config_path: str = "config/fees.yaml"):
         self.fees = self._load_fees(config_path)
-        self.min_profitable_spread = 30  # basis points
+        self.min_profitable_spread = 30
 
     def _load_fees(self, config_path: str) -> Dict:
         """Load fee configuration"""
@@ -26,9 +26,8 @@ class ArbitragePricer:
             with open(config_file) as f:
                 return yaml.safe_load(f)
         else:
-            # Default fees if config not found
             return {
-                "binance": {"spot": {"maker": 0.10, "taker": 0.10}},
+                "binance": {"spot": {"maker": 0.1, "taker": 0.1}},
                 "btcturk": {"spot": {"maker": 0.08, "taker": 0.12}},
                 "tl_gateway": {"withdrawal_fee": 0.5},
                 "slippage": {"binance": {"small_order": 2}, "btcturk": {"small_order": 5}},
@@ -49,26 +48,20 @@ class ArbitragePricer:
             (vwap_price, actual_amount)
         """
         if not orderbook:
-            return 0.0, 0.0
-
+            return (0.0, 0.0)
         total_cost = 0.0
         total_amount = 0.0
-
         for price, size in orderbook:
             if total_amount >= target_amount:
                 break
-
             remaining = target_amount - total_amount
             fill_amount = min(size, remaining)
-
             total_cost += price * fill_amount
             total_amount += fill_amount
-
         if total_amount == 0:
-            return 0.0, 0.0
-
+            return (0.0, 0.0)
         vwap = total_cost / total_amount
-        return vwap, total_amount
+        return (vwap, total_amount)
 
     def get_effective_price(
         self, exchange: str, orderbook: Dict, amount: float, side: str, use_maker: bool = False
@@ -93,12 +86,10 @@ class ArbitragePricer:
                 'available_depth': float
             }
         """
-        # Determine which side of orderbook to use
         if side == "buy":
             levels = orderbook.get("asks", [])
         else:
             levels = orderbook.get("bids", [])
-
         if not levels:
             return {
                 "raw_price": 0,
@@ -108,30 +99,17 @@ class ArbitragePricer:
                 "effective_price": 0,
                 "available_depth": 0,
             }
-
-        # Best price
         raw_price = levels[0][0]
-
-        # Calculate VWAP
         vwap_price, filled_amount = self.calculate_vwap(levels, amount, side)
-
-        # Get fee
         fee_type = "maker" if use_maker else "taker"
         fee_pct = self.fees[exchange]["spot"][fee_type]
-
-        # Calculate slippage
-        slippage_bps = ((vwap_price - raw_price) / raw_price) * 10000
+        slippage_bps = (vwap_price - raw_price) / raw_price * 10000
         if side == "sell":
             slippage_bps = -slippage_bps
-
-        # Calculate effective price
         if side == "buy":
-            # When buying, we pay more (price + fees)
             effective_price = vwap_price * (1 + fee_pct / 100)
         else:
-            # When selling, we receive less (price - fees)
             effective_price = vwap_price * (1 - fee_pct / 100)
-
         return {
             "raw_price": raw_price,
             "vwap_price": vwap_price,
@@ -156,42 +134,25 @@ class ArbitragePricer:
         Returns:
             Detailed profit calculation
         """
-        # Calculate BTC amount from USDT
         binance_buy = self.get_effective_price(
             "binance", binance_book, amount_usdt, "buy", use_maker=False
         )
-
         if binance_buy["vwap_price"] == 0:
             return {"profitable": False, "reason": "No Binance depth"}
-
         btc_amount = amount_usdt / binance_buy["effective_price"]
-
-        # Calculate BTCTurk sell
         btcturk_sell = self.get_effective_price(
             "btcturk", btcturk_book, btc_amount, "sell", use_maker=False
         )
-
         if btcturk_sell["vwap_price"] == 0:
             return {"profitable": False, "reason": "No BTCTurk depth"}
-
-        # Calculate profit
         tl_received = btc_amount * btcturk_sell["effective_price"]
-
-        # Apply TL gateway fee
         gateway_fee_pct = self.fees["tl_gateway"]["withdrawal_fee"]
         tl_after_gateway = tl_received * (1 - gateway_fee_pct / 100)
-
-        # Convert back to USDT
         usdt_final = tl_after_gateway / fx_rate
-
-        # Calculate profit
         profit_usdt = usdt_final - amount_usdt
-        profit_pct = (profit_usdt / amount_usdt) * 100
-
-        # Check if profitable
+        profit_pct = profit_usdt / amount_usdt * 100
         spread_bps = profit_pct * 100
         min_spread = self.fees.get("min_profitable_spread", {}).get("default", 30)
-
         return {
             "profitable": spread_bps > min_spread,
             "btc_amount": btc_amount,
@@ -228,21 +189,17 @@ class ArbitragePricer:
         """
         test_sizes = [100, 500, 1000, 2000, 5000, 10000]
         test_sizes = [s for s in test_sizes if s <= max_size]
-
         best_profit = 0
         best_size = 0
         best_result = None
-
         for size in test_sizes:
             result = self.calculate_arbitrage_profit(binance_book, btcturk_book, size, fx_rate)
-
             if result.get("profitable", False):
                 profit_usdt = result["profit_usdt"]
                 if profit_usdt > best_profit:
                     best_profit = profit_usdt
                     best_size = size
                     best_result = result
-
         if best_result:
             return {
                 "optimal_size": best_size,
@@ -273,16 +230,12 @@ class ArbitragePricer:
             "bid": {"levels": [], "total_volume": 0, "avg_price": 0},
             "ask": {"levels": [], "total_volume": 0, "avg_price": 0},
         }
-
-        # Analyze bid side
         if orderbook.get("bids"):
             total_volume = 0
             total_value = 0
-
             for i, (price, size) in enumerate(orderbook["bids"][:10]):
                 total_volume += size
                 total_value += price * size
-
                 level_info = {
                     "level": i + 1,
                     "price": price,
@@ -291,26 +244,19 @@ class ArbitragePricer:
                     "vwap": total_value / total_volume if total_volume > 0 else 0,
                     "spread_bps": 0,
                 }
-
                 if i == 0:
                     best_bid = price
                 else:
-                    level_info["spread_bps"] = ((best_bid - price) / best_bid) * 10000
-
+                    level_info["spread_bps"] = (best_bid - price) / best_bid * 10000
                 analysis["bid"]["levels"].append(level_info)
-
             analysis["bid"]["total_volume"] = total_volume
             analysis["bid"]["avg_price"] = total_value / total_volume if total_volume > 0 else 0
-
-        # Analyze ask side
         if orderbook.get("asks"):
             total_volume = 0
             total_value = 0
-
             for i, (price, size) in enumerate(orderbook["asks"][:10]):
                 total_volume += size
                 total_value += price * size
-
                 level_info = {
                     "level": i + 1,
                     "price": price,
@@ -319,23 +265,17 @@ class ArbitragePricer:
                     "vwap": total_value / total_volume if total_volume > 0 else 0,
                     "spread_bps": 0,
                 }
-
                 if i == 0:
                     best_ask = price
                 else:
-                    level_info["spread_bps"] = ((price - best_ask) / best_ask) * 10000
-
+                    level_info["spread_bps"] = (price - best_ask) / best_ask * 10000
                 analysis["ask"]["levels"].append(level_info)
-
             analysis["ask"]["total_volume"] = total_volume
             analysis["ask"]["avg_price"] = total_value / total_volume if total_volume > 0 else 0
-
-        # Calculate mid-market spread
         if analysis["bid"]["levels"] and analysis["ask"]["levels"]:
             best_bid = analysis["bid"]["levels"][0]["price"]
             best_ask = analysis["ask"]["levels"][0]["price"]
-            analysis["spread_bps"] = ((best_ask - best_bid) / best_bid) * 10000
+            analysis["spread_bps"] = (best_ask - best_bid) / best_bid * 10000
         else:
             analysis["spread_bps"] = 0
-
         return analysis

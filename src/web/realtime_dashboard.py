@@ -9,9 +9,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Set
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
+
+from src.adapters.web.fastapi_adapter import FastAPI, HTMLResponse, WebSocket, WebSocketDisconnect
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class DashboardUpdate(BaseModel):
     """Dashboard update message"""
 
-    type: str  # price, portfolio, alert, trade
+    type: str
     data: Dict[str, Any]
     timestamp: datetime
 
@@ -57,7 +57,6 @@ class ConnectionManager:
                 try:
                     await connection.send_text(message)
                 except:
-                    # Connection might be closed
                     pass
 
     def subscribe(self, websocket: WebSocket, channels: List[str]):
@@ -76,15 +75,13 @@ class RealTimeDashboard:
         self.price_cache: Dict[str, float] = {}
         self.portfolio_cache: Dict[str, Any] = {}
         self.alerts: List[Dict] = []
-        self.update_interval = 1  # seconds
+        self.update_interval = 1
 
     async def start_price_updates(self):
         """Start streaming price updates"""
         symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"]
-
         while True:
             try:
-                # Simulate price updates (replace with real data source)
                 import random
 
                 for symbol in symbols:
@@ -94,12 +91,9 @@ class RealTimeDashboard:
                             symbol, 100
                         ),
                     )
-
-                    # Random walk
                     change = random.uniform(-0.5, 0.5) / 100
                     new_price = base_price * (1 + change)
                     self.price_cache[symbol] = new_price
-
                     update = DashboardUpdate(
                         type="price",
                         data={
@@ -110,11 +104,8 @@ class RealTimeDashboard:
                         },
                         timestamp=datetime.now(timezone.utc),
                     )
-
                     await manager.broadcast(update.model_dump_json(), channel="prices")
-
                 await asyncio.sleep(self.update_interval)
-
             except Exception as e:
                 logger.error(f"Price update error: {e}")
                 await asyncio.sleep(5)
@@ -123,9 +114,7 @@ class RealTimeDashboard:
         """Start streaming portfolio updates"""
         while True:
             try:
-                # Simulate portfolio updates
                 portfolio_value = sum(self.price_cache.values()) * 0.1
-
                 update = DashboardUpdate(
                     type="portfolio",
                     data={
@@ -144,11 +133,8 @@ class RealTimeDashboard:
                     },
                     timestamp=datetime.now(timezone.utc),
                 )
-
                 await manager.broadcast(update.model_dump_json(), channel="portfolio")
-
-                await asyncio.sleep(5)  # Update every 5 seconds
-
+                await asyncio.sleep(5)
             except Exception as e:
                 logger.error(f"Portfolio update error: {e}")
                 await asyncio.sleep(5)
@@ -157,9 +143,7 @@ class RealTimeDashboard:
         """Check and broadcast alerts"""
         while True:
             try:
-                # Check price alerts
                 for symbol, price in self.price_cache.items():
-                    # Example alert conditions
                     if symbol == "BTC/USDT" and price > 69000:
                         alert = {
                             "type": "price_alert",
@@ -168,199 +152,16 @@ class RealTimeDashboard:
                             "severity": "high",
                             "timestamp": datetime.now(timezone.utc).isoformat(),
                         }
-
                         await manager.broadcast(
                             json.dumps({"type": "alert", "data": alert}), channel="alerts"
                         )
-
-                await asyncio.sleep(10)  # Check every 10 seconds
-
+                await asyncio.sleep(10)
             except Exception as e:
                 logger.error(f"Alert check error: {e}")
                 await asyncio.sleep(10)
 
 
-# Dashboard HTML template
-dashboard_html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Real-Time Trading Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
-            color: #e0e0e0;
-            padding: 20px;
-        }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        .card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .price-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            margin: 10px 0;
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
-        }
-        .price { font-size: 24px; font-weight: bold; }
-        .positive { color: #4ade80; }
-        .negative { color: #f87171; }
-        .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-        .connected { background: #4ade80; color: #000; }
-        .disconnected { background: #f87171; color: #fff; }
-        .alert {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-            background: rgba(248,113,113,0.2);
-            border-left: 4px solid #f87171;
-        }
-        #chart { height: 400px; background: rgba(255,255,255,0.03); border-radius: 8px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Real-Time Trading Dashboard</h1>
-            <span id="status" class="status disconnected">Disconnected</span>
-        </div>
-
-        <div class="grid">
-            <div class="card">
-                <h2>📊 Live Prices</h2>
-                <div id="prices"></div>
-            </div>
-
-            <div class="card">
-                <h2>💼 Portfolio</h2>
-                <div id="portfolio">
-                    <p>Total Value: $<span id="totalValue">0.00</span></p>
-                    <p>Daily P&L: <span id="dailyPnl">$0.00</span></p>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>🔔 Alerts</h2>
-                <div id="alerts"></div>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top: 20px;">
-            <h2>📈 Price Chart</h2>
-            <div id="chart"></div>
-        </div>
-    </div>
-
-    <script>
-        const ws = new WebSocket('ws://localhost:8000/ws/dashboard');
-        const statusEl = document.getElementById('status');
-        const pricesEl = document.getElementById('prices');
-        const alertsEl = document.getElementById('alerts');
-        const priceData = {};
-
-        ws.onopen = () => {
-            statusEl.textContent = 'Connected';
-            statusEl.className = 'status connected';
-
-            // Subscribe to channels
-            ws.send(JSON.stringify({
-                action: 'subscribe',
-                channels: ['prices', 'portfolio', 'alerts']
-            }));
-        };
-
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-
-            if (data.type === 'price') {
-                updatePrice(data.data);
-            } else if (data.type === 'portfolio') {
-                updatePortfolio(data.data);
-            } else if (data.type === 'alert') {
-                showAlert(data.data);
-            }
-        };
-
-        ws.onclose = () => {
-            statusEl.textContent = 'Disconnected';
-            statusEl.className = 'status disconnected';
-        };
-
-        function updatePrice(data) {
-            if (!priceData[data.symbol]) {
-                priceData[data.symbol] = document.createElement('div');
-                priceData[data.symbol].className = 'price-card';
-                pricesEl.appendChild(priceData[data.symbol]);
-            }
-
-            const changeClass = data.change_24h >= 0 ? 'positive' : 'negative';
-            priceData[data.symbol].innerHTML = `
-                <div>
-                    <strong>${data.symbol}</strong>
-                    <div class="price">$${data.price.toFixed(2)}</div>
-                </div>
-                <div class="${changeClass}">
-                    ${data.change_24h >= 0 ? '+' : ''}${data.change_24h.toFixed(2)}%
-                </div>
-            `;
-        }
-
-        function updatePortfolio(data) {
-            document.getElementById('totalValue').textContent = data.total_value.toFixed(2);
-            document.getElementById('dailyPnl').textContent =
-                (data.daily_pnl >= 0 ? '+' : '') + '$' + data.daily_pnl.toFixed(2);
-            document.getElementById('dailyPnl').className =
-                data.daily_pnl >= 0 ? 'positive' : 'negative';
-        }
-
-        function showAlert(data) {
-            const alert = document.createElement('div');
-            alert.className = 'alert';
-            alert.innerHTML = `
-                <strong>${data.symbol}</strong>: ${data.message}
-                <small style="float: right">${new Date(data.timestamp).toLocaleTimeString()}</small>
-            `;
-            alertsEl.insertBefore(alert, alertsEl.firstChild);
-
-            // Keep only last 5 alerts
-            while (alertsEl.children.length > 5) {
-                alertsEl.removeChild(alertsEl.lastChild);
-            }
-        }
-    </script>
-</body>
-</html>
-"""
-
-
-# FastAPI app
+dashboard_html = "\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Real-Time Trading Dashboard</title>\n    <style>\n        * { margin: 0; padding: 0; box-sizing: border-box; }\n        body {\n            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n            background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);\n            color: #e0e0e0;\n            padding: 20px;\n        }\n        .container { max-width: 1400px; margin: 0 auto; }\n        .header {\n            background: rgba(255,255,255,0.05);\n            border-radius: 12px;\n            padding: 20px;\n            margin-bottom: 20px;\n            backdrop-filter: blur(10px);\n        }\n        .grid {\n            display: grid;\n            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));\n            gap: 20px;\n        }\n        .card {\n            background: rgba(255,255,255,0.05);\n            border-radius: 12px;\n            padding: 20px;\n            backdrop-filter: blur(10px);\n            border: 1px solid rgba(255,255,255,0.1);\n        }\n        .price-card {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            padding: 15px;\n            margin: 10px 0;\n            background: rgba(255,255,255,0.03);\n            border-radius: 8px;\n        }\n        .price { font-size: 24px; font-weight: bold; }\n        .positive { color: #4ade80; }\n        .negative { color: #f87171; }\n        .status {\n            display: inline-block;\n            padding: 4px 8px;\n            border-radius: 4px;\n            font-size: 12px;\n            margin-left: 10px;\n        }\n        .connected { background: #4ade80; color: #000; }\n        .disconnected { background: #f87171; color: #fff; }\n        .alert {\n            padding: 15px;\n            margin: 10px 0;\n            border-radius: 8px;\n            background: rgba(248,113,113,0.2);\n            border-left: 4px solid #f87171;\n        }\n        #chart { height: 400px; background: rgba(255,255,255,0.03); border-radius: 8px; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h1>🚀 Real-Time Trading Dashboard</h1>\n            <span id=\"status\" class=\"status disconnected\">Disconnected</span>\n        </div>\n\n        <div class=\"grid\">\n            <div class=\"card\">\n                <h2>📊 Live Prices</h2>\n                <div id=\"prices\"></div>\n            </div>\n\n            <div class=\"card\">\n                <h2>💼 Portfolio</h2>\n                <div id=\"portfolio\">\n                    <p>Total Value: $<span id=\"totalValue\">0.00</span></p>\n                    <p>Daily P&L: <span id=\"dailyPnl\">$0.00</span></p>\n                </div>\n            </div>\n\n            <div class=\"card\">\n                <h2>🔔 Alerts</h2>\n                <div id=\"alerts\"></div>\n            </div>\n        </div>\n\n        <div class=\"card\" style=\"margin-top: 20px;\">\n            <h2>📈 Price Chart</h2>\n            <div id=\"chart\"></div>\n        </div>\n    </div>\n\n    <script>\n        const ws = new WebSocket('ws://localhost:8000/ws/dashboard');\n        const statusEl = document.getElementById('status');\n        const pricesEl = document.getElementById('prices');\n        const alertsEl = document.getElementById('alerts');\n        const priceData = {};\n\n        ws.onopen = () => {\n            statusEl.textContent = 'Connected';\n            statusEl.className = 'status connected';\n\n            // Subscribe to channels\n            ws.send(JSON.stringify({\n                action: 'subscribe',\n                channels: ['prices', 'portfolio', 'alerts']\n            }));\n        };\n\n        ws.onmessage = (event) => {\n            const data = JSON.parse(event.data);\n\n            if (data.type === 'price') {\n                updatePrice(data.data);\n            } else if (data.type === 'portfolio') {\n                updatePortfolio(data.data);\n            } else if (data.type === 'alert') {\n                showAlert(data.data);\n            }\n        };\n\n        ws.onclose = () => {\n            statusEl.textContent = 'Disconnected';\n            statusEl.className = 'status disconnected';\n        };\n\n        function updatePrice(data) {\n            if (!priceData[data.symbol]) {\n                priceData[data.symbol] = document.createElement('div');\n                priceData[data.symbol].className = 'price-card';\n                pricesEl.appendChild(priceData[data.symbol]);\n            }\n\n            const changeClass = data.change_24h >= 0 ? 'positive' : 'negative';\n            priceData[data.symbol].innerHTML = `\n                <div>\n                    <strong>${data.symbol}</strong>\n                    <div class=\"price\">$${data.price.toFixed(2)}</div>\n                </div>\n                <div class=\"${changeClass}\">\n                    ${data.change_24h >= 0 ? '+' : ''}${data.change_24h.toFixed(2)}%\n                </div>\n            `;\n        }\n\n        function updatePortfolio(data) {\n            document.getElementById('totalValue').textContent = data.total_value.toFixed(2);\n            document.getElementById('dailyPnl').textContent =\n                (data.daily_pnl >= 0 ? '+' : '') + '$' + data.daily_pnl.toFixed(2);\n            document.getElementById('dailyPnl').className =\n                data.daily_pnl >= 0 ? 'positive' : 'negative';\n        }\n\n        function showAlert(data) {\n            const alert = document.createElement('div');\n            alert.className = 'alert';\n            alert.innerHTML = `\n                <strong>${data.symbol}</strong>: ${data.message}\n                <small style=\"float: right\">${new Date(data.timestamp).toLocaleTimeString()}</small>\n            `;\n            alertsEl.insertBefore(alert, alertsEl.firstChild);\n\n            // Keep only last 5 alerts\n            while (alertsEl.children.length > 5) {\n                alertsEl.removeChild(alertsEl.lastChild);\n            }\n        }\n    </script>\n</body>\n</html>\n"
 app = FastAPI(title="Real-Time Dashboard")
 dashboard = RealTimeDashboard()
 
@@ -375,20 +176,16 @@ async def get_dashboard():
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""
     await manager.connect(websocket)
-
     try:
         while True:
-            # Receive messages from client
             data = await websocket.receive_text()
             message = json.loads(data)
-
             if message.get("action") == "subscribe":
                 channels = message.get("channels", [])
                 manager.subscribe(websocket, channels)
                 await manager.send_personal_message(
                     json.dumps({"status": "subscribed", "channels": channels}), websocket
                 )
-
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 

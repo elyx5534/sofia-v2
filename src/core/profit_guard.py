@@ -56,7 +56,6 @@ class ProfitGuard:
         """Load risk configuration"""
         path = Path(config_path)
         if not path.exists():
-            # Use defaults if config doesn't exist
             return {
                 "daily_targets": {
                     "profit_target_pct": 0.5,
@@ -80,7 +79,6 @@ class ProfitGuard:
                     "reset_at_utc": "00:00",
                 },
             }
-
         with open(path) as f:
             return yaml.safe_load(f)
 
@@ -103,17 +101,10 @@ class ProfitGuard:
         """Main monitoring loop"""
         while True:
             try:
-                # Check for daily reset
                 await self._check_daily_reset()
-
-                # Update trailing stop
                 self._update_trailing_stop()
-
-                # Check emergency stops
                 self._check_emergency_stops()
-
                 await asyncio.sleep(1)
-
             except Exception as e:
                 self.logger.error(f"Monitor loop error: {e}")
 
@@ -122,10 +113,7 @@ class ProfitGuard:
         reset_time_str = self.config["emergency_stops"]["reset_at_utc"]
         reset_hour, reset_minute = map(int, reset_time_str.split(":"))
         reset_time = time(reset_hour, reset_minute)
-
         now = datetime.utcnow()
-
-        # Check if we've passed reset time since last reset
         if now.time() >= reset_time and (now - self.state.last_reset).total_seconds() > 3600:
             self.reset_daily_state()
             self.logger.info("Daily risk state reset")
@@ -144,46 +132,32 @@ class ProfitGuard:
     def update_pnl(self, pnl_pct: float):
         """Update daily P&L and adjust risk parameters"""
         self.state.daily_pnl_pct = Decimal(str(pnl_pct))
-
-        # Update high water mark
         self.state.daily_high_water_mark = max(
             self.state.daily_pnl_pct, self.state.daily_high_water_mark
         )
-
-        # Update position scaling based on profit
         self._update_position_scaling()
-
-        # Check if we should activate trailing lock
         self._check_trailing_lock_activation()
 
     def _update_position_scaling(self):
         """Update position size scaling based on daily P&L"""
         scale_config = self.config["daily_targets"]["scale_on_profit"]
-
-        # Find appropriate scale factor
         scale_factor = Decimal("1.0")
         for threshold, scale in sorted(scale_config.items()):
             if float(self.state.daily_pnl_pct) >= threshold:
                 scale_factor = Decimal(str(scale))
-
         self.state.current_scale_factor = scale_factor
-
         if scale_factor < Decimal("1.0"):
             self.logger.info(
-                f"Position scaling adjusted to {float(scale_factor)*100:.0f}% due to profit level"
+                f"Position scaling adjusted to {float(scale_factor) * 100:.0f}% due to profit level"
             )
 
     def _check_trailing_lock_activation(self):
         """Check if trailing profit lock should activate"""
         trail_config = self.config["daily_targets"]["trailing_lock"]
-
         if not trail_config["enabled"]:
             return
-
         lock_at = Decimal(str(trail_config["lock_profit_at"]))
         trail_distance = Decimal(str(trail_config["trail_distance"]))
-
-        # Activate trailing stop if we hit the profit target
         if self.state.daily_pnl_pct >= lock_at and self.state.trailing_stop_level is None:
             self.state.trailing_stop_level = self.state.daily_pnl_pct - trail_distance
             self.logger.info(
@@ -194,20 +168,15 @@ class ProfitGuard:
         """Update trailing stop level"""
         if self.state.trailing_stop_level is None:
             return
-
         trail_distance = Decimal(
             str(self.config["daily_targets"]["trailing_lock"]["trail_distance"])
         )
         new_stop_level = self.state.daily_pnl_pct - trail_distance
-
-        # Only move stop up, never down
         if new_stop_level > self.state.trailing_stop_level:
             self.state.trailing_stop_level = new_stop_level
             self.logger.info(
                 f"Trailing stop updated to {float(self.state.trailing_stop_level):.2f}%"
             )
-
-        # Check if stop is hit
         if self.state.daily_pnl_pct <= self.state.trailing_stop_level:
             self.state.positions_blocked = True
             self.state.block_reason = (
@@ -218,16 +187,12 @@ class ProfitGuard:
     def _check_emergency_stops(self):
         """Check emergency stop conditions"""
         emergency = self.config["emergency_stops"]
-
-        # Check daily loss limit
         if float(self.state.daily_pnl_pct) <= emergency["daily_loss_limit_pct"]:
             self.state.positions_blocked = True
             self.state.block_reason = (
                 f"Daily loss limit hit: {float(self.state.daily_pnl_pct):.2f}%"
             )
             self.logger.critical(f"EMERGENCY STOP: {self.state.block_reason}")
-
-        # Check consecutive losses
         if self.state.consecutive_losses >= emergency["consecutive_losses"]:
             self.state.positions_blocked = True
             self.state.block_reason = f"Consecutive losses: {self.state.consecutive_losses}"
@@ -242,18 +207,13 @@ class ProfitGuard:
 
     def can_open_position(self, size_pct: float) -> Tuple[bool, Optional[str]]:
         """Check if new position can be opened"""
-        # Check if positions are blocked
         if self.state.positions_blocked:
-            return False, self.state.block_reason
-
-        # Check position size limit
+            return (False, self.state.block_reason)
         max_size = self.config["position_limits"]["max_position_size_pct"]
         scaled_size = size_pct * float(self.state.current_scale_factor)
-
         if scaled_size > max_size:
-            return False, f"Position size {scaled_size:.1f}% exceeds limit {max_size}%"
-
-        return True, None
+            return (False, f"Position size {scaled_size:.1f}% exceeds limit {max_size}%")
+        return (True, None)
 
     def get_scaled_position_size(self, base_size: float) -> float:
         """Get scaled position size based on current risk state"""
@@ -275,21 +235,17 @@ class ProfitGuard:
     def _get_risk_alerts(self) -> List[str]:
         """Get current risk alerts"""
         alerts = []
-
         if self.state.positions_blocked:
             alerts.append(f"BLOCKED: {self.state.block_reason}")
-
         if self.state.trailing_stop_level is not None:
             alerts.append(f"Trailing stop active at {float(self.state.trailing_stop_level):.2f}%")
-
         if self.state.current_scale_factor < Decimal("1.0"):
-            alerts.append(f"Position scaling at {float(self.state.current_scale_factor)*100:.0f}%")
-
+            alerts.append(
+                f"Position scaling at {float(self.state.current_scale_factor) * 100:.0f}%"
+            )
         if self.state.consecutive_losses > 2:
             alerts.append(f"Warning: {self.state.consecutive_losses} consecutive losses")
-
         return alerts
 
 
-# Global instance
 profit_guard = ProfitGuard()

@@ -2,9 +2,9 @@
 Markets UI Route
 """
 
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+
+from src.adapters.web.fastapi_adapter import APIRouter, HTMLResponse, Request
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")

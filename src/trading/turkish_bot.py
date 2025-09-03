@@ -25,8 +25,8 @@ class CoinPosition:
     def __init__(self, symbol: str):
         self.symbol = symbol
         self.amount = 0.0
-        self.entry_price_try = 0.0  # TRY cinsinden giriş fiyatı
-        self.current_price_try = 0.0  # TRY cinsinden güncel fiyat
+        self.entry_price_try = 0.0
+        self.current_price_try = 0.0
         self.highest_price_try = 0.0
         self.unrealized_pnl_try = 0.0
         self.realized_pnl_try = 0.0
@@ -43,7 +43,6 @@ class CoinPosition:
 class TurkishTradingBot:
     """Advanced Turkish Lira trading bot supporting hundreds of coins"""
 
-    # Binance'ta işlem gören TÜM coinler (500+ coin)
     POPULAR_COINS = [
         "BTC/USDT",
         "ETH/USDT",
@@ -81,10 +80,7 @@ class TurkishTradingBot:
         "JASMY/USDT",
         "PEOPLE/USDT",
     ]
-
-    # 500+ COIN - Binance'taki TÜM coinler (meme coinler dahil)
     ALL_COINS = POPULAR_COINS + [
-        # Major Alts
         "CHZ/USDT",
         "THETA/USDT",
         "ONE/USDT",
@@ -105,7 +101,6 @@ class TurkishTradingBot:
         "CRV/USDT",
         "INCH/USDT",
         "RSR/USDT",
-        # DeFi Coins
         "AAVE/USDT",
         "ANKR/USDT",
         "BADGER/USDT",
@@ -121,7 +116,6 @@ class TurkishTradingBot:
         "DODO/USDT",
         "DYDX/USDT",
         "FARM/USDT",
-        # Gaming & Metaverse
         "ALICE/USDT",
         "ATA/USDT",
         "ATLAS/USDT",
@@ -137,7 +131,6 @@ class TurkishTradingBot:
         "CFX/USDT",
         "CHR/USDT",
         "CITY/USDT",
-        # Meme Coins (bunlar çok volatil!)
         "PEPE/USDT",
         "FLOKI/USDT",
         "BONK/USDT",
@@ -153,7 +146,6 @@ class TurkishTradingBot:
         "VOLT/USDT",
         "DOBO/USDT",
         "SAMO/USDT",
-        # Layer 1 & 2
         "ARB/USDT",
         "OP/USDT",
         "MATIC/USDT",
@@ -169,7 +161,6 @@ class TurkishTradingBot:
         "KLAY/USDT",
         "WAXP/USDT",
         "ICX/USDT",
-        # AI & Big Data
         "FET/USDT",
         "OCEAN/USDT",
         "AGIX/USDT",
@@ -180,7 +171,6 @@ class TurkishTradingBot:
         "PHB/USDT",
         "CTXC/USDT",
         "MDT/USDT",
-        # Storage
         "FIL/USDT",
         "AR/USDT",
         "STORJ/USDT",
@@ -191,7 +181,6 @@ class TurkishTradingBot:
         "TFUEL/USDT",
         "DGB/USDT",
         "RLC/USDT",
-        # Privacy
         "XMR/USDT",
         "ZEC/USDT",
         "DASH/USDT",
@@ -202,7 +191,6 @@ class TurkishTradingBot:
         "XVG/USDT",
         "NAV/USDT",
         "PIVX/USDT",
-        # Exchange Tokens
         "BNB/USDT",
         "OKB/USDT",
         "HT/USDT",
@@ -213,7 +201,6 @@ class TurkishTradingBot:
         "MX/USDT",
         "GT/USDT",
         "WOO/USDT",
-        # Oracles
         "LINK/USDT",
         "BAND/USDT",
         "API3/USDT",
@@ -224,7 +211,6 @@ class TurkishTradingBot:
         "OGN/USDT",
         "TORN/USDT",
         "UMA/USDT",
-        # NFT
         "APE/USDT",
         "MANA/USDT",
         "SAND/USDT",
@@ -235,7 +221,6 @@ class TurkishTradingBot:
         "THETA/USDT",
         "WAXP/USDT",
         "ILV/USDT",
-        # New Listings (2024)
         "JTO/USDT",
         "PYTH/USDT",
         "SEI/USDT",
@@ -261,7 +246,6 @@ class TurkishTradingBot:
         "ZK/USDT",
         "LISTA/USDT",
         "ZRO/USDT",
-        # Small Caps (yüksek riskli)
         "ACH/USDT",
         "ADX/USDT",
         "AERGO/USDT",
@@ -287,7 +271,6 @@ class TurkishTradingBot:
         "AUTO/USDT",
         "AVA/USDT",
         "AXS/USDT",
-        # Daha fazla altcoin
         "BAR/USDT",
         "BAT/USDT",
         "BCD/USDT",
@@ -324,11 +307,9 @@ class TurkishTradingBot:
         self.status = BotStatus.STOPPED
         self.balance_try = initial_balance_try
         self.initial_balance_try = initial_balance_try
-        self.usd_to_try = 34.5  # USD/TRY kuru (dinamik olarak güncellenebilir)
-
-        self.positions = {}  # symbol -> CoinPosition
-        self.active_coins = set()  # İzlenen coinler
-        # 50 coin ile başla (meme coinler dahil çeşitli)
+        self.usd_to_try = 34.5
+        self.positions = {}
+        self.active_coins = set()
         initial_coins = self.POPULAR_COINS[:20] + [
             "PEPE/USDT",
             "FLOKI/USDT",
@@ -352,32 +333,24 @@ class TurkishTradingBot:
             "HOOK/USDT",
         ]
         self.watchlist = set(initial_coins[:50])
-
         self.strategy_type = StrategyType.COMBINED
-        # Daha agresif risk yönetimi
         self.risk_manager = RiskManager(
-            stop_loss_pct=0.05,  # %5 stop loss (daha geniş)
-            take_profit_pct=0.03,  # %3 take profit (daha sık kar al)
-            trailing_stop_pct=0.025,  # %2.5 trailing stop
-            max_position_size=0.02,  # Portföyün max %2'si tek pozisyonda (daha fazla coin)
+            stop_loss_pct=0.05,
+            take_profit_pct=0.03,
+            trailing_stop_pct=0.025,
+            max_position_size=0.02,
         )
-
         self.strategies = TradingStrategies()
         self.all_trades = []
         self.indicators = {}
-
-        # Performance tracking
         self.daily_pnl = 0.0
         self.weekly_pnl = 0.0
         self.monthly_pnl = 0.0
         self.best_trade = None
         self.worst_trade = None
-
-        # Coin filters - daha agresif
-        self.min_volume_usd = 100000  # Minimum 100K USD hacim (daha düşük)
-        self.max_coins_to_trade = 50  # Aynı anda max 50 coin (daha fazla)
-        self.min_price_usd = 0.0000001  # Çok düşük fiyatlı coinleri de al
-
+        self.min_volume_usd = 100000
+        self.max_coins_to_trade = 50
+        self.min_price_usd = 1e-07
         logger.info(f"Turkish Trading Bot initialized with {self.initial_balance_try:,.2f} TRY")
 
     def add_coins_to_watchlist(self, symbols: List[str]):
@@ -386,28 +359,20 @@ class TurkishTradingBot:
             if symbol in self.ALL_COINS:
                 self.watchlist.add(symbol)
                 logger.info(f"Added {symbol} to watchlist")
-
-        # Limit watchlist size
         if len(self.watchlist) > 50:
-            # Keep only top 50 by some criteria (volume, volatility, etc.)
             self.watchlist = set(list(self.watchlist)[:50])
 
     def scan_for_opportunities(self) -> List[str]:
         """Scan all coins for trading opportunities"""
         opportunities = []
-
         for symbol in self.watchlist:
             if symbol in self.indicators:
                 indicators = self.indicators[symbol]
-
-                # Check for strong signals
                 if self.strategy_type == StrategyType.RSI:
                     rsi = indicators.get("rsi", 50)
-                    if rsi < 25 or rsi > 75:  # Strong oversold/overbought
+                    if rsi < 25 or rsi > 75:
                         opportunities.append(symbol)
-
                 elif self.strategy_type == StrategyType.COMBINED:
-                    # Check multiple indicators
                     score = 0
                     if indicators.get("rsi", 50) < 30:
                         score += 1
@@ -417,21 +382,18 @@ class TurkishTradingBot:
                         score += 1
                     if indicators.get("bollinger", {}).get("percent_b", 0.5) < 0.2:
                         score += 1
-
-                    if abs(score) >= 2:  # Strong signal
+                    if abs(score) >= 2:
                         opportunities.append(symbol)
-
-        return opportunities[: self.max_coins_to_trade]  # Limit to max coins
+        return opportunities[: self.max_coins_to_trade]
 
     def calculate_position_size_try(self, confidence: str = "medium") -> float:
         """Calculate position size in TRY based on risk"""
         base_size_try = self.balance_try * self.risk_manager.max_position_size
-
         if confidence == "high":
             return base_size_try
         elif confidence == "medium":
             return base_size_try * 0.7
-        else:  # low confidence
+        else:
             return base_size_try * 0.4
 
     def execute_trade(
@@ -440,10 +402,8 @@ class TurkishTradingBot:
         """Execute a paper trade in TRY"""
         if symbol not in self.positions:
             self.positions[symbol] = CoinPosition(symbol)
-
         position = self.positions[symbol]
         price_try = price_usd * self.usd_to_try
-
         trade = {
             "timestamp": datetime.now().isoformat(),
             "symbol": symbol,
@@ -457,72 +417,48 @@ class TurkishTradingBot:
             "confidence": confidence,
             "indicators": self.indicators.get(symbol, {}),
         }
-
         if signal == "BUY" and position.amount == 0:
-            # Calculate position size in TRY
             trade_value_try = self.calculate_position_size_try(confidence)
-
-            # Don't use more than available balance
             trade_value_try = min(trade_value_try, self.balance_try * 0.95)
-
-            if trade_value_try > 1000:  # Minimum 1000 TRY işlem
+            if trade_value_try > 1000:
                 amount = trade_value_try / price_try
                 self.balance_try -= trade_value_try
-
                 position.amount = amount
                 position.entry_price_try = price_try
                 position.current_price_try = price_try
                 position.highest_price_try = price_try
-
                 trade["amount"] = amount
                 trade["value_try"] = trade_value_try
                 trade["balance_after_try"] = self.balance_try
-
                 self.active_coins.add(symbol)
                 logger.info(
                     f"BUY {symbol}: {amount:.6f} @ {price_try:.2f} TRY (Confidence: {confidence})"
                 )
-
         elif signal == "SELL" and position.amount > 0:
-            # Sell all position
             trade_value_try = position.amount * price_try
             self.balance_try += trade_value_try
-
-            # Calculate P&L in TRY
-            trade["pnl_try"] = trade_value_try - (position.amount * position.entry_price_try)
+            trade["pnl_try"] = trade_value_try - position.amount * position.entry_price_try
             position.realized_pnl_try += trade["pnl_try"]
-
-            # Update daily/weekly/monthly P&L
             self.daily_pnl += trade["pnl_try"]
-
-            # Track best/worst trades
             if not self.best_trade or trade["pnl_try"] > self.best_trade["pnl_try"]:
                 self.best_trade = trade
             if not self.worst_trade or trade["pnl_try"] < self.worst_trade["pnl_try"]:
                 self.worst_trade = trade
-
             trade["amount"] = position.amount
             trade["value_try"] = trade_value_try
             trade["balance_after_try"] = self.balance_try
-
             logger.info(
                 f"SELL {symbol}: {position.amount:.6f} @ {price_try:.2f} TRY | P&L: {trade['pnl_try']:+,.2f} TRY"
             )
-
-            # Reset position
             position.amount = 0
             position.entry_price_try = 0
             position.unrealized_pnl_try = 0
             self.active_coins.discard(symbol)
-
-        # Risk management checks
         if position.amount > 0:
             self._check_risk_management(symbol, position, price_try, trade)
-
         if trade["amount"] > 0:
             position.trades.append(trade)
             self.all_trades.append(trade)
-
         return trade
 
     def _check_risk_management(
@@ -530,48 +466,34 @@ class TurkishTradingBot:
     ):
         """Check and apply risk management rules"""
         price_usd = price_try / self.usd_to_try
-
-        # Check stop loss
         if self.risk_manager.should_stop_loss(position.entry_price_try, price_try):
             logger.warning(f"STOP LOSS triggered for {symbol} at {price_try:.2f} TRY")
             self.execute_trade(symbol, "SELL", price_usd, "risk_management")
-
-        # Check take profit
         elif self.risk_manager.should_take_profit(position.entry_price_try, price_try):
             logger.info(f"TAKE PROFIT triggered for {symbol} at {price_try:.2f} TRY")
             self.execute_trade(symbol, "SELL", price_usd, "risk_management")
-
-        # Update trailing stop
         else:
             entry_price_usd = position.entry_price_try / self.usd_to_try
             highest_price_usd = position.highest_price_try / self.usd_to_try
             trailing_stop_usd = self.risk_manager.update_trailing_stop(
                 symbol, entry_price_usd, price_usd, highest_price_usd
             )
-
             if self.risk_manager.should_trailing_stop(symbol, price_usd):
                 logger.info(f"TRAILING STOP triggered for {symbol} at {price_try:.2f} TRY")
                 self.execute_trade(symbol, "SELL", price_usd, "risk_management")
 
     def get_portfolio_stats(self) -> Dict:
         """Get complete portfolio statistics in TRY"""
-        # Calculate total portfolio value in TRY
         total_position_value_try = sum(
             pos.amount * pos.current_price_try for pos in self.positions.values()
         )
         total_value_try = self.balance_try + total_position_value_try
-
-        # Calculate total P&L in TRY
         total_unrealized_pnl_try = sum(pos.unrealized_pnl_try for pos in self.positions.values())
         total_realized_pnl_try = sum(pos.realized_pnl_try for pos in self.positions.values())
         total_pnl_try = total_value_try - self.initial_balance_try
-        pnl_percent = (total_pnl_try / self.initial_balance_try) * 100
-
-        # Win/loss statistics
+        pnl_percent = total_pnl_try / self.initial_balance_try * 100
         winning_trades = [t for t in self.all_trades if t.get("pnl_try", 0) > 0]
         losing_trades = [t for t in self.all_trades if t.get("pnl_try", 0) < 0]
-
-        # Position details
         positions_data = {}
         for symbol, pos in self.positions.items():
             if pos.amount > 0:
@@ -583,7 +505,6 @@ class TurkishTradingBot:
                     "realized_pnl_try": round(pos.realized_pnl_try, 2),
                     "value_try": round(pos.amount * pos.current_price_try, 2),
                 }
-
         return {
             "status": self.status.value,
             "strategy": self.strategy_type.value,

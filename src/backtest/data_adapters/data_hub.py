@@ -51,39 +51,26 @@ class DataHubAdapter:
             "timeframe": timeframe,
             "limit": limit,
         }
-
         if start_date:
             params["start_date"] = start_date.isoformat()
         if end_date:
             params["end_date"] = end_date.isoformat()
-
         try:
             response = self.client.get(f"{self.base_url}/ohlcv", params=params)
             response.raise_for_status()
-
             data = response.json()
-
             if not data or "data" not in data:
                 return pd.DataFrame()
-
-            # Convert to DataFrame
             df = pd.DataFrame(data["data"])
-
             if df.empty:
                 return df
-
-            # Convert timestamp to datetime index
             df["timestamp"] = pd.to_datetime(df["timestamp"])
             df.set_index("timestamp", inplace=True)
-
-            # Ensure numeric columns
             numeric_cols = ["open", "high", "low", "close", "volume"]
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors="coerce")
-
             return df
-
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 raise ValueError(f"Symbol {symbol} not found")

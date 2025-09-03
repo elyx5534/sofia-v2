@@ -5,25 +5,17 @@ UI Server - Serves HTML templates with FastAPI
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-logger = logging.getLogger(__name__)
+from src.adapters.web.fastapi_adapter import FastAPI, HTMLResponse, Request
 
-# Get paths
+logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).parent.parent
 TEMPLATES_DIR = BASE_DIR / "ui" / "templates"
 STATIC_DIR = BASE_DIR / "ui" / "static"
-
-# Create FastAPI app for UI
 ui_app = FastAPI(title="Sofia V2 UI")
-
-# Mount static files
 ui_app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-
-# Setup templates
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
@@ -46,9 +38,7 @@ async def dashboard(request: Request):
 @ui_app.get("/showcase/{symbol}", response_class=HTMLResponse)
 async def showcase(request: Request, symbol: str):
     """Showcase page for a symbol"""
-    # Convert symbol format
     display_symbol = symbol.replace("-", "/")
-
     return templates.TemplateResponse(
         "showcase.html", {"request": request, "active_page": "showcase", "symbol": display_symbol}
     )
@@ -58,7 +48,6 @@ async def showcase(request: Request, symbol: str):
 async def analysis(request: Request, symbol: str):
     """Analysis page for a symbol"""
     display_symbol = symbol.replace("-", "/")
-
     return templates.TemplateResponse(
         "analysis.html", {"request": request, "active_page": "analysis", "symbol": display_symbol}
     )
@@ -74,10 +63,8 @@ async def backtest_studio(request: Request):
 
 def mount_ui_routes(app: FastAPI):
     """Mount UI routes to main FastAPI app"""
-    # Mount static files
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-    # Add UI routes
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         return templates.TemplateResponse(

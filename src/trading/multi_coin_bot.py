@@ -47,13 +47,13 @@ class MultiCoinBot:
         self.status = BotStatus.STOPPED
         self.balance = initial_balance
         self.initial_balance = initial_balance
-        self.positions = {}  # symbol -> CoinPosition
+        self.positions = {}
         self.active_coins = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"]
         self.strategy_type = StrategyType.COMBINED
         self.risk_manager = RiskManager()
         self.strategies = TradingStrategies()
         self.all_trades = []
-        self.indicators = {}  # Store latest indicators for each coin
+        self.indicators = {}
 
     def add_coin(self, symbol: str):
         """Add a coin to track"""
@@ -74,35 +74,27 @@ class MultiCoinBot:
 
     def get_signal(self, symbol: str, prices: List[float]) -> tuple[Optional[str], Dict]:
         """Get trading signal based on selected strategy"""
-        # Calculate all indicators
         indicators = {
             "rsi": self.strategies.calculate_rsi(prices),
             "macd": self.strategies.calculate_macd(prices),
             "ma_crossover": self.strategies.calculate_ma_crossover(prices),
             "bollinger": self.strategies.calculate_bollinger_bands(prices),
         }
-
-        # Store indicators for this coin
         self.indicators[symbol] = indicators
-
-        # Get signal based on strategy
         if self.strategy_type == StrategyType.RSI:
             signal = self.strategies.get_rsi_signal(prices)
             confidence = "high" if indicators["rsi"] < 25 or indicators["rsi"] > 75 else "medium"
-            return signal, {"confidence": confidence, "indicators": indicators}
-
+            return (signal, {"confidence": confidence, "indicators": indicators})
         elif self.strategy_type == StrategyType.MACD:
             signal = self.strategies.get_macd_signal(prices)
             confidence = "high" if abs(indicators["macd"]["histogram"]) > 10 else "medium"
-            return signal, {"confidence": confidence, "indicators": indicators}
-
+            return (signal, {"confidence": confidence, "indicators": indicators})
         elif self.strategy_type == StrategyType.MA_CROSSOVER:
             signal = self.strategies.get_ma_crossover_signal(prices)
             confidence = (
                 "high" if abs(indicators["ma_crossover"]["difference_pct"]) > 1 else "medium"
             )
-            return signal, {"confidence": confidence, "indicators": indicators}
-
+            return (signal, {"confidence": confidence, "indicators": indicators})
         elif self.strategy_type == StrategyType.BOLLINGER:
             signal = self.strategies.get_bollinger_signal(prices)
             confidence = (
@@ -111,9 +103,8 @@ class MultiCoinBot:
                 or indicators["bollinger"]["percent_b"] > 0.9
                 else "medium"
             )
-            return signal, {"confidence": confidence, "indicators": indicators}
-
-        else:  # COMBINED
+            return (signal, {"confidence": confidence, "indicators": indicators})
+        else:
             return self.strategies.get_combined_signal(prices)
 
     def execute_trade(
@@ -122,9 +113,7 @@ class MultiCoinBot:
         """Execute a paper trade for a specific coin"""
         if symbol not in self.positions:
             self.positions[symbol] = CoinPosition(symbol)
-
         position = self.positions[symbol]
-
         trade = {
             "timestamp": datetime.now().isoformat(),
             "symbol": symbol,
@@ -137,96 +126,64 @@ class MultiCoinBot:
             "confidence": confidence,
             "indicators": self.indicators.get(symbol, {}),
         }
-
         if signal == "BUY" and position.amount == 0:
-            # Calculate position size based on risk
             trade_value = self.risk_manager.calculate_position_size(self.balance, confidence)
-
-            # Don't use more than available balance
-            trade_value = min(trade_value, self.balance * 0.9)  # Keep 10% reserve
-
-            if trade_value > 100:  # Minimum trade size
+            trade_value = min(trade_value, self.balance * 0.9)
+            if trade_value > 100:
                 amount = trade_value / price
                 self.balance -= trade_value
-
                 position.amount = amount
                 position.entry_price = price
                 position.current_price = price
                 position.highest_price = price
-
                 trade["amount"] = amount
                 trade["value"] = trade_value
                 trade["balance_after"] = self.balance
-
                 logger.info(f"BUY {symbol}: {amount:.6f} @ ${price:.2f} (Confidence: {confidence})")
-
         elif signal == "SELL" and position.amount > 0:
-            # Sell all position
             trade_value = position.amount * price
             self.balance += trade_value
-
-            # Calculate P&L
-            trade["pnl"] = trade_value - (position.amount * position.entry_price)
+            trade["pnl"] = trade_value - position.amount * position.entry_price
             position.realized_pnl += trade["pnl"]
-
             trade["amount"] = position.amount
             trade["value"] = trade_value
             trade["balance_after"] = self.balance
-
             logger.info(
                 f"SELL {symbol}: {position.amount:.6f} @ ${price:.2f} P&L: ${trade['pnl']:.2f}"
             )
-
-            # Reset position
             position.amount = 0
             position.entry_price = 0
             position.unrealized_pnl = 0
-
-        # Check risk management
         if position.amount > 0:
-            # Check stop loss
             if self.risk_manager.should_stop_loss(position.entry_price, price):
                 logger.warning(f"STOP LOSS triggered for {symbol}")
                 return self.execute_trade(symbol, "SELL", price, "risk_management")
-
-            # Check take profit
             if self.risk_manager.should_take_profit(position.entry_price, price):
                 logger.info(f"TAKE PROFIT triggered for {symbol}")
                 return self.execute_trade(symbol, "SELL", price, "risk_management")
-
-            # Update trailing stop
             trailing_stop = self.risk_manager.update_trailing_stop(
                 symbol, position.entry_price, price, position.highest_price
             )
             if self.risk_manager.should_trailing_stop(symbol, price):
                 logger.info(f"TRAILING STOP triggered for {symbol} at ${trailing_stop:.2f}")
                 return self.execute_trade(symbol, "SELL", price, "risk_management")
-
         if trade["amount"] > 0:
             position.trades.append(trade)
             self.all_trades.append(trade)
-
         return trade
 
     def get_portfolio_stats(self) -> Dict:
         """Get complete portfolio statistics"""
-        # Calculate total portfolio value
         total_position_value = sum(
             pos.amount * pos.current_price for pos in self.positions.values()
         )
         total_value = self.balance + total_position_value
-
-        # Calculate total P&L
         total_unrealized_pnl = sum(pos.unrealized_pnl for pos in self.positions.values())
         total_realized_pnl = sum(pos.realized_pnl for pos in self.positions.values())
         total_pnl = total_value - self.initial_balance
-        pnl_percent = (total_pnl / self.initial_balance) * 100
-
-        # Win/loss statistics
+        pnl_percent = total_pnl / self.initial_balance * 100
         winning_trades = [t for t in self.all_trades if t.get("pnl", 0) > 0]
         losing_trades = [t for t in self.all_trades if t.get("pnl", 0) < 0]
-
-        # Position details
         positions_data = {}
         for symbol, pos in self.positions.items():
             positions_data[symbol] = {
@@ -237,7 +194,6 @@ class MultiCoinBot:
                 "realized_pnl": round(pos.realized_pnl, 2),
                 "value": round(pos.amount * pos.current_price, 2),
             }
-
         return {
             "status": self.status.value,
             "strategy": self.strategy_type.value,

@@ -14,7 +14,7 @@ class ParameterType(str, Enum):
     FLOAT = "float"
     BOOLEAN = "boolean"
     STRING = "string"
-    SELECT = "select"  # Dropdown selection
+    SELECT = "select"
 
 
 @dataclass
@@ -29,7 +29,7 @@ class ParameterSchema:
     min_value: Optional[float] = None
     max_value: Optional[float] = None
     step: Optional[float] = None
-    options: Optional[List[Any]] = None  # For SELECT type
+    options: Optional[List[Any]] = None
     required: bool = True
 
     def to_dict(self):
@@ -55,12 +55,12 @@ class StrategyMetadata:
     name: str
     display_name: str
     description: str
-    category: str  # trend, momentum, mean_reversion, ml, etc.
+    category: str
     author: str
     version: str
     parameters: List[ParameterSchema] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
-    risk_level: str = "medium"  # low, medium, high
+    risk_level: str = "medium"
     timeframes: List[str] = field(default_factory=lambda: ["1d", "4h", "1h"])
 
     def to_dict(self):
@@ -95,24 +95,19 @@ class StrategyRegistry:
         """Initialize registry."""
         if self._initialized:
             return
-
         self._strategies: Dict[str, Type[BaseStrategy]] = {}
         self._metadata: Dict[str, StrategyMetadata] = {}
         self._initialized = True
-
-        # Register built-in strategies
         self._register_builtin_strategies()
 
     def _register_builtin_strategies(self):
         """Register all built-in strategies."""
-        # Import built-in strategies
         from .bollinger_strategy import BollingerBandsStrategy
         from .macd_strategy import MACDStrategy
         from .multi_indicator import MultiIndicatorStrategy
         from .rsi_strategy import RSIStrategy
         from .sma import SMAStrategy
 
-        # SMA Crossover Strategy
         self.register(
             SMAStrategy,
             StrategyMetadata(
@@ -159,8 +154,6 @@ class StrategyRegistry:
                 timeframes=["1d", "4h"],
             ),
         )
-
-        # RSI Strategy
         self.register(
             RSIStrategy,
             StrategyMetadata(
@@ -206,8 +199,6 @@ class StrategyRegistry:
                 risk_level="medium",
             ),
         )
-
-        # MACD Strategy
         self.register(
             MACDStrategy,
             StrategyMetadata(
@@ -250,8 +241,6 @@ class StrategyRegistry:
                 risk_level="medium",
             ),
         )
-
-        # Bollinger Bands Strategy
         self.register(
             BollingerBandsStrategy,
             StrategyMetadata(
@@ -286,8 +275,6 @@ class StrategyRegistry:
                 risk_level="medium",
             ),
         )
-
-        # Multi-Indicator Strategy
         self.register(
             MultiIndicatorStrategy,
             StrategyMetadata(
@@ -361,10 +348,8 @@ class StrategyRegistry:
     def list_strategies(self, category: Optional[str] = None) -> List[StrategyMetadata]:
         """List all registered strategies, optionally filtered by category."""
         strategies = list(self._metadata.values())
-
         if category:
             strategies = [s for s in strategies if s.category == category]
-
         return strategies
 
     def get_categories(self) -> List[str]:
@@ -383,30 +368,20 @@ class StrategyRegistry:
         metadata = self.get_metadata(strategy_name)
         if not metadata:
             raise ValueError(f"Strategy {strategy_name} not found")
-
         validated = {}
-
         for param_schema in metadata.parameters:
             value = parameters.get(param_schema.name, param_schema.default)
-
-            # Type coercion
             if param_schema.type == ParameterType.INTEGER:
                 value = int(value)
             elif param_schema.type == ParameterType.FLOAT:
                 value = float(value)
             elif param_schema.type == ParameterType.BOOLEAN:
                 value = bool(value)
-
-            # Range validation
             if param_schema.min_value is not None and value < param_schema.min_value:
                 value = param_schema.min_value
             if param_schema.max_value is not None and value > param_schema.max_value:
                 value = param_schema.max_value
-
-            # Options validation
             if param_schema.options and value not in param_schema.options:
                 value = param_schema.default
-
             validated[param_schema.name] = value
-
         return validated

@@ -42,7 +42,7 @@ class Position(BaseModel):
         """Get return percentage."""
         if self.entry_price == 0:
             return 0
-        return ((self.current_price - self.entry_price) / self.entry_price) * 100
+        return (self.current_price - self.entry_price) / self.entry_price * 100
 
 
 class PositionManager:
@@ -54,57 +54,39 @@ class PositionManager:
         self.closed_positions: List[Position] = []
         self.total_realized_pnl: float = 0
 
-    def open_position(
-        self,
-        symbol: str,
-        quantity: float,
-        entry_price: float,
-    ) -> Position:
+    def open_position(self, symbol: str, quantity: float, entry_price: float) -> Position:
         """Open a new position or add to existing."""
         if symbol in self.positions:
-            # Add to existing position (averaging)
             existing = self.positions[symbol]
             total_quantity = existing.quantity + quantity
             avg_price = (
-                (existing.entry_price * existing.quantity) + (entry_price * quantity)
+                existing.entry_price * existing.quantity + entry_price * quantity
             ) / total_quantity
-
             existing.quantity = total_quantity
             existing.entry_price = avg_price
             existing.updated_at = datetime.utcnow()
             return existing
         else:
-            # Create new position
             position = Position(
-                symbol=symbol,
-                quantity=quantity,
-                entry_price=entry_price,
-                current_price=entry_price,
+                symbol=symbol, quantity=quantity, entry_price=entry_price, current_price=entry_price
             )
             self.positions[symbol] = position
             return position
 
     def close_position(
-        self,
-        symbol: str,
-        exit_price: float,
-        quantity: Optional[float] = None,
+        self, symbol: str, exit_price: float, quantity: Optional[float] = None
     ) -> Optional[float]:
         """Close position fully or partially."""
         if symbol not in self.positions:
             return None
-
         position = self.positions[symbol]
-
         if quantity is None or quantity >= position.quantity:
-            # Close full position
             pnl = position.close_position(exit_price)
             self.total_realized_pnl += pnl
             self.closed_positions.append(position)
             del self.positions[symbol]
             return pnl
         else:
-            # Partial close
             pnl = (exit_price - position.entry_price) * quantity
             position.quantity -= quantity
             position.realized_pnl += pnl

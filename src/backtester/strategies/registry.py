@@ -60,5 +60,4 @@ class StrategyRegistry:
         return list(self.strategies.keys())
 
 
-# Global registry instance
 strategy_registry = StrategyRegistry()

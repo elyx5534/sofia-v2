@@ -50,11 +50,10 @@ class TechnicalIndicators:
             RSI series (0-100)
         """
         delta = data.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        gain = delta.where(delta > 0, 0).rolling(window=period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-
         rs = gain / loss
-        rsi = 100 - (100 / (1 + rs))
+        rsi = 100 - 100 / (1 + rs)
         return rsi
 
     @staticmethod
@@ -75,12 +74,10 @@ class TechnicalIndicators:
         """
         ema_fast = data.ewm(span=fast, adjust=False).mean()
         ema_slow = data.ewm(span=slow, adjust=False).mean()
-
         macd_line = ema_fast - ema_slow
         signal_line = macd_line.ewm(span=signal, adjust=False).mean()
         histogram = macd_line - signal_line
-
-        return macd_line, signal_line, histogram
+        return (macd_line, signal_line, histogram)
 
     @staticmethod
     def bollinger_bands(
@@ -99,11 +96,9 @@ class TechnicalIndicators:
         """
         middle = data.rolling(window=window).mean()
         std = data.rolling(window=window).std()
-
-        upper = middle + (std * num_std)
-        lower = middle - (std * num_std)
-
-        return upper, middle, lower
+        upper = middle + std * num_std
+        lower = middle - std * num_std
+        return (upper, middle, lower)
 
     @staticmethod
     def stochastic(
@@ -124,11 +119,9 @@ class TechnicalIndicators:
         """
         lowest_low = low.rolling(window=k_period).min()
         highest_high = high.rolling(window=k_period).max()
-
         k_percent = 100 * ((close - lowest_low) / (highest_high - lowest_low))
         d_percent = k_percent.rolling(window=d_period).mean()
-
-        return k_percent, d_percent
+        return (k_percent, d_percent)
 
     @staticmethod
     def atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
@@ -147,10 +140,8 @@ class TechnicalIndicators:
         high_low = high - low
         high_close = np.abs(high - close.shift())
         low_close = np.abs(low - close.shift())
-
         ranges = pd.concat([high_low, high_close, low_close], axis=1)
         true_range = ranges.max(axis=1)
-
         return true_range.rolling(window=period).mean()
 
     @staticmethod
@@ -197,52 +188,35 @@ class TechnicalIndicators:
             DataFrame with all indicators added as new columns
         """
         result = df.copy()
-
-        # Moving Averages
         result["sma_20"] = TechnicalIndicators.sma(df["close"], 20)
         result["sma_50"] = TechnicalIndicators.sma(df["close"], 50)
         result["ema_12"] = TechnicalIndicators.ema(df["close"], 12)
         result["ema_26"] = TechnicalIndicators.ema(df["close"], 26)
-
-        # RSI
         result["rsi"] = TechnicalIndicators.rsi(df["close"])
-
-        # MACD
         macd, signal, histogram = TechnicalIndicators.macd(df["close"])
         result["macd"] = macd
         result["macd_signal"] = signal
         result["macd_histogram"] = histogram
-
-        # Bollinger Bands
         upper, middle, lower = TechnicalIndicators.bollinger_bands(df["close"])
         result["bb_upper"] = upper
         result["bb_middle"] = middle
         result["bb_lower"] = lower
-
-        # Stochastic
         k, d = TechnicalIndicators.stochastic(df["high"], df["low"], df["close"])
         result["stoch_k"] = k
         result["stoch_d"] = d
-
-        # ATR
         result["atr"] = TechnicalIndicators.atr(df["high"], df["low"], df["close"])
-
-        # Volume indicators
         if "volume" in df.columns:
             result["obv"] = TechnicalIndicators.obv(df["close"], df["volume"])
             result["vwap"] = TechnicalIndicators.vwap(
                 df["high"], df["low"], df["close"], df["volume"]
             )
-
         return result
 
 
-# Convenience functions for quick calculations
 def calculate_rsi(prices: Union[pd.Series, list, np.ndarray], period: int = 14) -> float:
     """Calculate current RSI value."""
     if isinstance(prices, (list, np.ndarray)):
         prices = pd.Series(prices)
-
     indicators = TechnicalIndicators()
     rsi_series = indicators.rsi(prices, period)
     return rsi_series.iloc[-1] if not rsi_series.empty else 50.0
@@ -252,7 +226,6 @@ def calculate_sma(prices: Union[pd.Series, list, np.ndarray], window: int) -> fl
     """Calculate current SMA value."""
     if isinstance(prices, (list, np.ndarray)):
         prices = pd.Series(prices)
-
     indicators = TechnicalIndicators()
     sma_series = indicators.sma(prices, window)
     return sma_series.iloc[-1] if not sma_series.empty else prices.iloc[-1]

@@ -7,12 +7,11 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException, StreamingResponse
 
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from src.dev.jobs import job_runner
 
 router = APIRouter(prefix="/api/dev", tags=["dev"])
@@ -23,7 +22,6 @@ class ActionRequest(BaseModel):
     args: Optional[Dict] = {}
 
 
-# Action to command mapping
 ACTION_MAP = {
     "demo": ["python", "run_paper_session.py", "5"],
     "qa": ["python", "tools/qa_proof.py"],
@@ -45,8 +43,6 @@ ACTION_MAP = {
         "30",
     ],
 }
-
-# Action families for rate limiting
 ACTION_FAMILIES = {
     "demo": "trading",
     "arbitrage": "trading",
@@ -66,16 +62,11 @@ async def execute_action(request: ActionRequest):
     """Execute a predefined action"""
     if request.action not in ACTION_MAP:
         raise HTTPException(status_code=400, detail=f"Unknown action: {request.action}")
-
     cmd = ACTION_MAP[request.action].copy()
-
-    # Add any additional args
     if request.args:
         for key, value in request.args.items():
             cmd.extend([f"--{key}", str(value)])
-
     family = ACTION_FAMILIES.get(request.action)
-
     try:
         job_id = await job_runner.spawn_job(cmd, family=family)
         return {"job_id": job_id, "action": request.action, "family": family, "status": "started"}
@@ -98,7 +89,6 @@ async def get_job_details(job_id: str):
     job = await job_runner.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found")
-
     return job.to_dict()
 
 
@@ -127,5 +117,4 @@ async def kill_job(job_id: str):
     success = await job_runner.kill_job(job_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found or not running")
-
     return {"status": "killed", "job_id": job_id}

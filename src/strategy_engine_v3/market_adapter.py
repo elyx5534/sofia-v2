@@ -90,7 +90,7 @@ class Position(BaseModel):
 
     symbol: str
     market_type: MarketType
-    side: str  # long/short
+    side: str
     quantity: float
     entry_price: float
     current_price: float
@@ -173,7 +173,6 @@ class CryptoAdapter(MarketAdapter):
 
     async def connect(self) -> bool:
         """Connect to crypto exchange."""
-        # Mock implementation for now
         return True
 
     async def disconnect(self) -> None:
@@ -182,7 +181,6 @@ class CryptoAdapter(MarketAdapter):
 
     async def get_market_data(self, symbol: str) -> MarketData:
         """Get crypto market data."""
-        # Mock implementation
         return MarketData(
             symbol=symbol,
             market_type=self.market_type,
@@ -201,7 +199,6 @@ class CryptoAdapter(MarketAdapter):
         self, symbol: str, timeframe: str, start_date: datetime, end_date: datetime
     ) -> List[MarketData]:
         """Get historical crypto data."""
-        # Mock implementation
         return [
             MarketData(
                 symbol=symbol,
@@ -285,14 +282,14 @@ class EquityAdapter(MarketAdapter):
             symbol=symbol,
             market_type=self.market_type,
             timestamp=datetime.utcnow(),
-            bid=150.00,
+            bid=150.0,
             ask=150.01,
-            last=150.00,
+            last=150.0,
             volume=5000000.0,
-            open=149.00,
-            high=151.00,
-            low=148.50,
-            close=150.00,
+            open=149.0,
+            high=151.0,
+            low=148.5,
+            close=150.0,
         )
 
     async def get_historical_data(
@@ -335,10 +332,7 @@ class EquityAdapter(MarketAdapter):
 class MarketAdapterFactory:
     """Factory for creating market adapters."""
 
-    _adapters = {
-        MarketType.CRYPTO: CryptoAdapter,
-        MarketType.EQUITY: EquityAdapter,
-    }
+    _adapters = {MarketType.CRYPTO: CryptoAdapter, MarketType.EQUITY: EquityAdapter}
 
     @classmethod
     def create(cls, market_type: MarketType, config: Dict[str, Any]) -> MarketAdapter:

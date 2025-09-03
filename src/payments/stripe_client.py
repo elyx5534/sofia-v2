@@ -20,10 +20,7 @@ class StripeClient:
         self.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_your_stripe_key_here")
         self.publishable_key = os.getenv("STRIPE_PUBLISHABLE_KEY", "pk_test_your_stripe_key_here")
         self.webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_your_webhook_secret")
-
         stripe.api_key = self.api_key
-
-        # Product and price IDs (you'll create these in Stripe dashboard)
         self.price_ids = {
             "basic_monthly": os.getenv("STRIPE_BASIC_MONTHLY_PRICE_ID", "price_basic_monthly"),
             "basic_yearly": os.getenv("STRIPE_BASIC_YEARLY_PRICE_ID", "price_basic_yearly"),
@@ -57,17 +54,12 @@ class StripeClient:
             checkout_session = stripe.checkout.Session.create(
                 customer=customer_id,
                 payment_method_types=["card"],
-                line_items=[
-                    {
-                        "price": price_id,
-                        "quantity": 1,
-                    }
-                ],
+                line_items=[{"price": price_id, "quantity": 1}],
                 mode="subscription",
                 success_url=success_url,
                 cancel_url=cancel_url,
                 metadata={"user_id": user_id},
-                allow_promotion_codes=True,  # Allow discount codes
+                allow_promotion_codes=True,
                 billing_address_collection="required",
                 tax_id_collection={"enabled": True},
             )
@@ -81,8 +73,7 @@ class StripeClient:
         """Create Stripe customer portal session for subscription management"""
         try:
             portal_session = stripe.billing_portal.Session.create(
-                customer=customer_id,
-                return_url=return_url,
+                customer=customer_id, return_url=return_url
             )
             logger.info(f"Created portal session for customer: {customer_id}")
             return portal_session
@@ -128,7 +119,6 @@ class StripeClient:
                 )
             else:
                 subscription = stripe.Subscription.cancel(subscription_id)
-
             logger.info(f"Cancelled subscription: {subscription_id}")
             return subscription
         except stripe.error.StripeError as e:
@@ -138,21 +128,12 @@ class StripeClient:
     def update_subscription(self, subscription_id: str, new_price_id: str) -> Dict[str, Any]:
         """Update subscription to new price/plan"""
         try:
-            # Get current subscription
             subscription = stripe.Subscription.retrieve(subscription_id)
-
-            # Update subscription
             updated_subscription = stripe.Subscription.modify(
                 subscription_id,
-                items=[
-                    {
-                        "id": subscription["items"]["data"][0]["id"],
-                        "price": new_price_id,
-                    }
-                ],
+                items=[{"id": subscription["items"]["data"][0]["id"], "price": new_price_id}],
                 proration_behavior="immediate_with_remaining_time",
             )
-
             logger.info(f"Updated subscription {subscription_id} to price {new_price_id}")
             return updated_subscription
         except stripe.error.StripeError as e:
@@ -231,7 +212,6 @@ class StripeClient:
             raise
 
 
-# Global Stripe client instance
 stripe_client = StripeClient()
 
 

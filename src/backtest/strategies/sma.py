@@ -27,21 +27,16 @@ class SMAStrategy(BaseStrategy):
         """
         if len(data) < slow_period:
             return [0] * len(data)
-
-        # Calculate SMAs
         fast_sma = data["close"].rolling(window=fast_period).mean()
         slow_sma = data["close"].rolling(window=slow_period).mean()
-
-        # Generate signals
         signals = []
         for i in range(len(data)):
             if pd.isna(fast_sma.iloc[i]) or pd.isna(slow_sma.iloc[i]):
                 signals.append(0)
             elif fast_sma.iloc[i] > slow_sma.iloc[i]:
-                signals.append(1)  # Long signal
+                signals.append(1)
             elif fast_sma.iloc[i] < slow_sma.iloc[i]:
-                signals.append(-1)  # Short signal
+                signals.append(-1)
             else:
-                signals.append(0)  # Flat
-
+                signals.append(0)
         return signals

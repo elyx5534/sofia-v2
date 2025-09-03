@@ -7,14 +7,14 @@ import logging
 import os
 from typing import Dict, Literal, Optional
 
-from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+from src.adapters.web.fastapi_adapter import APIRouter, HTTPException
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/live", tags=["live"])
 
 
-# Request/Response models
 class SwitchModeRequest(BaseModel):
     mode: Literal["paper", "live"]
     confirm: bool = False
@@ -37,16 +37,14 @@ class RiskLimitRequest(BaseModel):
 
 
 class ExchangeConfigRequest(BaseModel):
-    exchange: str  # e.g., "binance", "btcturk"
+    exchange: str
     api_key: str
     secret: str
     testnet: bool = True
 
 
-# Check for live mode authorization
 def check_live_auth():
     """Check if live trading is authorized"""
-    # Check for API keys in environment
     has_keys = bool(os.getenv("EXCHANGE_API_KEY") or os.getenv("BINANCE_API_KEY"))
     return has_keys
 
@@ -56,37 +54,26 @@ async def switch_trading_mode(request: SwitchModeRequest) -> Dict:
     """Switch between paper and live trading modes"""
     try:
         if request.mode == "live":
-            # Check authorization
             if not check_live_auth():
                 raise HTTPException(
                     status_code=403, detail="Live mode not authorized. Configure API keys first."
                 )
-
-            # Require confirmation
             if not request.confirm:
                 raise HTTPException(
                     status_code=400, detail="Live mode requires confirmation (set confirm=true)"
                 )
-
-        # Get execution service
         from src.services.execution import get_execution_service
 
         router = get_execution_service()
-
-        # Switch mode
         success = router.switch_mode(request.mode)
-
         if not success:
             raise HTTPException(status_code=400, detail=f"Failed to switch to {request.mode} mode")
-
         logger.info(f"Switched to {request.mode} mode")
-
         return {
             "success": True,
             "mode": request.mode,
             "message": f"Switched to {request.mode} mode successfully",
         }
-
     except HTTPException:
         raise
     except Exception as e:
@@ -101,11 +88,7 @@ async def place_order(request: OrderRequest) -> Dict:
         from src.services.execution import OrderType, get_execution_service
 
         execution = get_execution_service()
-
-        # Convert string type to enum
         order_type = OrderType[request.type.upper()]
-
-        # Place order
         result = await execution.place_order(
             symbol=request.symbol,
             side=request.side,
@@ -114,14 +97,10 @@ async def place_order(request: OrderRequest) -> Dict:
             price=request.price,
             stop_price=request.stop_price,
         )
-
         if not result["success"]:
             raise HTTPException(status_code=400, detail=result.get("reason", "Order rejected"))
-
         logger.info(f"Order placed: {result['order_id']}")
-
         return result
-
     except HTTPException:
         raise
     except Exception as e:
@@ -137,14 +116,11 @@ async def cancel_order(order_id: str) -> Dict:
 
         execution = get_execution_service()
         success = execution.cancel_order(order_id)
-
         if not success:
             raise HTTPException(
                 status_code=404, detail=f"Order {order_id} not found or already filled"
             )
-
         return {"success": True, "order_id": order_id, "message": "Order cancelled successfully"}
-
     except HTTPException:
         raise
     except Exception as e:
@@ -160,8 +136,6 @@ async def get_positions() -> Dict:
 
         execution = get_execution_service()
         positions = execution.get_positions()
-
-        # Convert positions to dict format
         positions_list = []
         for symbol, pos in positions.items():
             positions_list.append(
@@ -174,9 +148,7 @@ async def get_positions() -> Dict:
                     "realized_pnl": pos.realized_pnl,
                 }
             )
-
         return {"positions": positions_list, "count": len(positions_list)}
-
     except Exception as e:
         logger.error(f"Get positions error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -190,9 +162,7 @@ async def get_trading_stats() -> Dict:
 
         execution = get_execution_service()
         stats = execution.get_stats()
-
         return stats
-
     except Exception as e:
         logger.error(f"Get stats error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -206,22 +176,15 @@ async def update_risk_limits(request: RiskLimitRequest) -> Dict:
 
         execution = get_execution_service()
         risk_guard = execution.risk_guard
-
-        # Update limits
         if request.daily_loss_limit_pct is not None:
             risk_guard.daily_loss_limit = request.daily_loss_limit_pct
-
         if request.position_limit is not None:
             risk_guard.position_limit = request.position_limit
-
         if request.max_position_size_pct is not None:
             risk_guard.max_position_size = request.max_position_size_pct
-
         if request.notional_cap is not None:
             risk_guard.notional_cap = request.notional_cap
-
         logger.info("Risk limits updated")
-
         return {
             "success": True,
             "limits": {
@@ -231,7 +194,6 @@ async def update_risk_limits(request: RiskLimitRequest) -> Dict:
                 "notional_cap": risk_guard.notional_cap,
             },
         }
-
     except Exception as e:
         logger.error(f"Update risk limits error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -245,13 +207,11 @@ async def reset_kill_switch() -> Dict:
 
         execution = get_execution_service()
         execution.risk_guard.reset_kill_switch()
-
         return {
             "success": True,
             "message": "Kill switch reset successfully",
             "kill_switch_active": False,
         }
-
     except Exception as e:
         logger.error(f"Reset kill switch error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -261,18 +221,15 @@ async def reset_kill_switch() -> Dict:
 async def configure_exchange(request: ExchangeConfigRequest) -> Dict:
     """Configure exchange credentials (stored in memory only)"""
     try:
-        # Validate exchange name
         valid_exchanges = ["binance", "btcturk", "paribu", "kucoin"]
         if request.exchange not in valid_exchanges:
             raise HTTPException(
                 status_code=400, detail=f"Invalid exchange. Valid: {valid_exchanges}"
             )
-
-        # Re-initialize execution service with new config
         from src.services.execution import init_execution_service
 
         config = {
-            "mode": "paper",  # Start in paper mode for safety
+            "mode": "paper",
             "exchanges": {
                 request.exchange: {
                     "exchange": request.exchange,
@@ -282,18 +239,14 @@ async def configure_exchange(request: ExchangeConfigRequest) -> Dict:
                 }
             },
         }
-
         init_execution_service(config)
-
         logger.info(f"Exchange {request.exchange} configured (testnet={request.testnet})")
-
         return {
             "success": True,
             "exchange": request.exchange,
             "testnet": request.testnet,
             "message": "Exchange configured. Switch to live mode to use.",
         }
-
     except HTTPException:
         raise
     except Exception as e:

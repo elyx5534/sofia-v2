@@ -43,32 +43,22 @@ class BacktestEngine:
         """
         if data.empty:
             raise ValueError("Data cannot be empty")
-
-        # Generate signals from strategy
         positions = strategy.generate_signals(data, **strategy_params)
-
-        # Initialize tracking variables
         equity = self.initial_capital
         cash = self.initial_capital
         position = 0
         trades = []
         equity_curve = []
-
-        # Process each time period
         for i in range(len(data)):
             timestamp = data.index[i]
             price = data.iloc[i]["close"]
             signal = positions[i] if i < len(positions) else 0
-
-            # Handle position changes
             if signal != position:
-                # Close existing position
                 if position != 0:
                     trade_value = position * price
                     commission_cost = abs(trade_value) * self.commission
                     slippage_cost = abs(trade_value) * self.slippage
                     cash += trade_value - commission_cost - slippage_cost
-
                     trades.append(
                         {
                             "timestamp": timestamp,
@@ -79,19 +69,14 @@ class BacktestEngine:
                             "commission": commission_cost,
                         }
                     )
-
-                # Open new position
                 if signal != 0:
-                    # Calculate position size based on available cash
                     max_position = int(cash / (price * (1 + self.commission + self.slippage)))
                     position = min(abs(signal), max_position) * (1 if signal > 0 else -1)
-
                     if position != 0:
                         trade_value = abs(position) * price
                         commission_cost = trade_value * self.commission
                         slippage_cost = trade_value * self.slippage
                         cash -= trade_value + commission_cost + slippage_cost
-
                         trades.append(
                             {
                                 "timestamp": timestamp,
@@ -104,13 +89,10 @@ class BacktestEngine:
                         )
                 else:
                     position = 0
-
-            # Calculate current equity
             if position != 0:
                 equity = cash + position * price
             else:
                 equity = cash
-
             equity_curve.append(
                 {
                     "timestamp": (
@@ -119,15 +101,12 @@ class BacktestEngine:
                     "equity": round(equity, 2),
                 }
             )
-
-        # Close any remaining position at the end
         if position != 0:
             final_price = data.iloc[-1]["close"]
             trade_value = position * final_price
             commission_cost = abs(trade_value) * self.commission
             cash += trade_value - commission_cost
             equity = cash
-
             trades.append(
                 {
                     "timestamp": data.index[-1],
@@ -138,11 +117,8 @@ class BacktestEngine:
                     "commission": commission_cost,
                 }
             )
-
-        # Calculate final metrics
         final_equity = equity
-        total_return = ((final_equity - self.initial_capital) / self.initial_capital) * 100
-
+        total_return = (final_equity - self.initial_capital) / self.initial_capital * 100
         return {
             "equity_curve": equity_curve,
             "trades": trades,

@@ -24,9 +24,9 @@ class Asset:
     """Canonical asset representation"""
 
     type: AssetType
-    base: str  # BTC, AAPL, EUR
-    quote: str  # USDT, USD, TRY
-    venue: str  # BINANCE, NASDAQ, BIST
+    base: str
+    quote: str
+    venue: str
 
     def __str__(self):
         """Standard format: BASE/QUOTE@VENUE"""
@@ -39,14 +39,12 @@ class Asset:
     def to_yfinance(self) -> str:
         """Convert to yfinance format"""
         if self.type == AssetType.CRYPTO:
-            # Crypto: BTC-USD
             return f"{self.base}-{self.quote}"
         elif self.type == AssetType.STOCK:
-            # Stock: AAPL or ASELS.IS for BIST
             if self.venue == "BIST":
                 return f"{self.base}.IS"
             return self.base
-        return f"{self.base}{self.quote}=X"  # Forex format
+        return f"{self.base}{self.quote}=X"
 
     def to_binance(self) -> str:
         """Convert to Binance format"""
@@ -68,7 +66,6 @@ class SymbolRegistry:
 
     def _init_common_symbols(self):
         """Initialize common symbol mappings"""
-        # Crypto symbols
         cryptos = [
             ("BTC/USDT@BINANCE", "crypto", "BTC", "USDT", "BINANCE"),
             ("ETH/USDT@BINANCE", "crypto", "ETH", "USDT", "BINANCE"),
@@ -79,8 +76,6 @@ class SymbolRegistry:
             ("ETH/TRY@BTCTURK", "crypto", "ETH", "TRY", "BTCTURK"),
             ("BTC/TRY@PARIBU", "crypto", "BTC", "TRY", "PARIBU"),
         ]
-
-        # Stock symbols
         stocks = [
             ("AAPL@NASDAQ", "stock", "AAPL", "USD", "NASDAQ"),
             ("MSFT@NASDAQ", "stock", "MSFT", "USD", "NASDAQ"),
@@ -91,15 +86,11 @@ class SymbolRegistry:
             ("SISE@BIST", "stock", "SISE", "TRY", "BIST"),
             ("GARAN@BIST", "stock", "GARAN", "TRY", "BIST"),
         ]
-
-        # Forex pairs
         forex = [
             ("USD/TRY@FOREX", "forex", "USD", "TRY", "FOREX"),
             ("EUR/USD@FOREX", "forex", "EUR", "USD", "FOREX"),
             ("GBP/USD@FOREX", "forex", "GBP", "USD", "FOREX"),
         ]
-
-        # Register all
         for symbol, asset_type, base, quote, venue in cryptos + stocks + forex:
             self.register(symbol, AssetType(asset_type), base, quote, venue)
 
@@ -109,33 +100,25 @@ class SymbolRegistry:
         """Register a new asset"""
         asset = Asset(type=asset_type, base=base, quote=quote, venue=venue)
         self.assets[symbol] = asset
-
-        # Also register without venue for convenience
         simple_symbol = f"{base}/{quote}"
         if simple_symbol not in self.assets:
             self.assets[simple_symbol] = asset
-
         return asset
 
     def parse(self, symbol: str) -> Optional[Asset]:
         """Parse symbol string to Asset"""
-        # Check if already registered
         if symbol in self.assets:
             return self.assets[symbol]
-
-        # Try to parse: BASE/QUOTE@VENUE or BASE/QUOTE
         if "@" in symbol:
             parts = symbol.split("@")
             if len(parts) == 2:
                 pair, venue = parts
                 if "/" in pair:
                     base, quote = pair.split("/")
-                    # Guess asset type
                     asset_type = self._guess_asset_type(base, quote, venue)
                     return self.register(symbol, asset_type, base, quote, venue)
         elif "/" in symbol:
             base, quote = symbol.split("/")
-            # Default venue based on quote
             if quote in ["USDT", "BUSD", "USDC"]:
                 venue = "BINANCE"
                 asset_type = AssetType.CRYPTO
@@ -146,25 +129,18 @@ class SymbolRegistry:
                 venue = "FOREX"
                 asset_type = AssetType.FOREX
             return self.register(symbol, asset_type, base, quote, venue)
-
-        # Try stock symbol
         if symbol.upper() == symbol and 2 <= len(symbol) <= 5:
-            # Likely a stock ticker
             if symbol.endswith(".IS"):
-                # BIST stock
                 base = symbol[:-3]
                 return self.register(f"{base}@BIST", AssetType.STOCK, base, "TRY", "BIST")
             else:
-                # US stock
                 return self.register(f"{symbol}@NASDAQ", AssetType.STOCK, symbol, "USD", "NASDAQ")
-
         return None
 
     def _guess_asset_type(self, base: str, quote: str, venue: str) -> AssetType:
         """Guess asset type from components"""
         crypto_venues = ["BINANCE", "BYBIT", "COINBASE", "BTCTURK", "PARIBU"]
         stock_venues = ["NASDAQ", "NYSE", "BIST"]
-
         if venue in crypto_venues:
             return AssetType.CRYPTO
         elif venue in stock_venues:
@@ -180,11 +156,9 @@ class SymbolRegistry:
         """Search for assets matching query"""
         query = query.upper()
         results = []
-
         for symbol, asset in self.assets.items():
             if query in asset.base or query in str(asset):
                 results.append(asset)
-
         return results
 
     def get_by_venue(self, venue: str) -> List[Asset]:
@@ -196,5 +170,4 @@ class SymbolRegistry:
         return [a for a in self.assets.values() if a.type == asset_type]
 
 
-# Global registry instance
 symbol_registry = SymbolRegistry()

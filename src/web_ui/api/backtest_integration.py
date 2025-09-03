@@ -7,9 +7,7 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 
-# Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-
 from src.backtester.engine import BacktestEngine
 from src.backtester.strategies.sma import SMACrossStrategy
 from src.data_hub.pipeline import Pipeline
@@ -44,54 +42,33 @@ class BacktestService:
         Returns:
             Backtest results including metrics and trades
         """
-        # Default dates if not provided
         if not end_date:
             end_date = datetime.now().strftime("%Y-%m-%d")
         if not start_date:
             start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
-
-        # Create cache key
         cache_key = f"{symbol}_{strategy_type}_{start_date}_{end_date}"
-
-        # Check cache
         if cache_key in self.results_cache:
             cached_result, timestamp = self.results_cache[cache_key]
             if datetime.now() - timestamp < timedelta(minutes=10):
                 return cached_result
-
         try:
-            # Fetch data
             data_path = self.pipeline.fetch_symbol(
                 symbol=symbol, start=start_date, end=end_date, interval="1d"
             )
-
-            # Load data
             data = pd.read_parquet(data_path)
-
-            # Select strategy
             if strategy_type == "sma_cross":
                 strategy = SMACrossStrategy(
                     fast_period=strategy_params.get("fast_period", 20),
                     slow_period=strategy_params.get("slow_period", 50),
                 )
             else:
-                # Default to SMA cross
                 strategy = SMACrossStrategy()
-
-            # Run backtest
             results = self.engine.run(data, strategy)
-
-            # Format results for UI
             formatted_results = self._format_results(results, symbol, strategy_type)
-
-            # Cache results
             self.results_cache[cache_key] = (formatted_results, datetime.now())
-
             return formatted_results
-
         except Exception as e:
             print(f"Backtest error: {e}")
-            # Return mock results for demo
             return self._get_mock_results(symbol, strategy_type)
 
     def _format_results(self, results: Dict, symbol: str, strategy_type: str) -> Dict:
@@ -108,7 +85,7 @@ class BacktestService:
                 "final_equity": results.get("final_equity", 10000),
             },
             "equity_curve": results.get("equity_curve", []),
-            "trades": results.get("trades", [])[:10],  # Last 10 trades
+            "trades": results.get("trades", [])[:10],
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -116,7 +93,6 @@ class BacktestService:
         """Get mock backtest results for demo."""
         import random
 
-        # Generate mock equity curve
         equity_curve = []
         equity = 10000
         for i in range(100):
@@ -127,7 +103,6 @@ class BacktestService:
                     "equity": round(equity, 2),
                 }
             )
-
         return {
             "symbol": symbol,
             "strategy": strategy_type,
@@ -154,5 +129,4 @@ class BacktestService:
         }
 
 
-# Singleton instance
 backtest_service = BacktestService()
